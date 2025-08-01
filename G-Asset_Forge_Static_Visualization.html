@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-Asset Forge 项目策划文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            line-height: 1.5;
+            color: #333;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e8f5e8 100%);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #00c896 0%, #32d896 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 200, 150, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header .tagline {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-banner {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e8f0fe;
+        }
+        
+        .banner-header {
+            background: linear-gradient(135deg, #00c896 0%, #32d896 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            margin: -30px -30px 25px -30px;
+            text-align: center;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f8fffe 100%);
+            border: 2px solid #e0f7fa;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #00c896 0%, #32d896 100%);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00c896;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 1.1em;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, #fff 0%, #f0f8ff 100%);
+            border: 1px solid #e3f2fd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        
+        .product-modules {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .module-item {
+            background: white;
+            border: 1px solid #e8f0fe;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+        
+        .module-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        
+        .module-image {
+            height: 180px;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e8f5e8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            color: #00c896;
+        }
+        
+        .module-info {
+            padding: 20px;
+        }
+        
+        .module-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .module-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+        
+        .module-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .feature-tag {
+            background: #e8f5e8;
+            color: #00c896;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .tech-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e8f0fe;
+        }
+        
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .tech-card {
+            background: linear-gradient(135deg, #fff 0%, #f8fffe 100%);
+            border: 1px solid #e0f7fa;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #00c896 0%, #32d896 100%);
+        }
+        
+        .tech-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .tech-list {
+            list-style: none;
+        }
+        
+        .tech-list li {
+            padding: 6px 0;
+            color: #666;
+            font-size: 0.95em;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .tech-list li:before {
+            content: '●';
+            position: absolute;
+            left: 0;
+            color: #00c896;
+        }
+        
+        .architecture-section {
+            background: linear-gradient(135deg, #f0f8ff 0%, #e8f5e8 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+        }
+        
+        .arch-layer {
+            background: white;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #00c896;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .arch-layer h4 {
+            color: #00c896;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        
+        .arch-layer p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        
+        .value-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e8f0fe;
+        }
+        
+        .value-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .value-card {
+            background: linear-gradient(135deg, #fff 0%, #f0f8ff 100%);
+            border: 1px solid #e3f2fd;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .value-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #00c896 0%, #32d896 100%);
+        }
+        
+        .value-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+        
+        .value-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .value-desc {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        
+        .user-roles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .role-card {
+            background: linear-gradient(135deg, #fff 0%, #f8fffe 100%);
+            border: 1px solid #e0f7fa;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .role-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .role-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .role-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .features-grid {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 页面标题 -->
+        <div class="header">
+            <h1>🎮 G-Asset Forge</h1>
+            <div class="tagline">跨渠道游戏素材工具 - 产品策划可视化</div>
+        </div>
+        
+        <!-- 产品概览 -->
+        <div class="main-banner">
+            <div class="banner-header">🎯 产品概览 - 专业游戏素材制作平台</div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">6+</div>
+                    <div class="stat-label">核心功能模块</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">游戏字体库</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">80%</div>
+                    <div class="stat-label">效率提升</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">多渠道</div>
+                    <div class="stat-label">一站式适配</div>
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">🎨 专业设计工具集</div>
+                <div class="feature-card">📱 游戏风格模板库</div>
+                <div class="feature-card">⚡ 批量制作系统</div>
+                <div class="feature-card">📄 H5活动页面制作</div>
+                <div class="feature-card">👥 团队协作工作流</div>
+                <div class="feature-card">🔄 多渠道规格适配</div>
+            </div>
+        </div>
+        
+        <!-- 功能模块 -->
+        <div class="main-banner">
+            <div class="banner-header">🔧 核心功能模块 - 6大专业工具集</div>
+            
+            <div class="product-modules">
+                <div class="module-item">
+                    <div class="module-image">🎨</div>
+                    <div class="module-info">
+                        <div class="module-title">资源位素材设计编辑器</div>
+                        <div class="module-desc">专为游戏渠道素材设计的专业编辑器，支持多渠道尺寸规范和智能辅助设计</div>
+                        <div class="module-features">
+                            <span class="feature-tag">渠道规范预设</span>
+                            <span class="feature-tag">多画板管理</span>
+                            <span class="feature-tag">智能辅助</span>
+                            <span class="feature-tag">专业工具集</span>
+                            <span class="feature-tag">游戏风格</span>
+                            <span class="feature-tag">插件系统</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="module-item">
+                    <div class="module-image">📱</div>
+                    <div class="module-info">
+                        <div class="module-title">资源位模板库</div>
+                        <div class="module-desc">丰富的游戏风格模板库，按渠道、游戏类型、营销目标分类管理</div>
+                        <div class="module-features">
+                            <span class="feature-tag">渠道分类</span>
+                            <span class="feature-tag">游戏类型</span>
+                            <span class="feature-tag">营销目标</span>
+                            <span class="feature-tag">50+字体</span>
+                            <span class="feature-tag">风格滤镜</span>
+                            <span class="feature-tag">装饰元素</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="module-item">
+                    <div class="module-image">⚡</div>
+                    <div class="module-info">
+                        <div class="module-title">批量制作系统</div>
+                        <div class="module-desc">高效的批量素材生产系统，支持变量模板和数据驱动的自动化制作</div>
+                        <div class="module-features">
+                            <span class="feature-tag">变量模板</span>
+                            <span class="feature-tag">数据导入</span>
+                            <span class="feature-tag">批量渲染</span>
+                            <span class="feature-tag">并发处理</span>
+                            <span class="feature-tag">进度监控</span>
+                            <span class="feature-tag">错误处理</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="module-item">
+                    <div class="module-image">📄</div>
+                    <div class="module-info">
+                        <div class="module-title">活动H5制作系统</div>
+                        <div class="module-desc">可视化H5页面制作工具，提供丰富的交互组件和活动模板</div>
+                        <div class="module-features">
+                            <span class="feature-tag">拖拽编辑</span>
+                            <span class="feature-tag">多页面管理</span>
+                            <span class="feature-tag">交互组件</span>
+                            <span class="feature-tag">活动模板</span>
+                            <span class="feature-tag">智能切图</span>
+                            <span class="feature-tag">多端适配</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="module-item">
+                    <div class="module-image">📁</div>
+                    <div class="module-info">
+                        <div class="module-title">素材资源管理</div>
+                        <div class="module-desc">智能化的素材资源管理系统，支持AI标签识别和版本控制</div>
+                        <div class="module-features">
+                            <span class="feature-tag">智能分类</span>
+                            <span class="feature-tag">批量上传</span>
+                            <span class="feature-tag">AI标签</span>
+                            <span class="feature-tag">版本控制</span>
+                            <span class="feature-tag">字体管理</span>
+                            <span class="feature-tag">重复检测</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="module-item">
+                    <div class="module-image">👥</div>
+                    <div class="module-info">
+                        <div class="module-title">协作工作流</div>
+                        <div class="module-desc">完整的团队协作解决方案，支持实时编辑和自定义审核流程</div>
+                        <div class="module-features">
+                            <span class="feature-tag">角色权限</span>
+                            <span class="feature-tag">项目看板</span>
+                            <span class="feature-tag">实时协作</span>
+                            <span class="feature-tag">在线反馈</span>
+                            <span class="feature-tag">审核流程</span>
+                            <span class="feature-tag">版本历史</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 技术架构 -->
+        <div class="tech-section">
+            <div class="banner-header">🏗️ 技术架构 - 现代化Web技术栈</div>
+            
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <div class="tech-title">🎯 核心技术</div>
+                    <ul class="tech-list">
+                        <li>Canvas/WebGL 高性能图形渲染</li>
+                        <li>组件化架构设计</li>
+                        <li>WebSocket 实时协作</li>
+                        <li>Web Worker 多线程处理</li>
+                    </ul>
+                </div>
+                
+                <div class="tech-card">
+                    <div class="tech-title">⚡ 性能优化</div>
+                    <ul class="tech-list">
+                        <li>智能图片压缩算法</li>
+                        <li>本地缓存机制</li>
+                        <li>增量更新同步</li>
+                        <li>资源懒加载</li>
+                    </ul>
+                </div>
+                
+                <div class="tech-card">
+                    <div class="tech-title">🔧 扩展性设计</div>
+                    <ul class="tech-list">
+                        <li>开放式插件系统</li>
+                        <li>模板市场生态</li>
+                        <li>第三方API集成</li>
+                        <li>自定义组件开发</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="architecture-section">
+                <div class="arch-layer">
+                    <h4>📱 用户界面层</h4>
+                    <p>可视化编辑器 | 项目管理界面 | 协作工具 | 预览系统</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>🔧 业务逻辑层</h4>
+                    <p>设计引擎 | 模板系统 | 批量处理 | 权限管理 | 工作流控制</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>⚡ 服务支撑层</h4>
+                    <p>实时同步 | 文件处理 | 渲染服务 | 通知系统 | API网关</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>💾 数据存储层</h4>
+                    <p>项目数据 | 素材库 | 用户信息 | 模板资源 | 缓存系统</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 产品价值 -->
+        <div class="value-section">
+            <div class="banner-header">💎 产品价值 - 高效协作新体验</div>
+            
+            <div class="value-cards">
+                <div class="value-card">
+                    <div class="value-icon">🚀</div>
+                    <div class="value-title">效率提升</div>
+                    <div class="value-desc">通过批量制作和模板化设计，大幅提升素材制作和渠道适配效率，节省80%的重复工作时间</div>
+                </div>
+                
+                <div class="value-card">
+                    <div class="value-icon">🎯</div>
+                    <div class="value-title">质量保障</div>
+                    <div class="value-desc">标准化模板和合规检查确保输出质量，降低素材被拒风险，提升渠道通过率</div>
+                </div>
+                
+                <div class="value-card">
+                    <div class="value-icon">💰</div>
+                    <div class="value-title">成本控制</div>
+                    <div class="value-desc">减少重复工作，优化人力配置，降低项目管理复杂度，实现精益化运营</div>
+                </div>
+            </div>
+            
+            <div class="user-roles">
+                <div class="role-card">
+                    <div class="role-icon">👨‍🎨</div>
+                    <div class="role-title">设计师</div>
+                    <div class="role-desc">专业工具集、游戏风格模板、创意时间释放</div>
+                </div>
+                <div class="role-card">
+                    <div class="role-icon">👩‍💼</div>
+                    <div class="role-title">运营人员</div>
+                    <div class="role-desc">快速响应需求、批量制作、多渠道适配</div>
+                </div>
+                <div class="role-card">
+                    <div class="role-icon">🏢</div>
+                    <div class="role-title">项目管理</div>
+                    <div class="role-desc">统一平台管理、协作工作流、成本控制</div>
+                </div>
+                <div class="role-card">
+                    <div class="role-icon">✅</div>
+                    <div class="role-title">审核人员</div>
+                    <div class="role-desc">合规检查、质量把关、流程管理</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
