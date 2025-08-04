@@ -106,9 +106,9 @@
         }
         
         .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 15px;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 12px;
             margin: 25px 0;
         }
         
@@ -120,6 +120,8 @@
             text-align: center;
             font-weight: 500;
             transition: all 0.3s ease;
+            flex: 1;
+            white-space: nowrap;
         }
         
         .feature-card:hover {
@@ -382,7 +384,7 @@
         <!-- 页面标题 -->
         <div class="header">
             <h1>🎮 G-Asset Forge</h1>
-            <div class="tagline">跨渠道游戏素材工具 - 产品策划可视化</div>
+            <div class="tagline">快速、批量、标准化的渠道投放素材生产</div>
         </div>
         
         <!-- 产品概览 -->
@@ -523,62 +525,72 @@
         
         <!-- 技术架构 -->
         <div class="tech-section">
-            <div class="banner-header">🏗️ 技术架构 - 现代化Web技术栈</div>
+            <div class="banner-header">🏗️ 技术架构 - 桌面应用解决方案</div>
             
             <div class="tech-grid">
                 <div class="tech-card">
-                    <div class="tech-title">🎯 核心技术</div>
+                    <div class="tech-title">💻 桌面应用架构</div>
                     <ul class="tech-list">
-                        <li>Canvas/WebGL 高性能图形渲染</li>
-                        <li>组件化架构设计</li>
-                        <li>WebSocket 实时协作</li>
-                        <li>Web Worker 多线程处理</li>
+                        <li>Electron 跨平台桌面应用框架</li>
+                        <li>Fabric.js 画布渲染引擎</li>
+                        <li>React + TypeScript 前端技术栈</li>
+                        <li>Node.js 文件系统操作</li>
                     </ul>
                 </div>
                 
                 <div class="tech-card">
-                    <div class="tech-title">⚡ 性能优化</div>
+                    <div class="tech-title">🎨 画布渲染系统</div>
                     <ul class="tech-list">
-                        <li>智能图片压缩算法</li>
-                        <li>本地缓存机制</li>
-                        <li>增量更新同步</li>
-                        <li>资源懒加载</li>
+                        <li>60fps 流畅操作体验</li>
+                        <li>支持常见游戏素材规格</li>
+                        <li>撤销/重做历史管理</li>
+                        <li>PNG/JPG 高质量导出</li>
                     </ul>
                 </div>
                 
                 <div class="tech-card">
-                    <div class="tech-title">🔧 扩展性设计</div>
+                    <div class="tech-title">📁 内网部署优势</div>
                     <ul class="tech-list">
-                        <li>开放式插件系统</li>
-                        <li>模板市场生态</li>
-                        <li>第三方API集成</li>
-                        <li>自定义组件开发</li>
+                        <li>共享磁盘素材库访问</li>
+                        <li>离线模式正常工作</li>
+                        <li>本地文件系统直接操作</li>
+                        <li>企业内网安全可控</li>
+                    </ul>
+                </div>
+                
+                <div class="tech-card">
+                    <div class="tech-title">⚡ 性能与扩展</div>
+                    <ul class="tech-list">
+                        <li>内存占用控制在500MB内</li>
+                        <li>应用启动时间小于5秒</li>
+                        <li>支持Windows/macOS双平台</li>
+                        <li>内置自动更新机制</li>
                     </ul>
                 </div>
             </div>
             
             <div class="architecture-section">
                 <div class="arch-layer">
-                    <h4>📱 用户界面层</h4>
-                    <p>可视化编辑器 | 项目管理界面 | 协作工具 | 预览系统</p>
+                    <h4>💻 桌面应用层</h4>
+                    <p>Electron 主进程 | React UI界面 | 画布编辑器 | 工具栏系统</p>
                 </div>
                 <div class="arch-layer">
-                    <h4>🔧 业务逻辑层</h4>
-                    <p>设计引擎 | 模板系统 | 批量处理 | 权限管理 | 工作流控制</p>
+                    <h4>🎨 渲染引擎层</h4>
+                    <p>Fabric.js 画布 | 图像处理 | 文本渲染 | 图形绘制 | 导出引擎</p>
                 </div>
                 <div class="arch-layer">
-                    <h4>⚡ 服务支撑层</h4>
-                    <p>实时同步 | 文件处理 | 渲染服务 | 通知系统 | API网关</p>
+                    <h4>📁 文件系统层</h4>
+                    <p>项目文件管理 | 素材库访问 | 共享磁盘读写 | 本地缓存</p>
                 </div>
                 <div class="arch-layer">
                     <h4>💾 数据存储层</h4>
-                    <p>项目数据 | 素材库 | 用户信息 | 模板资源 | 缓存系统</p>
+                    <p>本地SQLite | 配置文件 | 素材索引 | 操作历史</p>
                 </div>
             </div>
         </div>
         
         <!-- 产品价值 -->
-        <div class="value-section">
+        <!-- <div class="value-section">
             <div class="banner-header">💎 产品价值 - 高效协作新体验</div>
             
             <div class="value-cards">
@@ -623,7 +635,7 @@
                     <div class="role-desc">合规检查、质量把关、流程管理</div>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 </body>
 </html>

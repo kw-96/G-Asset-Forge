@@ -101,7 +101,8 @@
         
         .ui-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
             gap: 25px;
             margin-bottom: 30px;
         }
@@ -336,6 +337,7 @@
             
             .ui-grid {
                 grid-template-columns: 1fr;
+                grid-template-rows: auto;
             }
         }
     </style>
@@ -344,7 +346,7 @@
     <div class="container">
         <header>
             <h1>G-Asset Forge 桌面应用UI原型设计方案</h1>
-            <p>专为游戏渠道运营打造的跨渠道素材设计工具 - 桌面应用版</p>
+            <p>专为渠道美术打造的跨渠道素材设计工具</p>
         </header>
         
         <!-- 设计理念部分 -->
@@ -636,7 +638,7 @@
                 <p>统一的视觉语言和交互规范确保用户体验一致性和操作效率。</p>
             </div>
             
-            <div class="ui-grid">
+            <div class="ui-grid" style="grid-template-columns: repeat(2, 1fr); grid-template-rows: auto;">
                 <div class="ui-card">
                     <div class="ui-preview" style="justify-content:flex-start; padding:20px;">
                         <div style="width:100%;">
@@ -722,8 +724,8 @@
         </section>
         
         <footer>
-            <p>G-Asset Forge 桌面应用UI原型设计方案 | 专为游戏渠道运营打造</p>
-            <p>© 2023 游戏素材设计工具 | 桌面应用版</p>
+            <p>G-Asset Forge 桌面应用UI原型设计方案</p>
+            <p>快速、批量、标准化的渠道投放素材生产</p>
         </footer>
     </div>
 </body>
