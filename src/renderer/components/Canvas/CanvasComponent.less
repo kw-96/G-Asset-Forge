@@ -1,0 +1,151 @@
+.canvas-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: hidden;
+
+  &.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &.error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .canvas-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    
+    canvas {
+      display: block;
+      border: none;
+      outline: none;
+    }
+  }
+
+  .canvas-loading {
+    text-align: center;
+    color: #666;
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+    }
+  }
+
+  .canvas-error {
+    text-align: center;
+    color: #ff4d4f;
+
+    h3 {
+      color: #ff4d4f;
+      margin-bottom: 8px;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .retry-button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+
+      &:hover {
+        background: #5a6fd8;
+      }
+    }
+  }
+
+  .canvas-performance-info {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    gap: 16px;
+    z-index: 1000;
+
+    .performance-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .label {
+        opacity: 0.8;
+      }
+
+      .value {
+        font-weight: bold;
+
+        &.good {
+          color: #52c41a;
+        }
+
+        &.caution {
+          color: #faad14;
+        }
+
+        &.warning {
+          color: #ff4d4f;
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .canvas-container {
+    .canvas-performance-info {
+      position: static;
+      margin-bottom: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #666;
+      justify-content: center;
+    }
+  }
+}
+
+// High DPI display support
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .canvas-container {
+    .canvas-wrapper canvas {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+  }
+}

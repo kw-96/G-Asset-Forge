@@ -1,0 +1,250 @@
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #d9d9d9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  min-height: 48px;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .section-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .ant-select {
+        .ant-select-selector {
+          border-radius: 4px;
+          font-size: 12px;
+        }
+      }
+
+      .ant-slider {
+        margin: 0 !important;
+        
+        .ant-slider-rail {
+          background-color: #f0f0f0;
+        }
+        
+        .ant-slider-track {
+          background-color: #667eea;
+        }
+        
+        .ant-slider-handle {
+          border-color: #667eea;
+          
+          &:hover,
+          &:focus {
+            border-color: #5a6fd8;
+            box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.12);
+          }
+        }
+      }
+    }
+
+    .canvas-size {
+      font-size: 12px;
+      color: #666;
+      font-family: 'Courier New', monospace;
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    .performance-metric {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      white-space: nowrap;
+
+      &.fps {
+        &.success {
+          color: #52c41a;
+          background: rgba(82, 196, 26, 0.1);
+        }
+        
+        &.warning {
+          color: #faad14;
+          background: rgba(250, 173, 20, 0.1);
+        }
+        
+        &.error {
+          color: #ff4d4f;
+          background: rgba(255, 77, 79, 0.1);
+        }
+      }
+
+      &.memory {
+        &.success {
+          color: #52c41a;
+          background: rgba(82, 196, 26, 0.1);
+        }
+        
+        &.warning {
+          color: #faad14;
+          background: rgba(250, 173, 20, 0.1);
+        }
+        
+        &.error {
+          color: #ff4d4f;
+          background: rgba(255, 77, 79, 0.1);
+        }
+      }
+
+      &.objects {
+        color: #666;
+        background: #f5f5f5;
+      }
+
+      .anticon {
+        font-size: 10px;
+      }
+    }
+  }
+
+  .ant-divider-vertical {
+    height: 24px;
+    margin: 0 8px;
+    border-color: #e8e8e8;
+  }
+
+  .ant-btn {
+    border-radius: 4px;
+    
+    &:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
+    
+    &:focus {
+      border-color: #667eea;
+      color: #667eea;
+    }
+    
+    &.ant-btn-primary {
+      background-color: #667eea;
+      border-color: #667eea;
+      
+      &:hover {
+        background-color: #5a6fd8;
+        border-color: #5a6fd8;
+      }
+    }
+  }
+
+  .ant-select {
+    .ant-select-selector {
+      border-radius: 4px;
+      
+      &:hover {
+        border-color: #667eea;
+      }
+    }
+    
+    &.ant-select-focused {
+      .ant-select-selector {
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .canvas-toolbar {
+    .toolbar-section {
+      .zoom-controls {
+        .ant-slider {
+          width: 80px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .canvas-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+    gap: 12px;
+
+    .toolbar-section {
+      width: 100%;
+      justify-content: space-between;
+
+      .section-label {
+        min-width: 60px;
+      }
+
+      .zoom-controls {
+        flex: 1;
+        justify-content: flex-end;
+        
+        .ant-slider {
+          width: 100px;
+        }
+      }
+    }
+
+    .ant-divider-vertical {
+      display: none;
+    }
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .canvas-toolbar {
+    border-bottom-color: #000;
+    
+    .performance-metric {
+      border: 1px solid currentColor;
+    }
+  }
+}
+
+// Dark mode support (if needed in future)
+.dark-theme {
+  .canvas-toolbar {
+    background: #1f1f1f;
+    border-bottom-color: #404040;
+    color: #fff;
+
+    .section-label {
+      color: #ccc;
+    }
+
+    .canvas-size {
+      background: #333;
+      color: #ccc;
+    }
+
+    .performance-metric {
+      &.objects {
+        background: #333;
+        color: #ccc;
+      }
+    }
+  }
+}

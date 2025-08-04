@@ -1,0 +1,245 @@
+.performance-monitor {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  width: 320px;
+  z-index: 1000;
+  
+  .performance-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    
+    .ant-card-head {
+      padding: 12px 16px;
+      min-height: auto;
+      border-bottom: 1px solid #f0f0f0;
+      
+      .ant-card-head-title {
+        padding: 0;
+        font-size: 14px;
+        font-weight: 600;
+        
+        .anticon {
+          margin-right: 8px;
+          color: #667eea;
+        }
+      }
+    }
+    
+    .ant-card-body {
+      padding: 16px;
+    }
+  }
+
+  .metric-section {
+    margin-bottom: 16px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .metric-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      
+      .anticon {
+        margin-right: 6px;
+        color: #666;
+      }
+      
+      .metric-value {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+        
+        &.success {
+          background: rgba(82, 196, 26, 0.1);
+          color: #52c41a;
+        }
+        
+        &.normal {
+          background: rgba(250, 173, 20, 0.1);
+          color: #faad14;
+        }
+        
+        &.exception {
+          background: rgba(255, 77, 79, 0.1);
+          color: #ff4d4f;
+        }
+      }
+    }
+    
+    .ant-progress {
+      margin-bottom: 4px;
+      
+      .ant-progress-bg {
+        height: 6px !important;
+      }
+    }
+    
+    .metric-info {
+      font-size: 11px;
+      color: #999;
+      line-height: 1.4;
+    }
+  }
+
+  .warnings-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+    
+    .warnings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #faad14;
+      
+      .anticon {
+        margin-right: 6px;
+      }
+    }
+    
+    .ant-alert {
+      margin-bottom: 4px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .ant-alert-message {
+        font-size: 11px;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .suggestions-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+    
+    .suggestions-header {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #666;
+    }
+    
+    .suggestions-list {
+      margin: 0;
+      padding-left: 16px;
+      
+      li {
+        font-size: 11px;
+        line-height: 1.5;
+        color: #666;
+        margin-bottom: 4px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+}
+
+// Animation for performance values
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.performance-monitor {
+  .metric-value {
+    &.exception {
+      animation: pulse 2s infinite;
+    }
+  }
+}
+
+// Dark theme support
+.dark-theme {
+  .performance-monitor {
+    .performance-card {
+      background: #1f1f1f;
+      border-color: #404040;
+      
+      .ant-card-head {
+        background: #1f1f1f;
+        border-bottom-color: #404040;
+        color: #fff;
+      }
+      
+      .ant-card-body {
+        background: #1f1f1f;
+        color: #fff;
+      }
+    }
+    
+    .metric-section {
+      .metric-header {
+        color: #fff;
+        
+        .anticon {
+          color: #ccc;
+        }
+      }
+      
+      .metric-info {
+        color: #999;
+      }
+    }
+    
+    .warnings-section,
+    .suggestions-section {
+      border-top-color: #404040;
+      
+      .suggestions-header {
+        color: #ccc;
+      }
+      
+      .suggestions-list li {
+        color: #999;
+      }
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .performance-monitor {
+    .performance-card {
+      border: 2px solid #000;
+    }
+    
+    .metric-value {
+      border: 1px solid currentColor;
+    }
+  }
+}
