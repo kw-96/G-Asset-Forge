@@ -1,5 +1,5 @@
 import { fabric } from 'fabric';
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../utils/EventEmitter';
 import { CanvasEngine } from './CanvasEngine';
 import { MemoryManager } from './MemoryManager';
 

@@ -1,2 +1,18 @@
 {
+  "eslint.workingDirectories": ["./src"],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.options": {
+    "extensions": [".js", ".jsx", ".ts", ".tsx"]
+  },
+  "[markdown]": {
+    "eslint.enable": false
+  },
+  "files.associations": {
+    "*.md": "markdown"
+  }
 }

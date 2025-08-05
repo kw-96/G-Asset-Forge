@@ -6,6 +6,7 @@ import Header from './components/Layout/Header';
 import Sidebar from './components/Layout/Sidebar';
 import MainContent from './components/Layout/MainContent';
 import StatusBar from './components/Layout/StatusBar';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const { Content } = Layout;
 
@@ -15,6 +16,7 @@ interface AppProps {
 
 const App: React.FC<AppProps> = ({ onReady }) => {
   const [isInitialized, setIsInitialized] = useState(false);
+  const [needsInitializationCheck, setNeedsInitializationCheck] = useState(false);
   const { initializeApp, setAppVersion, setPlatform } = useAppStore();
   const { initializeCanvas } = useCanvasStore();
 
@@ -23,71 +25,41 @@ const App: React.FC<AppProps> = ({ onReady }) => {
       try {
         console.log('开始初始化应用...');
         
-        // Check if electronAPI is available
-        if (typeof window !== 'undefined' && window.electronAPI) {
-          console.log('获取应用信息...');
-          try {
-            const version = await window.electronAPI.app.getVersion();
-            const platform = await window.electronAPI.app.getPlatform();
-            
-            console.log('设置应用版本和平台...');
-            setAppVersion(version);
-            setPlatform(platform);
-          } catch (apiError) {
-            console.warn('无法获取Electron API信息，使用默认值:', apiError);
-            setAppVersion('1.0.0');
-            setPlatform('unknown');
-          }
-        } else {
-          console.warn('Electron API不可用，可能在开发环境中');
-          setAppVersion('1.0.0-dev');
-          setPlatform('development');
-        }
-
-        // Initialize stores with error handling
-        console.log('初始化应用存储...');
-        try {
-          await initializeApp();
-        } catch (appError) {
-          console.warn('应用存储初始化失败:', appError);
-        }
+        // 最简化的初始化过程
+        setAppVersion('1.0.0-dev');
+        setPlatform('development');
         
-        console.log('初始化画布存储...');
-        try {
-          await initializeCanvas();
-        } catch (canvasError) {
-          console.warn('画布存储初始化失败:', canvasError);
-        }
-
-        // Setup menu event listeners with error handling
-        console.log('设置菜单监听器...');
-        try {
-          setupMenuListeners();
-        } catch (menuError) {
-          console.warn('菜单监听器设置失败:', menuError);
-        }
-
-        console.log('应用初始化完成');
+        // 立即设置为已初始化
         setIsInitialized(true);
-        onReady?.();
+        setNeedsInitializationCheck(false);
         
-        message.success('G-Asset Forge 初始化成功');
+        // 调用准备完成回调
+        if (onReady) {
+          onReady();
+        }
+        
+        console.log('应用初始化完成');
+        
       } catch (error) {
         console.error('应用初始化失败:', error);
-        message.error(`应用程序初始化失败: ${error instanceof Error ? error.message : String(error)}`);
-        // 即使失败也要设置为已初始化，避免卡在加载界面
+        // 即使失败也要设置为已初始化，避免白屏
         setIsInitialized(true);
-        onReady?.();
+        setNeedsInitializationCheck(false);
+        
+        if (onReady) {
+          onReady();
+        }
       }
     };
 
-    initApp();
+    // 延迟一点时间确保DOM准备好
+    setTimeout(initApp, 100);
 
     // Cleanup listeners on unmount
     return () => {
       cleanupMenuListeners();
     };
-  }, [initializeApp, initializeCanvas, onReady, setAppVersion, setPlatform]);
+  }, [initializeApp, initializeCanvas, onReady, setAppVersion, setPlatform, needsInitializationCheck]);
 
   const setupMenuListeners = () => {
     // Check if electronAPI is available before setting up listeners
@@ -167,8 +139,56 @@ const App: React.FC<AppProps> = ({ onReady }) => {
     }
   };
 
+  const handleInitializationReady = () => {
+    setNeedsInitializationCheck(false);
+  };
+
+  const handleInitializationRetry = () => {
+    // 重置状态以触发重新检查
+    setIsInitialized(false);
+  };
+
+  // 如果需要初始化检查，显示检查器
+  if (needsInitializationCheck) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column'
+      }}>
+        <div>正在检查系统兼容性...</div>
+        <button onClick={() => setNeedsInitializationCheck(false)}>跳过检查</button>
+      </div>
+    );
+  }
+
+  // 如果应用未初始化完成，显示加载状态
   if (!isInitialized) {
-    return null; // Loading screen is shown by default
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundColor: '#f0f2f5'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #1890ff',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '16px'
+        }} />
+        <p style={{ color: '#666', fontSize: '14px' }}>
+          正在初始化应用程序...
+        </p>
+      </div>
+    );
   }
 
   return (

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Configuration files
+*.config.js
+webpack.*.js
+
+# Documentation files (屏蔽md文件报错)
+**/*.md
+*.md
+README.md
+docs/
+开发文档/
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

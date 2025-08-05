@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - G-Asset Forge</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+        }
+        .debug-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+        .error { background: #fff2f0; border: 1px solid #ffccc7; color: #cf1322; }
+        .warning { background: #fffbe6; border: 1px solid #ffe58f; color: #d48806; }
+    </style>
+</head>
+<body>
+    <div class="debug-info">
+        <h1>G-Asset Forge - 调试页面</h1>
+        <p>如果你看到这个页面，说明 HTML 加载是正常的。</p>
+        
+        <div id="status-container">
+            <div class="status success">✓ HTML 加载成功</div>
+        </div>
+        
+        <h3>环境信息：</h3>
+        <ul id="env-info">
+            <li>User Agent: <span id="user-agent"></span></li>
+            <li>Platform: <span id="platform"></span></li>
+            <li>Language: <span id="language"></span></li>
+            <li>Electron API: <span id="electron-api"></span></li>
+        </ul>
+        
+        <h3>测试按钮：</h3>
+        <button onclick="testAlert()">测试 Alert</button>
+        <button onclick="testConsole()">测试 Console</button>
+        <button onclick="testElectron()">测试 Electron API</button>
+        
+        <h3>控制台日志：</h3>
+        <div id="console-log" style="background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        // 重写 console.log 以显示在页面上
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        const logContainer = document.getElementById('console-log');
+        
+        function addLog(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            logContainer.textContent += `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog('log', ...args);
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('error', ...args);
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addLog('warn', ...args);
+        };
+        
+        // 捕获未处理的错误
+        window.addEventListener('error', function(e) {
+            console.error('未处理的错误:', e.error);
+            document.getElementById('status-container').innerHTML += 
+                '<div class="status error">✗ JavaScript 错误: ' + e.message + '</div>';
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('未处理的 Promise 拒绝:', e.reason);
+            document.getElementById('status-container').innerHTML += 
+                '<div class="status error">✗ Promise 错误: ' + e.reason + '</div>';
+        });
+        
+        // 填充环境信息
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+        document.getElementById('platform').textContent = navigator.platform;
+        document.getElementById('language').textContent = navigator.language;
+        document.getElementById('electron-api').textContent = 
+            typeof window.electronAPI !== 'undefined' ? '可用' : '不可用';
+        
+        // 测试函数
+        function testAlert() {
+            alert('Alert 测试成功！');
+        }
+        
+        function testConsole() {
+            console.log('Console 测试成功！', { timestamp: new Date() });
+        }
+        
+        function testElectron() {
+            if (typeof window.electronAPI !== 'undefined') {
+                console.log('Electron API 可用');
+                try {
+                    // 测试一个简单的 API 调用
+                    console.log('尝试调用 Electron API...');
+                } catch (error) {
+                    console.error('Electron API 调用失败:', error);
+                }
+            } else {
+                console.warn('Electron API 不可用');
+            }
+        }
+        
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM 加载完成');
+            document.getElementById('status-container').innerHTML += 
+                '<div class="status success">✓ DOM 加载完成</div>';
+        });
+        
+        window.addEventListener('load', function() {
+            console.log('页面完全加载完成');
+            document.getElementById('status-container').innerHTML += 
+                '<div class="status success">✓ 页面完全加载完成</div>';
+        });
+        
+        console.log('调试脚本开始执行');
+    </script>
+</body>
+</html>

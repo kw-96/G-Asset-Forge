@@ -1,5 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 import * as path from 'path';
+import { SecurityConfig } from '../config/security';
 
 export class WindowManager {
   private windows: Map<string, BrowserWindow> = new Map();
@@ -13,17 +14,36 @@ export class WindowManager {
       minWidth: 1200,
       minHeight: 800,
       webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        preload: path.join(__dirname, 'preload.js'),
-        webSecurity: true,
-        allowRunningInsecureContent: false
+        ...SecurityConfig.webSecurity,
+        preload: path.join(__dirname, './preload.js'),
+        // 额外的安全设置
+        backgroundThrottling: false, // 防止后台节流影响性能
+        disableDialogs: false, // 允许对话框（用于错误报告）
+        safeDialogs: true, // 启用安全对话框
+        safeDialogsMessage: 'G-Asset-Forge检测到不安全的对话框尝试', // 安全对话框消息
       },
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       show: false, // Don't show until ready
       icon: process.platform === 'win32' 
         ? path.join(__dirname, '../../assets/icon.ico')
-        : path.join(__dirname, '../../assets/icon.png')
+        : path.join(__dirname, '../../assets/icon.png'),
+      // 额外的窗口安全设置
+      frame: true, // 保持窗口框架
+      transparent: false, // 不允许透明窗口
+      thickFrame: true, // 允许厚框架调整大小
+      acceptFirstMouse: false, // 提高安全性
+      disableAutoHideCursor: false, // 允许光标自动隐藏
+      enableLargerThanScreen: false, // 不允许窗口大于屏幕
+      fullscreen: false, // 默认不全屏
+      fullscreenable: true, // 允许全屏
+      hasShadow: true, // 窗口阴影
+      maximizable: true, // 允许最大化
+      minimizable: true, // 允许最小化
+      movable: true, // 允许移动
+      resizable: true, // 允许调整大小
+      skipTaskbar: false, // 显示在任务栏
+      useContentSize: false, // 使用窗口边界计算大小
+      // webSecurity 选项应该在 webPreferences 中设置，这里移除重复设置
     });
 
     // Show window when ready to prevent visual flash
@@ -70,7 +90,7 @@ export class WindowManager {
   }
 
   closeAllWindows(): void {
-    this.windows.forEach((window, windowId) => {
+    this.windows.forEach((window, _windowId) => {
       if (!window.isDestroyed()) {
         window.close();
       }

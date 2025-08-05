@@ -2,7 +2,7 @@
 
 ## 概述
 
-G-Asset Forge 是一个基于 Electron 的桌面应用程序，专为企业内网环境中的游戏素材创作而设计。该应用采用模块化架构，集成了画布系统、设计工具、H5编辑器和素材库管理功能，为游戏开发团队提供完整的素材制作解决方案。
+G-Asset Forge 是一个基于 Electron 的桌面应用程序，专为企业内网环境中的游戏素材创作而设计。该应用采用模块化架构，集成了基于Suika的高性能画布系统、H5-Editor的移动端编辑功能，以及参考Figma和Penpot设计的现代化UI界面，为游戏开发团队提供完整的素材制作解决方案。
 
 ## 架构设计
 
@@ -27,7 +27,8 @@ G-Asset Forge 是一个基于 Electron 的桌面应用程序，专为企业内�
 │  Business Logic Layer                                      │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────┐  │
 │  │Canvas Engine│Design Tools │H5 Editor    │Asset Library│  │
-│  │(Fabric.js)  │Manager      │Manager      │Manager      │  │
+│  │(Suika)      │Manager      │Manager      │Manager      │  │
+│  │             │             │(H5-Editor)  │             │  │
 │  └─────────────┴─────────────┴─────────────┴─────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │  Data Access Layer                                         │
@@ -48,37 +49,92 @@ G-Asset Forge 是一个基于 Electron 的桌面应用程序，专为企业内�
 
 - **桌面框架**: Electron 28+ (跨平台支持)
 - **前端框架**: React 18 + TypeScript
-- **画布引擎**: Fabric.js 5.x (稳定的2D画布库)
+- **画布引擎**: Suika (高性能原生Canvas引擎，替代Fabric.js)
+- **H5编辑器**: H5-Editor (Vue到React适配层)
 - **状态管理**: Zustand (轻量级状态管理)
-- **UI组件库**: Ant Design (企业级UI组件)
+- **UI组件库**: 自定义组件系统 (基于Figma和Penpot设计语言)
+- **样式系统**: Styled Components / CSS-in-JS (现代化样式管理)
+- **主题系统**: 支持暗色/亮色模式切换
 - **文件处理**: Node.js fs-extra (增强文件操作)
 - **图片处理**: Sharp (高性能图片处理)
 - **打包工具**: electron-builder (应用打包分发)
 
 ## 组件和接口设计
 
-### 1. 画布引擎 (Canvas Engine)
+### 0. 开源项目集成架构
 
 ```typescript
-interface CanvasEngine {
-  // 画布管理
-  createCanvas(options: CanvasOptions): Promise<Canvas>;
+// Suika集成接口
+interface SuikaIntegration {
+  // 核心编辑器
+  editor: SuikaEditor;
+  scene: SuikaScene;
+  renderer: SuikaRenderer;
+  
+  // 适配层
+  createReactAdapter(): SuikaReactAdapter;
+  migrateFromFabric(fabricCanvas: fabric.Canvas): void;
+}
+
+// H5-Editor集成接口
+interface H5EditorIntegration {
+  // Vue到React适配
+  vueAdapter: VueToReactAdapter;
+  
+  // 核心功能
+  pageManager: H5PageManager;
+  componentLibrary: H5ComponentLibrary;
+  templateSystem: H5TemplateSystem;
+  
+  // 导出系统
+  exportEngine: H5ExportEngine;
+}
+
+// UI设计参考系统
+interface UIDesignSystem {
+  // Figma风格组件
+  figmaComponents: FigmaStyleComponents;
+  
+  // Penpot交互模式
+  penpotInteractions: PenpotInteractionSystem;
+  
+  // 主题系统
+  themeProvider: ModernThemeProvider;
+  
+  // 组件库
+  customUILibrary: CustomUIComponentLibrary;
+}
+```
+
+### 1. 画布引擎 (Canvas Engine - 基于Suika)
+
+```typescript
+interface SuikaCanvasEngine {
+  // Suika核心集成
+  suikaEditor: SuikaEditor;
+  suikaScene: SuikaScene;
+  
+  // 画布管理 (基于Suika)
+  createCanvas(options: SuikaCanvasOptions): Promise<SuikaCanvas>;
   destroyCanvas(canvasId: string): void;
   resizeCanvas(canvasId: string, width: number, height: number): void;
   
-  // 视图控制
+  // 视图控制 (Suika原生性能)
   setZoom(canvasId: string, scale: number): void;
   panCanvas(canvasId: string, deltaX: number, deltaY: number): void;
   fitToScreen(canvasId: string): void;
   
-  // 对象操作
-  addObject(canvasId: string, object: CanvasObject): string;
-  removeObject(canvasId: string, objectId: string): void;
-  updateObject(canvasId: string, objectId: string, properties: Partial<CanvasObject>): void;
+  // 对象操作 (Suika Graph系统)
+  addGraph(canvasId: string, graph: SuikaGraph): string;
+  removeGraph(canvasId: string, graphId: string): void;
+  updateGraph(canvasId: string, graphId: string, properties: Partial<SuikaGraph>): void;
   
-  // 事件处理
-  on(event: CanvasEvent, callback: EventCallback): void;
-  off(event: CanvasEvent, callback: EventCallback): void;
+  // 事件处理 (React适配)
+  on(event: SuikaEvent, callback: SuikaEventCallback): void;
+  off(event: SuikaEvent, callback: SuikaEventCallback): void;
+  
+  // Fabric.js迁移支持
+  migrateFromFabric(fabricCanvas: fabric.Canvas): Promise<void>;
 }
 
 interface CanvasOptions {
@@ -155,14 +211,29 @@ interface ShapeTool {
 }
 ```
 
-### 3. H5编辑器管理器 (H5 Editor Manager)
+### 3. H5编辑器管理器 (H5 Editor Manager - 基于H5-Editor)
 
 ```typescript
 interface H5EditorManager {
+  // H5-Editor核心集成
+  h5Editor: H5EditorCore;
+  vueAdapter: VueToReactAdapter;
+  
   // 编辑器模式
   enterH5Mode(): void;
   exitH5Mode(): void;
   isH5Mode(): boolean;
+  
+  // 页面管理 (H5-Editor特性)
+  createPage(options: H5PageOptions): Promise<H5Page>;
+  deletePage(pageId: string): void;
+  switchPage(pageId: string): void;
+  getPages(): H5Page[];
+  
+  // 组件系统 (H5-Editor组件库)
+  getComponentLibrary(): H5ComponentLibrary;
+  addComponent(component: H5Component): void;
+  removeComponent(componentId: string): void;
   
   // 画布设置
   setCanvasSize(width: number, height: number): void;
@@ -170,13 +241,15 @@ interface H5EditorManager {
   setBackgroundImage(imageUrl: string): void;
   setBackgroundGradient(gradient: GradientOptions): void;
   
-  // 导出功能
+  // 导出功能 (H5-Editor导出引擎)
+  exportH5(options: H5ExportOptions): Promise<H5ExportResult>;
   exportImage(options: ExportOptions): Promise<Blob>;
   previewExport(options: ExportOptions): Promise<string>;
   
-  // 预设模板
+  // 模板系统 (H5-Editor模板)
   loadTemplate(templateId: string): Promise<void>;
   saveAsTemplate(name: string): Promise<string>;
+  getTemplateLibrary(): H5Template[];
 }
 
 interface ExportOptions {
@@ -196,7 +269,64 @@ interface GradientOptions {
 }
 ```
 
-### 4. 素材库管理器 (Asset Library Manager)
+### 4. UI设计系统 (UI Design System - 基于Figma和Penpot)
+
+```typescript
+interface UIDesignSystem {
+  // Figma风格组件
+  figmaComponents: {
+    toolbar: FigmaStyleToolbar;
+    propertyPanel: FigmaStylePropertyPanel;
+    layerPanel: FigmaStyleLayerPanel;
+    colorPicker: FigmaStyleColorPicker;
+    fontSelector: FigmaStyleFontSelector;
+  };
+  
+  // Penpot交互模式
+  penpotInteractions: {
+    toolSwitching: PenpotToolSwitching;
+    objectSelection: PenpotObjectSelection;
+    contextMenus: PenpotContextMenus;
+    keyboardShortcuts: PenpotKeyboardShortcuts;
+  };
+  
+  // 现代化主题系统
+  themeProvider: {
+    currentTheme: 'light' | 'dark';
+    switchTheme(theme: 'light' | 'dark'): void;
+    getThemeColors(): ThemeColors;
+    getThemeSpacing(): ThemeSpacing;
+    getThemeTypography(): ThemeTypography;
+  };
+  
+  // 自定义UI组件库
+  customComponents: {
+    Button: CustomButton;
+    Input: CustomInput;
+    Panel: CustomPanel;
+    Dropdown: CustomDropdown;
+    Slider: CustomSlider;
+    ColorPicker: CustomColorPicker;
+    FontSelector: CustomFontSelector;
+  };
+}
+
+interface FigmaStyleToolbar {
+  tools: ToolbarTool[];
+  activeToolId: string;
+  setActiveTool(toolId: string): void;
+  getToolGroups(): ToolGroup[];
+}
+
+interface PenpotToolSwitching {
+  switchTool(toolType: ToolType): void;
+  getToolState(): ToolState;
+  enableQuickSwitch(): void;
+  disableQuickSwitch(): void;
+}
+```
+
+### 5. 素材库管理器 (Asset Library Manager)
 
 ```typescript
 interface AssetLibraryManager {

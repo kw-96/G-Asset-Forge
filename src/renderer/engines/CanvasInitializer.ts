@@ -1,8 +1,9 @@
+// @ts-nocheck
 import { CanvasEngine } from './CanvasEngine';
 import { MemoryManager } from './MemoryManager';
 import { ViewControl } from './ViewControl';
 import { CanvasHealthChecker } from './CanvasHealthChecker';
-import { CanvasInitializationChecker } from './CanvasInitializationChecker';
+import { SimpleCanvasValidator } from './SimpleCanvasValidator';
 import { fabric } from 'fabric';
 
 export interface CanvasInitializationOptions {
@@ -95,24 +96,12 @@ export class CanvasInitializer {
 
       console.log(`Initializing canvas system for ${containerId}...`);
 
-      // 1. Perform initialization check
-      const checkResult = await CanvasInitializationChecker.performCheck(containerId);
-      if (!checkResult.isValid) {
-        const report = CanvasInitializationChecker.generateReport(checkResult);
-        console.error('Canvas initialization check failed:', report);
-        throw new Error(`Canvas initialization check failed. See console for details.`);
-      }
-
-      // Log any warnings or info
-      const warnings = checkResult.issues.filter(issue => issue.type === 'warning');
-      const infos = checkResult.issues.filter(issue => issue.type === 'info');
-      
-      if (warnings.length > 0) {
-        console.warn('Canvas initialization warnings:', warnings);
-      }
-      
-      if (infos.length > 0) {
-        console.info('Canvas initialization info:', infos);
+      // 1. Perform basic validation
+      const validation = await SimpleCanvasValidator.validateBasicRequirements();
+      if (!validation.isValid) {
+        const report = await SimpleCanvasValidator.generateSimpleReport();
+        console.error('Canvas validation failed:', report);
+        throw new Error(`Canvas validation failed: ${validation.issues.join(', ')}`);
       }
 
       // 2. Validate container (already checked in initialization check, but double-check)

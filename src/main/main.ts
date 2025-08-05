@@ -1,17 +1,25 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+// Global polyfill for Electron main process
+if (typeof global === 'undefined') {
+  // eslint-disable-next-line no-global-assign
+  (global as typeof globalThis) = globalThis;
+}
+
+import { app, BrowserWindow, Menu } from 'electron';
 import * as path from 'path';
 // import * as fs from 'fs-extra'; // 暂时不需要，后续会用到
-import { FileSystemManager } from './managers/FileSystemManager';
 import { WindowManager } from './managers/WindowManager';
+import { SecurityConfig } from './config/security';
+import { IpcHandlers } from './handlers/ipcHandlers';
+import { logger } from './utils/logger';
 
 class Application {
   private mainWindow: BrowserWindow | null = null;
-  private fileSystemManager: FileSystemManager;
   private windowManager: WindowManager;
+  private ipcHandlers: IpcHandlers;
 
   constructor() {
-    this.fileSystemManager = new FileSystemManager();
     this.windowManager = new WindowManager();
+    this.ipcHandlers = new IpcHandlers();
     this.initializeApp();
   }
 
@@ -31,16 +39,72 @@ class Application {
 
     // Handle app window closed
     app.on('window-all-closed', () => {
+      this.cleanup();
       if (process.platform !== 'darwin') {
         app.quit();
       }
     });
 
-    // Security: Prevent new window creation
+    // Handle app before quit
+    app.on('before-quit', () => {
+      this.cleanup();
+    });
+
+    // Security: Prevent new window creation and add comprehensive security headers
     app.on('web-contents-created', (event, contents) => {
-      contents.setWindowOpenHandler(({ url: _url }) => {
-        // Prevent opening new windows
+      // 防止创建新窗口
+      contents.setWindowOpenHandler(({ url }: { url: string }) => {
+        logger.warn('Window open attempt blocked:', url);
         return { action: 'deny' };
+      });
+
+      // 防止导航到外部URL
+      contents.on('will-navigate', (event: Electron.Event, navigationUrl: string) => {
+        const parsedUrl = new URL(navigationUrl);
+        
+        // 允许开发环境的localhost导航
+        if (process.env.NODE_ENV === 'development') {
+          if (parsedUrl.origin === 'http://localhost:3000' || 
+              parsedUrl.origin === 'https://localhost:3000') {
+            return;
+          }
+        }
+        
+        // 阻止其他导航
+        logger.warn('Navigation blocked:', navigationUrl);
+        event.preventDefault();
+      });
+
+      // 注意：new-window事件在较新的Electron版本中已被弃用
+      // setWindowOpenHandler已经足够处理新窗口阻止
+
+      // 添加全面的安全headers
+      contents.session.webRequest.onHeadersReceived((details, callback) => {
+        const securityHeaders = SecurityConfig.getAllSecurityHeaders();
+        
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            ...Object.keys(securityHeaders).reduce((acc, key) => {
+              acc[key] = [securityHeaders[key as keyof typeof securityHeaders]];
+              return acc;
+            }, {} as Record<string, string[]>)
+          }
+        });
+      });
+
+      // 拦截并验证资源加载
+      contents.session.webRequest.onBeforeRequest((details, callback) => {
+        const url = details.url;
+        
+        // 验证URL安全性
+        if (!SecurityConfig.isSafeUrl(url)) {
+          logger.warn('Unsafe URL blocked:', url);
+          callback({ cancel: true });
+          return;
+        }
+        
+        callback({ cancel: false });
       });
     });
   }
@@ -50,11 +114,15 @@ class Application {
     
     // Load the renderer
     const isDev = process.env.NODE_ENV === 'development';
+    
+    // 统一使用文件加载方式
+    const rendererPath = path.join(__dirname, '../renderer/index.html');
+    logger.info('Loading renderer from:', rendererPath);
+    this.mainWindow.loadFile(rendererPath);
+    
     if (isDev) {
-      this.mainWindow.loadURL('http://localhost:3000');
+      // 开发环境下打开开发者工具
       this.mainWindow.webContents.openDevTools();
-    } else {
-      this.mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
     }
 
     // Handle window closed
@@ -63,49 +131,47 @@ class Application {
     });
   }
 
+  private async loadDevelopmentRenderer(): Promise<void> {
+    if (!this.mainWindow) return;
+
+    try {
+      // 尝试连接开发服务器
+      await this.mainWindow.loadURL('http://localhost:3000');
+      this.mainWindow.webContents.openDevTools();
+      logger.info('Loaded development server successfully');
+    } catch (error) {
+      logger.warn('Development server not available, falling back to file:', error);
+      // 回退到文件模式
+      const rendererPath = path.join(__dirname, '../renderer/index.html');
+      await this.mainWindow.loadFile(rendererPath);
+      this.mainWindow.webContents.openDevTools();
+    }
+  }
+
   private setupIpcHandlers(): void {
-    // File system operations
-    ipcMain.handle('fs:readFile', async (event, filePath: string) => {
-      return await this.fileSystemManager.readFile(filePath);
-    });
+    // 使用统一的IPC处理器设置所有处理程序
+    this.ipcHandlers.setupHandlers(this.mainWindow);
 
-    ipcMain.handle('fs:writeFile', async (event, filePath: string, data: string) => {
-      return await this.fileSystemManager.writeFile(filePath, data);
-    });
+    logger.warn('IPC handlers setup completed');
+  }
 
-    ipcMain.handle('fs:exists', async (event, filePath: string) => {
-      return await this.fileSystemManager.exists(filePath);
-    });
-
-    ipcMain.handle('fs:createDirectory', async (event, dirPath: string) => {
-      return await this.fileSystemManager.createDirectory(dirPath);
-    });
-
-    // Window operations
-    ipcMain.handle('window:minimize', () => {
-      this.mainWindow?.minimize();
-    });
-
-    ipcMain.handle('window:maximize', () => {
-      if (this.mainWindow?.isMaximized()) {
-        this.mainWindow.unmaximize();
-      } else {
-        this.mainWindow?.maximize();
+  private cleanup(): void {
+    try {
+      logger.warn('Starting application cleanup...');
+      
+      // 清理IPC处理器
+      this.ipcHandlers.cleanup();
+      
+      // 清理窗口相关资源
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.removeAllListeners();
+        this.mainWindow = null;
       }
-    });
-
-    ipcMain.handle('window:close', () => {
-      this.mainWindow?.close();
-    });
-
-    // App info
-    ipcMain.handle('app:getVersion', () => {
-      return app.getVersion();
-    });
-
-    ipcMain.handle('app:getPlatform', () => {
-      return process.platform;
-    });
+      
+      logger.warn('Application cleanup completed');
+    } catch (error) {
+      logger.warn('Error during cleanup:', error);
+    }
   }
 
   private setupMenu(): void {

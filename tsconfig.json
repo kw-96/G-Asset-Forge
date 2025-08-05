@@ -18,10 +18,16 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"],
-      "@/components/*": ["components/*"],
-      "@/stores/*": ["stores/*"],
-      "@/utils/*": ["utils/*"],
-      "@/types/*": ["types/*"]
+      "@/components/*": ["renderer/components/*"],
+      "@/stores/*": ["renderer/stores/*"],
+      "@/utils/*": ["renderer/utils/*"],
+      "@/types/*": ["types/*"],
+      "@/core/*": ["renderer/core/*"],
+      "@/ui/*": ["renderer/ui/*"],
+      "@/engines/*": ["renderer/engines/*"],
+      "@suika/*": ["renderer/engines/suika/*"],
+      "@h5-editor/*": ["renderer/engines/h5-editor/*"],
+      "@fabric/*": ["renderer/engines/fabric/*"]
     },
     "declaration": true,
     "outDir": "./dist"
@@ -33,6 +39,10 @@
     "node_modules",
     "dist",
     "**/*.test.ts",
-    "**/*.test.tsx"
+    "**/*.test.tsx",
+    "**/*.md",
+    "docs/",
+    "CLAUDE.md",
+    "README.md"
   ]
 }

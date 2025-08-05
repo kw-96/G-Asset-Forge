@@ -2,7 +2,18 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider } from 'antd';
 import App from './App';
+import TestApp from './TestApp';
+import TestEngineApp from './TestEngineApp';
+import TestUIApp from './TestUIApp';
+import TestArchitectureApp from './TestArchitectureApp';
+import ErrorBoundary from './components/ErrorBoundary';
 import './styles/global.less';
+
+// Polyfill for global in Electron renderer process
+if (typeof global === 'undefined') {
+  (window as any).global = globalThis || window || this;
+  (globalThis as unknown).global = globalThis || window;
+}
 
 // Configure Ant Design theme
 const theme = {
@@ -47,10 +58,19 @@ const hideLoadingScreen = () => {
   }
 };
 
+// 临时使用架构测试页面来验证重构后的系统
+const USE_ARCHITECTURE_TEST = true;
+
 root.render(
   <React.StrictMode>
-    <ConfigProvider theme={theme}>
-      <App onReady={hideLoadingScreen} />
-    </ConfigProvider>
+    <ErrorBoundary>
+      <ConfigProvider theme={theme}>
+        {USE_ARCHITECTURE_TEST ? (
+          <TestArchitectureApp />
+        ) : (
+          <App onReady={hideLoadingScreen} />
+        )}
+      </ConfigProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

@@ -9,20 +9,23 @@
 
   &.loading {
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    background: #f5f5f5;
   }
 
   &.error {
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    background: #fff2f0;
   }
 
   .canvas-wrapper {
     width: 100%;
     height: 100%;
     position: relative;
+    overflow: hidden;
     
     canvas {
       display: block;
@@ -144,8 +147,12 @@
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .canvas-container {
     .canvas-wrapper canvas {
+      // Edge 79+ support
       image-rendering: -webkit-optimize-contrast;
+      // Modern browsers
       image-rendering: crisp-edges;
+      // Fallback for older browsers
+      image-rendering: pixelated;
     }
   }
 }

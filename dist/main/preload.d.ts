@@ -5,7 +5,7 @@ export interface ElectronAPI {
             data?: string;
             error?: string;
         }>;
-        writeFile: (filePath: string, data: any) => Promise<{
+        writeFile: (filePath: string, data: unknown) => Promise<{
             success: boolean;
             path?: string;
             error?: string;
@@ -42,6 +42,11 @@ export interface ElectronAPI {
         onFitToScreen: (callback: () => void) => void;
     };
     removeAllListeners: (channel: string) => void;
+    healthCheck: () => Promise<{
+        success: boolean;
+        timestamp?: number;
+        message?: string;
+    }>;
 }
 declare global {
     interface Window {

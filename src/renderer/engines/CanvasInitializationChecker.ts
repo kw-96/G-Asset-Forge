@@ -255,7 +255,7 @@ export class CanvasInitializationChecker {
     }
 
     // Check high-resolution time support
-    if (!performance.now) {
+    if (typeof performance === 'undefined' || typeof performance.now !== 'function') {
       issues.push({
         type: 'warning',
         component: 'performance',
@@ -390,9 +390,9 @@ export class CanvasInitializationChecker {
   private static supportsPerformanceAPI(): boolean {
     return !!(
       typeof performance !== 'undefined' &&
-      performance.now &&
-      performance.mark &&
-      performance.measure
+      typeof performance.now === 'function' &&
+      typeof performance.mark === 'function' &&
+      typeof performance.measure === 'function'
     );
   }
 
