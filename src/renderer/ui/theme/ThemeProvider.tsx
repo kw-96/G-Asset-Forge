@@ -42,15 +42,62 @@ const theme = {
   },
   
   borderRadius: {
-    small: '4px',
-    medium: '8px',
-    large: '12px'
+    sm: '4px',
+    md: '8px',
+    lg: '12px'
   },
   
   shadows: {
-    small: '0 2px 4px rgba(0,0,0,0.1)',
-    medium: '0 4px 8px rgba(0,0,0,0.15)',
-    large: '0 8px 16px rgba(0,0,0,0.2)'
+    sm: '0 2px 4px rgba(0,0,0,0.1)',
+    md: '0 4px 8px rgba(0,0,0,0.15)',
+    lg: '0 8px 16px rgba(0,0,0,0.2)'
+  },
+  
+  typography: {
+    fontFamily: {
+      sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      mono: 'SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace'
+    },
+    fontSize: {
+      xs: '12px',
+      sm: '14px',
+      base: '16px',
+      lg: '18px',
+      xl: '20px',
+      '2xl': '24px'
+    },
+    fontWeight: {
+      normal: '400',
+      medium: '500',
+      semibold: '600',
+      bold: '700'
+    },
+    lineHeight: {
+      tight: '1.2',
+      normal: '1.5',
+      relaxed: '1.6'
+    }
+  },
+
+  zIndex: {
+    dropdown: 1000,
+    modal: 1100,
+    tooltip: 1200,
+    toast: 1300
+  },
+
+  animation: {
+    duration: {
+      fast: '150ms',
+      normal: '200ms',
+      slow: '300ms'
+    },
+    easing: {
+      ease: 'ease',
+      easeIn: 'ease-in',
+      easeOut: 'ease-out',
+      easeInOut: 'ease-in-out'
+    }
   },
   
   transitions: {
