@@ -117,7 +117,7 @@ export const Card: React.FC<ICardProps> = ({
       $clickable={clickable}
       className={className}
       onClick={onClick}
-      whileTap={clickable ? { scale: 0.98 } : undefined}
+      whileTap={clickable ? { scale: 0.98 } : { scale: 1 }}
     >
       {children}
     </StyledCard>

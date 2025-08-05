@@ -15,7 +15,7 @@ class Logger {
 
   constructor() {
     // 根据环境设置日志级别
-    this.logLevel = process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
+    this.logLevel = process.env['NODE_ENV'] === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
   }
 
   private shouldLog(level: LogLevel): boolean {

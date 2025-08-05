@@ -1,0 +1,5 @@
+import { Theme } from './index';
+export declare const GlobalStyles: import("react").NamedExoticComponent<import("styled-components").ExecutionProps & {
+    theme: Theme;
+}>;
+//# sourceMappingURL=GlobalStyles.d.ts.map

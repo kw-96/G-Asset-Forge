@@ -101,7 +101,7 @@ export class CanvasSystemValidator {
       }
 
       // Try to initialize canvas system
-      const canvasSystem = await canvasInitializer.initializeCanvasSystem({
+      await canvasInitializer.initializeCanvasSystem({
         containerId,
         width: 800,
         height: 600,

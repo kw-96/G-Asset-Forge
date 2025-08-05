@@ -1,5 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Result, Button } from 'antd';
+import { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -21,7 +20,7 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
@@ -29,53 +28,90 @@ class ErrorBoundary extends Component<Props, State> {
     });
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div style={{ 
           height: '100vh', 
           display: 'flex', 
+          flexDirection: 'column',
           alignItems: 'center', 
           justifyContent: 'center',
-          padding: '20px'
+          padding: '20px',
+          background: '#fff',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
         }}>
-          <Result
-            status="error"
-            title="应用程序出现错误"
-            subTitle={this.state.error?.message || '未知错误'}
-            extra={[
-              <Button 
-                type="primary" 
-                key="reload"
+          <div style={{
+            textAlign: 'center',
+            maxWidth: '600px'
+          }}>
+            <h1 style={{ 
+              color: '#d32f2f', 
+              marginBottom: '16px',
+              fontSize: '24px' 
+            }}>
+              应用程序出现错误
+            </h1>
+            
+            <p style={{ 
+              color: '#666', 
+              marginBottom: '20px',
+              fontSize: '16px'
+            }}>
+              {this.state.error?.message || '未知错误'}
+            </p>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <button 
+                style={{
+                  background: '#1976d2',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginRight: '8px'
+                }}
                 onClick={() => window.location.reload()}
               >
                 重新加载
-              </Button>,
-              <Button 
-                key="details"
+              </button>
+              
+              <button 
+                style={{
+                  background: 'transparent',
+                  color: '#1976d2',
+                  border: '1px solid #1976d2',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
                 onClick={() => {
                   console.log('Error details:', this.state.error);
                   console.log('Error info:', this.state.errorInfo);
                 }}
               >
                 查看详情
-              </Button>
-            ]}
-          >
-            <div style={{ textAlign: 'left', maxWidth: '600px' }}>
-              <h4>错误详情：</h4>
+              </button>
+            </div>
+
+            <details style={{ textAlign: 'left' }}>
+              <summary style={{ cursor: 'pointer', marginBottom: '10px' }}>
+                错误堆栈
+              </summary>
               <pre style={{ 
                 background: '#f5f5f5', 
                 padding: '10px', 
                 borderRadius: '4px',
                 fontSize: '12px',
                 overflow: 'auto',
-                maxHeight: '200px'
+                maxHeight: '200px',
+                border: '1px solid #ddd'
               }}>
                 {this.state.error?.stack}
               </pre>
-            </div>
-          </Result>
+            </details>
+          </div>
         </div>
       );
     }

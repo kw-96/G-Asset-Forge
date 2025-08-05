@@ -17,7 +17,7 @@ const SIMPLE_GAME_ASSET_PRESETS = {
   ICON_LARGE: { width: 256, height: 256, name: '大图标 (256x256)' }
 };
 
-interface CanvasState {
+export interface CanvasState {
   // Canvas instance
   canvas: any | null;
   canvasContainer: HTMLElement | null;
@@ -31,6 +31,11 @@ interface CanvasState {
   // View state
   panX: number;
   panY: number;
+  
+  // Display options
+  showGrid: boolean;
+  showRuler: boolean;
+  snapToGrid: boolean;
   
   // Performance tracking
   fps: number;
@@ -48,6 +53,9 @@ interface CanvasState {
   setZoom: (zoom: number) => void;
   setBackgroundColor: (color: string) => void;
   setPan: (x: number, y: number) => void;
+  setShowGrid: (show: boolean) => void;
+  setShowRuler: (show: boolean) => void;
+  setSnapToGrid: (snap: boolean) => void;
   fitToScreen: () => void;
   resetView: () => void;
   updatePerformanceMetrics: (fps: number, memory: number, objectCount?: number) => void;
@@ -66,10 +74,13 @@ export const useCanvasStore = create<CanvasState>()(
       canvasContainer: null,
       width: 1920,
       height: 1080,
-      zoom: 1,
+      zoom: 100,
       backgroundColor: '#ffffff',
       panX: 0,
       panY: 0,
+      showGrid: true,
+      showRuler: true,
+      snapToGrid: false,
       fps: 60,
       memoryUsage: 0,
       objectCount: 0,
@@ -84,7 +95,7 @@ export const useCanvasStore = create<CanvasState>()(
             fps: 60, 
             memoryUsage: 0, 
             objectCount: 0,
-            zoom: 1,
+            zoom: 100,
             panX: 0,
             panY: 0
           });
@@ -113,10 +124,11 @@ export const useCanvasStore = create<CanvasState>()(
 
       setZoom: (zoom: number) => {
         const { canvas } = get();
-        const clampedZoom = Math.max(0.1, Math.min(5, zoom));
+        const clampedZoom = Math.max(25, Math.min(400, zoom));
         
         if (canvas) {
-          canvas.setZoom(clampedZoom);
+          // Convert percentage to decimal for fabric.js
+          canvas.setZoom(clampedZoom / 100);
           canvas.renderAll();
         }
         
@@ -142,6 +154,21 @@ export const useCanvasStore = create<CanvasState>()(
         set({ panX: x, panY: y });
       },
 
+      setShowGrid: (show: boolean) => {
+        set({ showGrid: show });
+        // TODO: 实际显示/隐藏网格的逻辑
+      },
+
+      setShowRuler: (show: boolean) => {
+        set({ showRuler: show });
+        // TODO: 实际显示/隐藏标尺的逻辑
+      },
+
+      setSnapToGrid: (snap: boolean) => {
+        set({ snapToGrid: snap });
+        // TODO: 实际启用/禁用网格对齐的逻辑
+      },
+
       fitToScreen: () => {
         const { canvas, canvasContainer, width, height } = get();
         if (!canvas || !canvasContainer) return;
@@ -158,7 +185,7 @@ export const useCanvasStore = create<CanvasState>()(
         ));
         canvas.renderAll();
 
-        set({ zoom: scale, panX: 0, panY: 0 });
+        set({ zoom: Math.round(scale * 100), panX: 0, panY: 0 });
       },
 
       resetView: () => {
@@ -168,7 +195,7 @@ export const useCanvasStore = create<CanvasState>()(
           canvas.absolutePan(new any(0, 0));
           canvas.renderAll();
         }
-        set({ zoom: 1, panX: 0, panY: 0 });
+        set({ zoom: 100, panX: 0, panY: 0 });
       },
 
       updatePerformanceMetrics: (fps: number, memory: number, objectCount = 0) => {
@@ -185,7 +212,7 @@ export const useCanvasStore = create<CanvasState>()(
           canvasContainer: null,
           panX: 0,
           panY: 0,
-          zoom: 1
+          zoom: 100
         });
       },
 

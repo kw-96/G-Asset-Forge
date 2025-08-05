@@ -38,6 +38,6 @@ export interface ISuikaGraphicsAttrs extends ISuikaTransform, ISuikaStyle {
 export { SuikaEditor, type ISuikaEditorOptions } from '../core/editor';
 export { ViewportManager, type IViewport } from '../core/viewport-manager';
 export { ZoomManager } from '../core/zoom-manager';
-export { SceneGraph, type ISceneObject } from '../core/scene-graph';
-export { ToolManager, ToolType, type ITool } from '../core/tool-manager';
+export { SceneGraph } from '../core/scene-graph';
+export { ToolManager, type ITool } from '../core/tool-manager';
 export { CommandManager, BaseCommand, type ICommand } from '../core/command-manager';

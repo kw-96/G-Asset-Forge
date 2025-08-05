@@ -16,11 +16,11 @@ export abstract class BaseCommand implements ICommand {
   abstract execute(): void;
   abstract undo(): void;
 
-  canMerge(other: ICommand): boolean {
+  canMerge(_other: ICommand): boolean {
     return false;
   }
 
-  merge(other: ICommand): ICommand {
+  merge(_other: ICommand): ICommand {
     return this;
   }
 }
@@ -103,13 +103,13 @@ export class ModifyObjectCommand extends BaseCommand {
     this.canvasManager.updateObject(this.objectId, this.oldData);
   }
 
-  canMerge(other: ICommand): boolean {
+  override canMerge(other: ICommand): boolean {
     return other instanceof ModifyObjectCommand && 
            other.objectId === this.objectId &&
            Date.now() - this.timestamp < 1000; // 1秒内的修改可以合并
   }
 
-  merge(other: ICommand): ICommand {
+  override merge(other: ICommand): ICommand {
     if (other instanceof ModifyObjectCommand) {
       return new ModifyObjectCommand(
         this.objectId,

@@ -4,7 +4,7 @@ import styled, { css } from 'styled-components';
 import { motion } from 'framer-motion';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface IButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragEnd' | 'onDragStart'> {
   variant?: ButtonVariant;
@@ -86,6 +86,13 @@ const getVariantStyles = (variant: ButtonVariant) => {
 
 const getSizeStyles = (size: ButtonSize) => {
   switch (size) {
+    case 'xs':
+      return css`
+        height: 28px;
+        padding: 0 ${({ theme }) => theme.spacing.xs};
+        font-size: ${({ theme }) => theme.typography.fontSize.xs};
+      `;
+    
     case 'sm':
       return css`
         height: 32px;
@@ -112,10 +119,13 @@ const getSizeStyles = (size: ButtonSize) => {
   }
 };
 
-const StyledButton = styled(motion.div)<{
+const StyledButton = styled(motion.button).withConfig({
+  shouldForwardProp: (prop) => !['whileTap', 'whileHover', 'initial', 'animate', 'exit', 'transition'].includes(prop)
+})<{
   $variant: ButtonVariant;
   $size: ButtonSize;
   $fullWidth: boolean;
+  $loading: boolean;
 }>`
   display: inline-flex;
   align-items: center;
@@ -174,7 +184,7 @@ const IconWrapper = styled.span<{ $position: 'left' | 'right' }>`
   `}
 `;
 
-export const Button: React.FC<IButtonProps> = ({
+export const Button = React.forwardRef<HTMLButtonElement, IButtonProps>(({
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -184,24 +194,25 @@ export const Button: React.FC<IButtonProps> = ({
   disabled,
   children,
   ...props
-}) => {
+}, ref) => {
   return (
+    // @ts-expect-error styled-components v6 compatibility issue with framer-motion
     <StyledButton
-      as="button"
+      ref={ref}
+      disabled={disabled || loading}
       $variant={variant}
       $size={size}
       $fullWidth={fullWidth}
-      disabled={disabled || loading}
+      $loading={loading}
       whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
       {...props}
     >
       {loading && <LoadingSpinner />}
-      {!loading && icon && (
-        <IconWrapper $position={iconPosition}>
-          {icon}
-        </IconWrapper>
-      )}
+      {icon && iconPosition === 'left' && <IconWrapper $position={iconPosition}>{icon}</IconWrapper>}
       {children}
+      {icon && iconPosition === 'right' && <IconWrapper $position={iconPosition}>{icon}</IconWrapper>}
     </StyledButton>
   );
-};
+});
+
+Button.displayName = 'Button';

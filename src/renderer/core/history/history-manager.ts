@@ -46,10 +46,11 @@ export class HistoryManager extends TypedEventEmitter<IHistoryManagerEvents> {
     }
 
     const command = this.commands[this.currentIndex];
-    command.undo();
-    this.currentIndex--;
-
-    this.emit('commandUndone', command);
+    if (command) {
+      command.undo();
+      this.currentIndex--;
+      this.emit('commandUndone', command);
+    }
     this.emitHistoryChanged();
     return true;
   }
@@ -61,9 +62,10 @@ export class HistoryManager extends TypedEventEmitter<IHistoryManagerEvents> {
 
     this.currentIndex++;
     const command = this.commands[this.currentIndex];
-    command.execute();
-
-    this.emit('commandRedone', command);
+    if (command) {
+      command.execute();
+      this.emit('commandRedone', command);
+    }
     this.emitHistoryChanged();
     return true;
   }

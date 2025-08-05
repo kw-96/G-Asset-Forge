@@ -8,7 +8,10 @@ export enum ToolType {
   BRUSH = 'brush',
   CROP = 'crop',
   PAN = 'pan',
-  ZOOM = 'zoom'
+  ZOOM = 'zoom',
+  LINE = 'line',
+  POLYGON = 'polygon',
+  STAR = 'star'
 }
 
 export interface IToolConfig {
@@ -22,8 +25,8 @@ export interface IToolConfig {
 export interface IToolState {
   isActive: boolean;
   isDragging: boolean;
-  startPoint?: { x: number; y: number };
-  currentPoint?: { x: number; y: number };
+  startPoint?: { x: number; y: number } | undefined;
+  currentPoint?: { x: number; y: number } | undefined;
   properties: Record<string, any>;
 }
 

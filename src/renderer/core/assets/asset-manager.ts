@@ -2,7 +2,6 @@
 import { TypedEventEmitter } from '../../utils/TypedEventEmitter';
 import type { 
   IAssetMetadata, 
-  IAssetFile, 
   IAssetLibrary, 
   IAssetSearchOptions, 
   IAssetSearchResult 
@@ -96,7 +95,7 @@ export class AssetManager extends TypedEventEmitter<IAssetManagerEvents> {
         if (options.sortOrder === 'desc') {
           return (bValue as any) > (aValue as any) ? 1 : -1;
         } else {
-          return (aValue as any) > (bValue as unknown) ? 1 : -1;
+          return (aValue as any) > (bValue as any) ? 1 : -1;
         }
       });
     }

@@ -53,10 +53,10 @@ export class CoordinateUtils {
   static getBounds(positions: ICanvasPosition[]): ICanvasBounds | null {
     if (positions.length === 0) return null;
 
-    let minX = positions[0].x;
-    let minY = positions[0].y;
-    let maxX = positions[0].x;
-    let maxY = positions[0].y;
+    let minX = positions[0]?.x || 0;
+    let minY = positions[0]?.y || 0;
+    let maxX = positions[0]?.x || 0;
+    let maxY = positions[0]?.y || 0;
 
     for (const pos of positions) {
       minX = Math.min(minX, pos.x);
@@ -116,9 +116,9 @@ export class ColorUtils {
     const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     if (!match) return '#000000';
     
-    const r = parseInt(match[1]);
-    const g = parseInt(match[2]);
-    const b = parseInt(match[3]);
+    const r = parseInt(match[1] || '0');
+    const g = parseInt(match[2] || '0');
+    const b = parseInt(match[3] || '0');
     
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
   }

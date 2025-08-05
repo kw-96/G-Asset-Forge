@@ -1,6 +1,13 @@
-// @ts-nocheck
-import { fabric } from 'fabric';
 import { EventEmitter } from '../utils/EventEmitter';
+
+// Define fabric Point type
+interface FabricPoint {
+  x: number;
+  y: number;
+}
+
+// Mock fabric Point constructor
+const MockPoint = (x: number, y: number): FabricPoint => ({ x, y });
 
 // View control configuration
 export interface ViewControlOptions {
@@ -94,7 +101,7 @@ export class ViewControl extends EventEmitter {
       return; // No significant change
     }
 
-    const zoomPoint = center || new any(
+    const zoomPoint = center || MockPoint(
       this.container.clientWidth / 2,
       this.container.clientHeight / 2
     );
@@ -198,7 +205,7 @@ export class ViewControl extends EventEmitter {
     try {
       // Apply zoom and pan
       this.canvas.setZoom(scale);
-      this.canvas.absolutePan(new any(centerX, centerY));
+      this.canvas.absolutePan(MockPoint(centerX, centerY));
       
       // Update view state
       this.viewState.zoom = scale;
@@ -220,7 +227,7 @@ export class ViewControl extends EventEmitter {
    */
   resetView(): void {
     this.canvas.setZoom(1);
-    this.canvas.absolutePan(new any(0, 0));
+    this.canvas.absolutePan(MockPoint(0, 0));
     
     this.viewState = {
       zoom: 1.0,
@@ -336,7 +343,7 @@ export class ViewControl extends EventEmitter {
     }
     
     const pointer = this.canvas.getPointer(opt.e);
-    this.setZoom(newZoom, new any(pointer.x, pointer.y));
+    this.setZoom(newZoom, MockPoint(pointer.x, pointer.y));
     
     opt.e.preventDefault();
     opt.e.stopPropagation();
@@ -352,7 +359,7 @@ export class ViewControl extends EventEmitter {
     if (evt.button === 1 || (evt.button === 0 && evt.shiftKey)) {
       this.isDragging = true;
       this.canvas.selection = false;
-      this.lastPanPoint = new any(evt.clientX, evt.clientY);
+      this.lastPanPoint = MockPoint(evt.clientX, evt.clientY);
       evt.preventDefault();
     }
   }
@@ -363,7 +370,7 @@ export class ViewControl extends EventEmitter {
   private handleMouseMove(opt: any): void {
     if (this.isDragging && this.lastPanPoint) {
       const evt = opt.e as MouseEvent;
-      const currentPoint = new any(evt.clientX, evt.clientY);
+      const currentPoint = MockPoint(evt.clientX, evt.clientY);
       
       const deltaX = (currentPoint.x - this.lastPanPoint.x) * this.options.panSensitivity;
       const deltaY = (currentPoint.y - this.lastPanPoint.y) * this.options.panSensitivity;
@@ -439,7 +446,7 @@ export class ViewControl extends EventEmitter {
         const centerX = (touch1.clientX + touch2.clientX) / 2;
         const centerY = (touch1.clientY + touch2.clientY) / 2;
         
-        this.setZoom(newZoom, new any(centerX, centerY));
+        this.setZoom(newZoom, MockPoint(centerX, centerY));
       }
       
       opt.self.lastDistance = distance;
@@ -482,7 +489,7 @@ export class ViewControl extends EventEmitter {
    * Direct panning without animation
    */
   private directPan(deltaX: number, deltaY: number): void {
-    this.canvas.relativePan(new any(deltaX, deltaY));
+    this.canvas.relativePan(MockPoint(deltaX, deltaY));
     this.updateViewState();
     
     this.emit(ViewControlEvent.PAN_CHANGED, {
@@ -510,14 +517,14 @@ export class ViewControl extends EventEmitter {
     
     // Constrain horizontal pan
     if (canvasWidth * zoom > containerWidth) {
-      vpt[4] = Math.max(minPanX, Math.min(maxPanX, vpt[4]));
+      vpt[4] = Math.max(minPanX, Math.min(maxPanX, vpt[4] || 0));
     } else {
       vpt[4] = (containerWidth - canvasWidth * zoom) / 2;
     }
     
     // Constrain vertical pan
     if (canvasHeight * zoom > containerHeight) {
-      vpt[5] = Math.max(minPanY, Math.min(maxPanY, vpt[5]));
+      vpt[5] = Math.max(minPanY, Math.min(maxPanY, vpt[5] || 0));
     } else {
       vpt[5] = (containerHeight - canvasHeight * zoom) / 2;
     }

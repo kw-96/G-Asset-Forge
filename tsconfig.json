@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["DOM", "DOM.Iterable", "ES6"],
+    "lib": ["DOM", "DOM.Iterable", "ES6", "ES2020"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -19,30 +19,75 @@
     "paths": {
       "@/*": ["*"],
       "@/components/*": ["renderer/components/*"],
-      "@/stores/*": ["renderer/stores/*"],
-      "@/utils/*": ["renderer/utils/*"],
-      "@/types/*": ["types/*"],
-      "@/core/*": ["renderer/core/*"],
-      "@/ui/*": ["renderer/ui/*"],
+      "@/ui/*": ["renderer/components/ui/*"],
+      "@/canvas/*": ["renderer/components/Canvas/*"],
+      "@/tools/*": ["renderer/components/tools/*"],
+      "@/panels/*": ["renderer/components/panels/*"],
       "@/engines/*": ["renderer/engines/*"],
       "@suika/*": ["renderer/engines/suika/*"],
       "@h5-editor/*": ["renderer/engines/h5-editor/*"],
-      "@fabric/*": ["renderer/engines/fabric/*"]
+      "@/managers/*": ["renderer/managers/*"],
+      "@/canvas-manager/*": ["renderer/managers/canvas/*"],
+      "@/tools-manager/*": ["renderer/managers/tools/*"],
+      "@/history-manager/*": ["renderer/managers/history/*"],
+      "@/assets-manager/*": ["renderer/managers/assets/*"],
+      "@/models/*": ["renderer/models/*"],
+      "@/utils/*": ["renderer/utils/*"],
+      "@/hooks/*": ["renderer/hooks/*"],
+      "@/styles/*": ["renderer/styles/*"],
+      "@/types/*": ["types/*"],
+      "@main/*": ["main/*"],
+      "@renderer/*": ["renderer/*"],
+      "@shared/*": ["shared/*"],
+      "@assets/*": ["../assets/*"],
+      "@images/*": ["../assets/images/*"],
+      "@fonts/*": ["../assets/fonts/*"],
+      "@icons/*": ["../assets/icons/*"],
+      "@/stores/*": ["renderer/stores/*"],
+      "@/core/*": ["renderer/core/*"],
+      "@/ui-components/*": ["renderer/ui/components/*"],
+      "@/ui-styles/*": ["renderer/ui/styles/*"],
+      "@/ui-theme/*": ["renderer/ui/theme/*"]
     },
     "declaration": true,
-    "outDir": "./dist"
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "removeComments": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "webpack.*.js",
+    "jest.config.js"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.test.ts",
     "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
     "**/*.md",
+    "*.md",
     "docs/",
+    "logs/",
+    "开发文档/",
     "CLAUDE.md",
-    "README.md"
-  ]
+    "README.md",
+    "temp-suika/"
+  ],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }

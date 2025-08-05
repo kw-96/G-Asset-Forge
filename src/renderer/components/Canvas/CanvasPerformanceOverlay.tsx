@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Tooltip } from 'antd';
-import { DashboardOutlined, CloseOutlined } from '@ant-design/icons';
+import { DashboardOutlined } from '@ant-design/icons';
 import PerformanceMonitor from '../Performance/PerformanceMonitor';
 import './CanvasPerformanceOverlay.less';
 

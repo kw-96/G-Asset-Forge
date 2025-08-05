@@ -19,8 +19,8 @@ export class AssetLibrary implements IAssetLibrary {
     this.id = id;
     this.name = name;
     this.isLocal = isLocal;
-    this.description = description;
-    this.path = path;
+    this.description = description || '';
+    this.path = path || '';
   }
 
   addAsset(asset: IAssetMetadata): void {
@@ -69,10 +69,10 @@ export class AssetLibrary implements IAssetLibrary {
     return {
       id: this.id,
       name: this.name,
-      description: this.description,
+      description: this.description || '',
       assets: this.assets,
       isLocal: this.isLocal,
-      path: this.path
+      path: this.path || '',
     };
   }
 

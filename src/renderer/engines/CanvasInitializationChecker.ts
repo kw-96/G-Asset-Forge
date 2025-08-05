@@ -156,7 +156,7 @@ export class CanvasInitializationChecker {
       recommendations.push('Wait for DOM to be ready before initializing canvas');
     }
 
-    const container = document.getElementById(containerId);
+    const container = document.getElementById(containerId!);
     if (!container) {
       issues.push({
         type: 'error',
@@ -224,7 +224,7 @@ export class CanvasInitializationChecker {
     // Check Fabric.js version compatibility
     const version = this.getFabricVersion();
     if (version) {
-      const majorVersion = parseInt(version.split('.')[0]);
+      const majorVersion = parseInt(version?.split('.')[0] ?? '');
       if (majorVersion < 4) {
         issues.push({
           type: 'warning',

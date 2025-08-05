@@ -11,10 +11,7 @@ import { CanvasEngineType } from '../../core/canvas/canvas-manager';
 export class H5EditorCanvasEngine implements ICanvasEngine {
   public readonly type = CanvasEngineType.H5_EDITOR;
   private editor: H5Editor | null = null;
-  private container: HTMLElement | null = null;
-
   async initialize(container: HTMLElement, config: ICanvasConfig): Promise<void> {
-    this.container = container;
     
     this.editor = new H5Editor({
       containerElement: container as HTMLDivElement,
@@ -32,7 +29,6 @@ export class H5EditorCanvasEngine implements ICanvasEngine {
       this.editor.destroy();
       this.editor = null;
     }
-    this.container = null;
   }
 
   getState(): ICanvasState {

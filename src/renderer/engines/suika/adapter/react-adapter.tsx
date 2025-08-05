@@ -41,7 +41,7 @@ export const SuikaCanvas = forwardRef<ISuikaCanvasRef, ISuikaCanvasProps>(
         containerElement: containerRef.current,
         width,
         height,
-        showPerfMonitor: process.env.NODE_ENV === 'development'
+        showPerfMonitor: process.env['NODE_ENV'] === 'development'
       };
 
       const editor = new SuikaEditor(options);

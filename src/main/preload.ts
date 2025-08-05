@@ -33,7 +33,7 @@ const safeInvoke = async (channel: string, ...args: unknown[]) => {
 // Safe wrapper for event listeners
 const safeOn = (channel: string, callback: (...args: unknown[]) => void) => {
   try {
-    const wrappedCallback = (event: IpcRendererEvent, ...args: unknown[]) => {
+    const wrappedCallback = (_event: IpcRendererEvent, ...args: unknown[]) => {
       try {
         callback(...args);
       } catch (error) {

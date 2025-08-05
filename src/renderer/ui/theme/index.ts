@@ -21,6 +21,7 @@ export interface ITheme {
     text: {
       primary: string;
       secondary: string;
+      tertiary: string;
       disabled: string;
       inverse: string;
     };
@@ -37,6 +38,13 @@ export interface ITheme {
       small: string;
       medium: string;
       large: string;
+    };
+    
+    // 画布特定颜色
+    canvas: {
+      background: string;
+      grid: string;
+      selection: string;
     };
   };
   
@@ -75,10 +83,12 @@ export interface ITheme {
     xl: string;
     '2xl': string;
     '3xl': string;
+    xxl: string;
   };
   
   borderRadius: {
     none: string;
+    xs: string;
     sm: string;
     md: string;
     lg: string;
@@ -126,7 +136,8 @@ export const lightTheme: ITheme = {
     text: {
       primary: '#1e293b',
       secondary: '#64748b',
-      disabled: '#94a3b8',
+      tertiary: '#94a3b8',
+      disabled: '#cbd5e1',
       inverse: '#ffffff',
     },
     
@@ -140,6 +151,12 @@ export const lightTheme: ITheme = {
       small: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       medium: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       large: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    },
+    
+    canvas: {
+      background: '#f1f5f9',
+      grid: '#e2e8f0',
+      selection: '#667eea',
     },
   },
   
@@ -178,10 +195,12 @@ export const lightTheme: ITheme = {
     xl: '2rem',
     '2xl': '3rem',
     '3xl': '4rem',
+    xxl: '5rem',
   },
   
   borderRadius: {
     none: '0',
+    xs: '0.125rem',
     sm: '0.25rem',
     md: '0.375rem',
     lg: '0.5rem',
@@ -223,7 +242,8 @@ export const darkTheme: ITheme = {
     text: {
       primary: '#f1f5f9',
       secondary: '#cbd5e1',
-      disabled: '#64748b',
+      tertiary: '#64748b',
+      disabled: '#475569',
       inverse: '#1e293b',
     },
     
@@ -237,6 +257,12 @@ export const darkTheme: ITheme = {
       small: '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
       medium: '0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
       large: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
+    },
+    
+    canvas: {
+      background: '#1e293b',
+      grid: '#334155',
+      selection: '#667eea',
     },
   },
 };

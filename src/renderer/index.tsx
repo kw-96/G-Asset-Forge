@@ -1,52 +1,20 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { ConfigProvider } from 'antd';
 import App from './App';
-import TestApp from './TestApp';
-import TestEngineApp from './TestEngineApp';
-import TestUIApp from './TestUIApp';
-import TestArchitectureApp from './TestArchitectureApp';
 import ErrorBoundary from './components/ErrorBoundary';
-import './styles/global.less';
+import { ThemeProvider } from './ui/theme/ThemeProvider';
+import { GlobalStyles } from './ui/styles/GlobalStyles';
 
-// Polyfill for global in Electron renderer process
+// 在 Electron 中设置 global 对象
+declare global {
+  var global: typeof globalThis;
+}
+
 if (typeof global === 'undefined') {
-  (window as any).global = globalThis || window || this;
-  (globalThis as unknown).global = globalThis || window;
+  (globalThis as any).global = globalThis || window;
 }
 
-// Configure Ant Design theme
-const theme = {
-  token: {
-    colorPrimary: '#667eea',
-    colorSuccess: '#52c41a',
-    colorWarning: '#faad14',
-    colorError: '#f5222d',
-    colorInfo: '#1890ff',
-    borderRadius: 6,
-    wireframe: false,
-  },
-  components: {
-    Layout: {
-      headerBg: '#001529',
-      siderBg: '#001529',
-    },
-    Menu: {
-      darkItemBg: '#001529',
-      darkSubMenuItemBg: '#000c17',
-    },
-  },
-};
-
-// Initialize React application
-const container = document.getElementById('root');
-if (!container) {
-  throw new Error('Root container not found');
-}
-
-const root = createRoot(container);
-
-// Hide loading screen once React is ready
+// 隐藏加载屏幕
 const hideLoadingScreen = () => {
   const loadingScreen = document.getElementById('loading-screen');
   if (loadingScreen) {
@@ -58,19 +26,38 @@ const hideLoadingScreen = () => {
   }
 };
 
-// 临时使用架构测试页面来验证重构后的系统
-const USE_ARCHITECTURE_TEST = true;
+// 初始化 React 应用
+const container = document.getElementById('root');
+if (!container) {
+  throw new Error('Root container not found');
+}
 
-root.render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <ConfigProvider theme={theme}>
-        {USE_ARCHITECTURE_TEST ? (
-          <TestArchitectureApp />
-        ) : (
+const root = createRoot(container);
+
+try {
+  root.render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <GlobalStyles />
           <App onReady={hideLoadingScreen} />
-        )}
-      </ConfigProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+        </ThemeProvider>
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
+  console.log('React app rendered successfully');
+} catch (error) {
+  console.error('Failed to render React app:', error);
+  // 简单的fallback界面
+  document.body.innerHTML = `
+    <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: system-ui;">
+      <div style="text-align: center; color: #d32f2f;">
+        <h1>渲染失败</h1>
+        <p>React 应用无法启动</p>
+        <button onclick="location.reload()" style="padding: 8px 16px; background: #1976d2; color: white; border: none; border-radius: 4px;">
+          重新加载
+        </button>
+      </div>
+    </div>
+  `;
+}

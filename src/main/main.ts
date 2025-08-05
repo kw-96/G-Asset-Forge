@@ -6,7 +6,6 @@ if (typeof global === 'undefined') {
 
 import { app, BrowserWindow, Menu } from 'electron';
 import * as path from 'path';
-// import * as fs from 'fs-extra'; // 暂时不需要，后续会用到
 import { WindowManager } from './managers/WindowManager';
 import { SecurityConfig } from './config/security';
 import { IpcHandlers } from './handlers/ipcHandlers';
@@ -51,7 +50,7 @@ class Application {
     });
 
     // Security: Prevent new window creation and add comprehensive security headers
-    app.on('web-contents-created', (event, contents) => {
+    app.on('web-contents-created', (_event, contents) => {
       // 防止创建新窗口
       contents.setWindowOpenHandler(({ url }: { url: string }) => {
         logger.warn('Window open attempt blocked:', url);
@@ -63,7 +62,7 @@ class Application {
         const parsedUrl = new URL(navigationUrl);
         
         // 允许开发环境的localhost导航
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env['NODE_ENV'] === 'development') {
           if (parsedUrl.origin === 'http://localhost:3000' || 
               parsedUrl.origin === 'https://localhost:3000') {
             return;
@@ -113,7 +112,7 @@ class Application {
     this.mainWindow = this.windowManager.createMainWindow();
     
     // Load the renderer
-    const isDev = process.env.NODE_ENV === 'development';
+    const isDev = process.env['NODE_ENV'] === 'development';
     
     // 统一使用文件加载方式
     const rendererPath = path.join(__dirname, '../renderer/index.html');
@@ -131,22 +130,6 @@ class Application {
     });
   }
 
-  private async loadDevelopmentRenderer(): Promise<void> {
-    if (!this.mainWindow) return;
-
-    try {
-      // 尝试连接开发服务器
-      await this.mainWindow.loadURL('http://localhost:3000');
-      this.mainWindow.webContents.openDevTools();
-      logger.info('Loaded development server successfully');
-    } catch (error) {
-      logger.warn('Development server not available, falling back to file:', error);
-      // 回退到文件模式
-      const rendererPath = path.join(__dirname, '../renderer/index.html');
-      await this.mainWindow.loadFile(rendererPath);
-      this.mainWindow.webContents.openDevTools();
-    }
-  }
 
   private setupIpcHandlers(): void {
     // 使用统一的IPC处理器设置所有处理程序
@@ -239,17 +222,23 @@ class Application {
           {
             label: '剪切',
             accelerator: 'CmdOrCtrl+X',
-            role: 'cut'
+            click: () => {
+              this.mainWindow?.webContents.send('menu:cut');
+            }
           },
           {
             label: '复制',
             accelerator: 'CmdOrCtrl+C',
-            role: 'copy'
+            click: () => {
+              this.mainWindow?.webContents.send('menu:copy');
+            }
           },
           {
             label: '粘贴',
             accelerator: 'CmdOrCtrl+V',
-            role: 'paste'
+            click: () => {
+              this.mainWindow?.webContents.send('menu:paste');
+            }
           }
         ]
       },
@@ -280,7 +269,7 @@ class Application {
           { type: 'separator' },
           {
             label: '切换开发者工具',
-            accelerator: 'F12',
+            accelerator: process.platform === 'darwin' ? 'Cmd+Option+I' : 'Ctrl+Shift+I',
             click: () => {
               this.mainWindow?.webContents.toggleDevTools();
             }

@@ -4,7 +4,7 @@ import styled, { css } from 'styled-components';
 import { motion } from 'framer-motion';
 
 export type IconButtonVariant = 'default' | 'primary' | 'ghost' | 'danger';
-export type IconButtonSize = 'sm' | 'md' | 'lg';
+export type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface IIconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragEnd' | 'onDragStart'> {
   variant?: IconButtonVariant;
@@ -66,6 +66,17 @@ const getVariantStyles = (variant: IconButtonVariant) => {
 
 const getSizeStyles = (size: IconButtonSize) => {
   switch (size) {
+    case 'xs':
+      return css`
+        width: 24px;
+        height: 24px;
+        
+        svg {
+          width: 12px;
+          height: 12px;
+        }
+      `;
+    
     case 'sm':
       return css`
         width: 32px;
@@ -114,7 +125,7 @@ const StyledIconButton = styled(motion.div)<{
   
   border-radius: ${({ theme }) => theme.borderRadius.md};
   cursor: pointer;
-  transition: all ${({ theme }) => theme.animation.duration.fast} ${({ theme }) => theme.animation.easing.ease};
+  transition: all ${({ theme }) => theme.transitions.duration.fast} ${({ theme }) => theme.transitions.easing.ease};
   
   ${({ $variant }) => getVariantStyles($variant)}
   ${({ $size }) => getSizeStyles($size)}
@@ -150,17 +161,18 @@ const LoadingSpinner = styled.div`
   }
 `;
 
-export const IconButton: React.FC<IIconButtonProps> = ({
+export const IconButton = React.forwardRef<HTMLButtonElement, IIconButtonProps>(({
   variant = 'default',
   size = 'md',
   icon,
   loading = false,
   disabled,
   ...props
-}) => {
+}, ref) => {
   return (
     <StyledIconButton
       as="button"
+      ref={ref}
       $variant={variant}
       $size={size}
       disabled={disabled || loading}
@@ -170,4 +182,6 @@ export const IconButton: React.FC<IIconButtonProps> = ({
       {loading ? <LoadingSpinner /> : icon}
     </StyledIconButton>
   );
-};
+});
+
+IconButton.displayName = 'IconButton';

@@ -1,0 +1,82 @@
+{
+  "project": {
+    "name": "G-Asset Forge MVP",
+    "description": "专为企业内网环境设计的桌面应用程序，用于创建游戏素材",
+    "type": "electron-desktop-app",
+    "framework": "electron-react-typescript"
+  },
+  "development": {
+    "language": "typescript",
+    "framework": "react",
+    "stateManagement": "zustand",
+    "styling": "styled-components",
+    "testing": "jest-react-testing-library",
+    "linting": "eslint-typescript",
+    "bundler": "webpack",
+    "packageManager": "npm"
+  },
+  "performance": {
+    "targetFPS": 60,
+    "maxMemoryUsage": "500MB",
+    "startupTime": "5s",
+    "canvasMemoryLimit": "100MB"
+  },
+  "architecture": {
+    "pattern": "modular",
+    "engines": ["suika", "h5-editor"],
+    "uiDesign": ["figma", "penpot"],
+    "platforms": ["windows", "macos"]
+  },
+  "codeQuality": {
+    "strictMode": true,
+    "testCoverage": {
+      "components": 80,
+      "utils": 90,
+      "models": 95
+    },
+    "linting": {
+      "typescript": "strict",
+      "eslint": "recommended"
+    }
+  },
+  "fileStructure": {
+    "src": {
+      "components": ["ui", "canvas", "tools", "panels"],
+      "engines": ["suika", "h5-editor"],
+      "managers": ["canvas", "tools", "history", "assets"],
+      "models": [],
+      "utils": [],
+      "hooks": [],
+      "styles": [],
+      "types": []
+    }
+  },
+  "errorHandling": {
+    "categories": [
+      "CANVAS_ERROR",
+      "FILE_ERROR", 
+      "NETWORK_ERROR",
+      "PERMISSION_ERROR",
+      "VALIDATION_ERROR",
+      "SYSTEM_ERROR"
+    ]
+  },
+  "userExperience": {
+    "designLanguage": ["figma", "penpot"],
+    "themes": ["light", "dark"],
+    "onboarding": "15min-first-project",
+    "accessibility": true
+  },
+  "deployment": {
+    "platforms": ["windows", "macos"],
+    "buildTool": "electron-builder",
+    "targets": {
+      "windows": ".exe",
+      "macos": ".dmg"
+    }
+  },
+  "documentation": {
+    "languages": ["zh-CN"],
+    "types": ["user-manual", "api-docs", "deployment-guide"]
+  }
+} 

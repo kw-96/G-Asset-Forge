@@ -1,26 +1,21 @@
 import React from 'react';
-import { Layout } from 'antd';
+import styled from 'styled-components';
 import CanvasArea from '../Canvas/CanvasArea';
-import PropertiesPanel from '../Properties/PropertiesPanel';
 
-const { Content, Sider } = Layout;
+const ContentContainer = styled.div`
+  flex: 1;
+  background: ${({ theme }) => theme.colors.background || '#f0f2f5'};
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
 
 const MainContent: React.FC = () => {
   return (
-    <Layout style={{ height: '100%' }}>
-      <Content style={{ background: '#f0f2f5', position: 'relative' }}>
-        <CanvasArea />
-      </Content>
-      <Sider
-        width={300}
-        style={{
-          background: '#ffffff',
-          borderLeft: '1px solid #d9d9d9'
-        }}
-      >
-        <PropertiesPanel />
-      </Sider>
-    </Layout>
+    <ContentContainer>
+      <CanvasArea />
+    </ContentContainer>
   );
 };
 

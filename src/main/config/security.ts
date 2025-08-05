@@ -47,7 +47,7 @@ export const SecurityConfig = {
    * 获取当前环境的CSP策略
    */
   getCurrentCSP(): string {
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isDevelopment = process.env['NODE_ENV'] === 'development';
     return isDevelopment ? this.CSP.development : this.CSP.production;
   },
 
@@ -69,7 +69,7 @@ export const SecurityConfig = {
       const urlObj = new URL(url);
       const allowedProtocols = ['https:', 'http:', 'file:', 'data:', 'blob:'];
       
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env['NODE_ENV'] === 'development') {
         if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
           return true;
         }

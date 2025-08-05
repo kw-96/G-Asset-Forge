@@ -29,8 +29,10 @@ export class CommandManager {
     // 尝试与上一个命令合并
     const lastCommand = this.history[this.currentIndex];
     if (lastCommand && lastCommand.canMerge && lastCommand.canMerge(command)) {
-      const mergedCommand = lastCommand.merge!(command);
-      this.history[this.currentIndex] = mergedCommand;
+      const mergedCommand = lastCommand.merge && lastCommand.merge(command);
+      if (mergedCommand) {
+        this.history[this.currentIndex] = mergedCommand;
+      }
     } else {
       // 添加新命令到历史记录
       this.history.push(command);
@@ -52,6 +54,10 @@ export class CommandManager {
     }
 
     const command = this.history[this.currentIndex];
+    if (!command) {
+      return false;
+    }
+    
     command.undo();
     this.currentIndex--;
 
@@ -66,6 +72,10 @@ export class CommandManager {
 
     this.currentIndex++;
     const command = this.history[this.currentIndex];
+    if (!command) {
+      return false;
+    }
+    
     command.execute();
 
     this.editor.render();
@@ -105,11 +115,11 @@ export abstract class BaseCommand implements ICommand {
   abstract execute(): void;
   abstract undo(): void;
 
-  canMerge(other: ICommand): boolean {
+  canMerge(_other: ICommand): boolean {
     return false;
   }
 
-  merge(other: ICommand): ICommand {
+  merge(_other: ICommand): ICommand {
     return this;
   }
 }

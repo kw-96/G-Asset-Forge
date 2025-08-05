@@ -1,20 +1,86 @@
-// 主题提供者组件
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { ReactNode, createContext, useContext, useState } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import { lightTheme, darkTheme, type ITheme } from './index';
 
+const theme = {
+  colors: {
+    primary: '#1976d2',
+    secondary: '#dc004e',
+    success: '#2e7d32',
+    warning: '#ed6c02',
+    error: '#d32f2f',
+    info: '#0288d1',
+    
+    text: {
+      primary: '#212121',
+      secondary: '#757575',
+      disabled: '#bdbdbd'
+    },
+    
+    background: {
+      default: '#ffffff',
+      paper: '#f5f5f5',
+      dark: '#121212'
+    },
+    
+    border: {
+      default: '#e0e0e0',
+      light: '#f0f0f0',
+      dark: '#424242',
+      hover: '#f5f5f5',
+      focus: '#1976d2'
+    },
+    
+    surface: '#fafafa'
+  },
+  
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px',
+    xl: '32px'
+  },
+  
+  borderRadius: {
+    small: '4px',
+    medium: '8px',
+    large: '12px'
+  },
+  
+  shadows: {
+    small: '0 2px 4px rgba(0,0,0,0.1)',
+    medium: '0 4px 8px rgba(0,0,0,0.15)',
+    large: '0 8px 16px rgba(0,0,0,0.2)'
+  },
+  
+  transitions: {
+    duration: {
+      fast: '150ms',
+      normal: '200ms',
+      slow: '300ms'
+    },
+    easing: {
+      ease: 'ease',
+      easeIn: 'ease-in',
+      easeOut: 'ease-out',
+      easeInOut: 'ease-in-out'
+    }
+  }
+};
+
+export type Theme = typeof theme;
 export type ThemeMode = 'light' | 'dark';
 
-interface IThemeContext {
-  theme: ITheme;
+interface ThemeContextType {
+  theme: Theme;
   mode: ThemeMode;
   toggleTheme: () => void;
   setTheme: (mode: ThemeMode) => void;
 }
 
-const ThemeContext = createContext<IThemeContext | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const useTheme = (): IThemeContext => {
+export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
@@ -22,25 +88,12 @@ export const useTheme = (): IThemeContext => {
   return context;
 };
 
-interface IThemeProviderProps {
-  children: React.ReactNode;
-  defaultMode?: ThemeMode;
+interface ThemeProviderProps {
+  children: ReactNode;
 }
 
-export const ThemeProvider: React.FC<IThemeProviderProps> = ({ 
-  children, 
-  defaultMode = 'light' 
-}) => {
-  const [mode, setMode] = useState<ThemeMode>(() => {
-    // 尝试从localStorage读取保存的主题模式
-    if (typeof window !== 'undefined') {
-      const savedMode = localStorage.getItem('theme-mode') as ThemeMode;
-      return savedMode || defaultMode;
-    }
-    return defaultMode;
-  });
-
-  const theme = mode === 'light' ? lightTheme : darkTheme;
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  const [mode, setMode] = useState<ThemeMode>('light');
 
   const toggleTheme = () => {
     setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
@@ -50,33 +103,7 @@ export const ThemeProvider: React.FC<IThemeProviderProps> = ({
     setMode(newMode);
   };
 
-  // 保存主题模式到localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme-mode', mode);
-    }
-  }, [mode]);
-
-  // 更新CSS变量以支持原生CSS
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const root = document.documentElement;
-      
-      // 设置CSS变量
-      root.style.setProperty('--color-primary', theme.colors.primary);
-      root.style.setProperty('--color-background', theme.colors.background);
-      root.style.setProperty('--color-surface', theme.colors.surface);
-      root.style.setProperty('--color-text-primary', theme.colors.text.primary);
-      root.style.setProperty('--color-text-secondary', theme.colors.text.secondary);
-      root.style.setProperty('--color-border-default', theme.colors.border.default);
-      
-      // 设置body背景色
-      document.body.style.backgroundColor = theme.colors.background;
-      document.body.style.color = theme.colors.text.primary;
-    }
-  }, [theme]);
-
-  const contextValue: IThemeContext = {
+  const contextValue: ThemeContextType = {
     theme,
     mode,
     toggleTheme,

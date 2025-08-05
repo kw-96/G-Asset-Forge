@@ -7,7 +7,7 @@ import ToolProperties from './ToolProperties';
 const { Title } = Typography;
 
 const PropertiesPanel: React.FC = () => {
-  const { currentTool } = useAppStore();
+  const { activeTool } = useAppStore();
 
   return (
     <div style={{ padding: '16px', height: '100%', overflow: 'auto' }}>
@@ -18,13 +18,13 @@ const PropertiesPanel: React.FC = () => {
           <CanvasProperties />
         </Card>
 
-        {currentTool && (
+        {activeTool && (
           <Card size="small">
             <Title level={5} style={{ margin: 0 }}>
-              {getToolDisplayName(currentTool)}属性
+              {getToolDisplayName(activeTool)}属性
             </Title>
             <Divider style={{ margin: '12px 0' }} />
-            <ToolProperties tool={currentTool} />
+            <ToolProperties tool={activeTool} />
           </Card>
         )}
 

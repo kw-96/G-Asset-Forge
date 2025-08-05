@@ -1,33 +1,32 @@
 // 全局样式 - 替代Ant Design的基础样式
 import { createGlobalStyle } from 'styled-components';
+import { Theme } from '../theme/ThemeProvider';
 
-export const GlobalStyles = createGlobalStyle`
+export const GlobalStyles = createGlobalStyle<{ theme: Theme }>`
   * {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
   }
 
-  html {
-    font-size: 16px;
-    line-height: 1.5;
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
-    margin: 0;
-    padding: 0;
-    font-family: ${({ theme }) => theme.typography.fontFamily.primary};
-    font-size: ${({ theme }) => theme.typography.fontSize.base};
-    font-weight: ${({ theme }) => theme.typography.fontWeight.normal};
-    line-height: ${({ theme }) => theme.typography.lineHeight.normal};
-    color: ${({ theme }) => theme.colors.text.primary};
-    background-color: ${({ theme }) => theme.colors.background};
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: ${({ theme }) => theme.colors.background.default};
+    color: ${({ theme }) => theme.colors.text.primary};
+    overflow: hidden;
   }
 
   #root {
-    width: 100%;
+    width: 100vw;
     height: 100vh;
-    overflow: hidden;
   }
 
   /* 滚动条样式 */
@@ -37,217 +36,209 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   ::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.colors.surface};
+    background: ${({ theme }) => theme.colors.background.paper};
   }
 
   ::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.colors.border.default};
-    border-radius: ${({ theme }) => theme.borderRadius.full};
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.colors.border.hover};
+    background: ${({ theme }) => theme.colors.text.secondary};
   }
 
   /* 选择文本样式 */
   ::selection {
-    background: ${({ theme }) => theme.colors.primary}30;
-    color: ${({ theme }) => theme.colors.text.primary};
-  }
-
-  /* 焦点样式重置 */
-  button:focus,
-  input:focus,
-  textarea:focus,
-  select:focus {
-    outline: none;
+    background-color: ${({ theme }) => theme.colors.primary};
+    color: white;
   }
 
   /* 链接样式 */
   a {
     color: ${({ theme }) => theme.colors.primary};
     text-decoration: none;
-    transition: color ${({ theme }) => theme.animation.duration.fast} ${({ theme }) => theme.animation.easing.ease};
   }
 
   a:hover {
-    color: ${({ theme }) => theme.colors.primary}dd;
+    text-decoration: underline;
   }
 
-  /* 标题样式 */
-  h1, h2, h3, h4, h5, h6 {
-    margin: 0;
-    font-weight: ${({ theme }) => theme.typography.fontWeight.semibold};
-    line-height: ${({ theme }) => theme.typography.lineHeight.tight};
-    color: ${({ theme }) => theme.colors.text.primary};
+  /* 按钮重置 */
+  button {
+    cursor: pointer;
+    font-family: inherit;
   }
 
-  h1 {
-    font-size: ${({ theme }) => theme.typography.fontSize['3xl']};
+  button:disabled {
+    cursor: not-allowed;
   }
 
-  h2 {
-    font-size: ${({ theme }) => theme.typography.fontSize['2xl']};
-  }
-
-  h3 {
-    font-size: ${({ theme }) => theme.typography.fontSize.xl};
-  }
-
-  h4 {
-    font-size: ${({ theme }) => theme.typography.fontSize.lg};
-  }
-
-  h5 {
-    font-size: ${({ theme }) => theme.typography.fontSize.base};
-  }
-
-  h6 {
-    font-size: ${({ theme }) => theme.typography.fontSize.sm};
-  }
-
-  /* 段落样式 */
-  p {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.text.primary};
-  }
-
-  /* 列表样式 */
-  ul, ol {
-    margin: 0;
-    padding: 0;
-  }
-
-  li {
-    list-style: none;
-  }
-
-  /* 表单元素样式重置 */
+  /* 输入框样式 */
   input, textarea, select {
     font-family: inherit;
-    font-size: inherit;
-  }
-
-  /* 按钮样式重置 */
-  button {
-    font-family: inherit;
-    font-size: inherit;
-    border: none;
-    background: none;
-    cursor: pointer;
-  }
-
-  /* 图片样式 */
-  img {
-    max-width: 100%;
-    height: auto;
   }
 
   /* 代码样式 */
-  code, pre {
-    font-family: ${({ theme }) => theme.typography.fontFamily.mono};
-    font-size: ${({ theme }) => theme.typography.fontSize.sm};
-  }
-
   code {
-    padding: 2px 4px;
-    background: ${({ theme }) => theme.colors.surface};
-    border-radius: ${({ theme }) => theme.borderRadius.sm};
-    color: ${({ theme }) => theme.colors.text.primary};
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   }
 
-  pre {
-    padding: ${({ theme }) => theme.spacing.md};
-    background: ${({ theme }) => theme.colors.surface};
-    border-radius: ${({ theme }) => theme.borderRadius.md};
-    overflow-x: auto;
-    color: ${({ theme }) => theme.colors.text.primary};
+  /* Custom scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
 
-  /* 分割线样式 */
-  hr {
-    border: none;
-    height: 1px;
+  ::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.colors.background};
+  }
+
+  ::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.colors.border.default};
-    margin: ${({ theme }) => theme.spacing.lg} 0;
-  }
-
-  /* 表格样式 */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  th, td {
-    padding: ${({ theme }) => theme.spacing.sm};
-    text-align: left;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
-  }
-
-  th {
-    font-weight: ${({ theme }) => theme.typography.fontWeight.semibold};
-    color: ${({ theme }) => theme.colors.text.primary};
-    background: ${({ theme }) => theme.colors.surface};
-  }
-
-  /* 工具提示动画 */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
+    border-radius: 3px;
+    
+    &:hover {
+      background: ${({ theme }) => theme.colors.border.hover};
     }
   }
 
-  @keyframes fadeOut {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
+  ::-webkit-scrollbar-corner {
+    background: ${({ theme }) => theme.colors.background};
   }
 
-  @keyframes slideIn {
-    from {
-      transform: translateY(-10px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+  /* Selection styles */
+  ::selection {
+    background: ${({ theme }) => theme.colors.primary}40;
   }
 
-  @keyframes slideOut {
-    from {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateY(-10px);
-      opacity: 0;
-    }
+  /* Focus outline reset */
+  *:focus {
+    outline: none;
   }
 
-  /* 禁用用户选择的工具类 */
+  /* Button reset */
+  button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* Input reset */
+  input, textarea {
+    border: none;
+    outline: none;
+    font-family: inherit;
+  }
+
+  /* Link reset */
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* List reset */
+  ul, ol {
+    list-style: none;
+  }
+
+  /* Heading reset */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+  }
+
+  /* Remove default fieldset styles */
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Prevent user select on UI elements */
   .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
   }
 
-  /* 可拖拽元素样式 */
-  .draggable {
-    cursor: grab;
+  /* Utility classes */
+  .visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
   }
 
-  .draggable:active {
-    cursor: grabbing;
+  /* App layout */
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: ${({ theme }) => theme.colors.background};
   }
 
-  /* 加载状态样式 */
-  .loading {
-    pointer-events: none;
-    opacity: 0.6;
+  .main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .canvas-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: ${({ theme }) => theme.colors.canvas.background};
+    position: relative;
+  }
+
+  /* Animation utilities */
+  .fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
+  /* Loading screen styles */
+  #loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: ${({ theme }) => theme.colors.background};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    font-size: 14px;
+    color: ${({ theme }) => theme.colors.text.secondary};
   }
 `;

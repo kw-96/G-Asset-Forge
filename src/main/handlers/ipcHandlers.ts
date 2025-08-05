@@ -23,19 +23,19 @@ export class IpcHandlers {
       this.mainWindow = mainWindow;
 
       // File system operations
-      this.registerHandler('fs:readFile', async (event, filePath: string) => {
+      this.registerHandler('fs:readFile', async (_event, filePath: string) => {
         return await this.fileSystemManager.readFile(filePath);
       });
 
-      this.registerHandler('fs:writeFile', async (event, filePath: string, data: string) => {
+      this.registerHandler('fs:writeFile', async (_event, filePath: string, data: string) => {
         return await this.fileSystemManager.writeFile(filePath, data);
       });
 
-      this.registerHandler('fs:exists', async (event, filePath: string) => {
+      this.registerHandler('fs:exists', async (_event, filePath: string) => {
         return await this.fileSystemManager.exists(filePath);
       });
 
-      this.registerHandler('fs:createDirectory', async (event, dirPath: string) => {
+      this.registerHandler('fs:createDirectory', async (_event, dirPath: string) => {
         return await this.fileSystemManager.createDirectory(dirPath);
       });
 
@@ -84,7 +84,7 @@ export class IpcHandlers {
         return app.getName();
       });
 
-      this.registerHandler('app:getPath', async (event, name: string) => {
+      this.registerHandler('app:getPath', async (_event, name: string) => {
         try {
           return app.getPath(name as any);
         } catch (error) {

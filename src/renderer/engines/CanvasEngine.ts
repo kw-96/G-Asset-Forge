@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { fabric } from 'fabric';
 import { EventEmitter } from '../utils/EventEmitter';
 
@@ -92,6 +91,7 @@ export class CanvasEngine extends EventEmitter {
   private canvases: Map<string, any> = new Map();
   private performanceMonitor: PerformanceMonitor;
   private isDestroyed = false;
+  private resizeTimeout?: NodeJS.Timeout;
 
   constructor() {
     super();
@@ -102,7 +102,7 @@ export class CanvasEngine extends EventEmitter {
   /**
    * Create a new canvas instance
    */
-  async createCanvas(containerId: string, options: CanvasOptions): Promise<any> {
+  async createCanvas(containerId: string, options: CanvasOptions): Promise<fabric.Canvas> {
     if (this.isDestroyed) {
       throw new Error('CanvasEngine has been destroyed');
     }
@@ -209,7 +209,7 @@ export class CanvasEngine extends EventEmitter {
   /**
    * Get canvas instance by ID
    */
-  getCanvas(canvasId: string): any | undefined {
+  getCanvas(canvasId: string): fabric.Canvas | undefined {
     return this.canvases.get(canvasId);
   }
 
@@ -261,7 +261,7 @@ export class CanvasEngine extends EventEmitter {
       throw new Error(`Canvas with id "${canvasId}" not found`);
     }
 
-    const object = canvas.getObjects().find(obj => (obj as any).id === objectId);
+    const object = canvas.getObjects().find((obj: any) => obj.id === objectId);
     if (object) {
       canvas.remove(object);
       canvas.renderAll();
@@ -278,7 +278,7 @@ export class CanvasEngine extends EventEmitter {
       throw new Error(`Canvas with id "${canvasId}" not found`);
     }
 
-    const object = canvas.getObjects().find(obj => (obj as any).id === objectId);
+    const object = canvas.getObjects().find((obj: any) => obj.id === objectId);
     if (object) {
       object.set(properties);
       canvas.renderAll();
@@ -325,20 +325,20 @@ export class CanvasEngine extends EventEmitter {
    */
   private setupCanvasEventHandlers(canvas: any, canvasId: string): void {
     // Object events
-    canvas.on('object:added', (e) => {
+    canvas.on('object:added', (e: any) => {
       this.emit(CanvasEvent.OBJECT_ADDED, { canvasId, object: e.target });
     });
 
-    canvas.on('object:removed', (e) => {
+    canvas.on('object:removed', (e: any) => {
       this.emit(CanvasEvent.OBJECT_REMOVED, { canvasId, object: e.target });
     });
 
-    canvas.on('object:modified', (e) => {
+    canvas.on('object:modified', (e: any) => {
       this.emit(CanvasEvent.OBJECT_MODIFIED, { canvasId, object: e.target });
     });
 
     // Selection events
-    canvas.on('selection:created', (e) => {
+    canvas.on('selection:created', (e: any) => {
       this.emit(CanvasEvent.SELECTION_CREATED, { canvasId, selection: e.selected });
     });
 
@@ -367,9 +367,11 @@ export class CanvasEngine extends EventEmitter {
    */
   private handleWindowResize(): void {
     // Debounce resize events
-    clearTimeout((this as any).resizeTimeout);
-    (this as any).resizeTimeout = setTimeout(() => {
-      this.canvases.forEach((canvas, canvasId) => {
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
+    this.resizeTimeout = setTimeout(() => {
+      this.canvases.forEach((canvas) => {
         canvas.calcOffset();
         canvas.renderAll();
       });
