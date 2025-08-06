@@ -1,7 +1,6 @@
 // Button组件 - 基于Figma设计语言
 import React from 'react';
 import styled, { css } from 'styled-components';
-import { motion } from 'framer-motion';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
@@ -20,12 +19,12 @@ const getVariantStyles = (variant: ButtonVariant) => {
   switch (variant) {
     case 'primary':
       return css`
-        background: ${({ theme }) => theme.colors.primary};
+        background: #667eea;
         color: white;
-        border: 1px solid ${({ theme }) => theme.colors.primary};
+        border: 1px solid #667eea;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.primary}dd;
+          background: #667eeadd;
           transform: translateY(-1px);
         }
         
@@ -33,52 +32,52 @@ const getVariantStyles = (variant: ButtonVariant) => {
           transform: translateY(0);
         }
       `;
-    
+
     case 'secondary':
       return css`
-        background: ${({ theme }) => theme.colors.surface};
-        color: ${({ theme }) => theme.colors.text.primary};
-        border: 1px solid ${({ theme }) => theme.colors.border.default};
+        background: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.border.hover};
-          border-color: ${({ theme }) => theme.colors.border.hover};
+          background: #cbd5e1;
+          border-color: #cbd5e1;
         }
       `;
-    
+
     case 'outline':
       return css`
         background: transparent;
-        color: ${({ theme }) => theme.colors.primary};
-        border: 1px solid ${({ theme }) => theme.colors.primary};
+        color: #667eea;
+        border: 1px solid #667eea;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.primary}10;
+          background: #667eea10;
         }
       `;
-    
+
     case 'ghost':
       return css`
         background: transparent;
-        color: ${({ theme }) => theme.colors.text.primary};
+        color: #1e293b;
         border: 1px solid transparent;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.surface};
+          background: #f8fafc;
         }
       `;
-    
+
     case 'danger':
       return css`
-        background: ${({ theme }) => theme.colors.error};
+        background: #ef4444;
         color: white;
-        border: 1px solid ${({ theme }) => theme.colors.error};
+        border: 1px solid #ef4444;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.error}dd;
+          background: #ef4444dd;
         }
       `;
-    
+
     default:
       return css``;
   }
@@ -89,39 +88,37 @@ const getSizeStyles = (size: ButtonSize) => {
     case 'xs':
       return css`
         height: 28px;
-        padding: 0 ${({ theme }) => theme.spacing.xs};
-        font-size: ${({ theme }) => theme.typography.fontSize.xs};
+        padding: 0 8px;
+        font-size: 12px;
       `;
-    
+
     case 'sm':
       return css`
         height: 32px;
-        padding: 0 ${({ theme }) => theme.spacing.sm};
-        font-size: ${({ theme }) => theme.typography.fontSize.sm};
+        padding: 0 12px;
+        font-size: 14px;
       `;
-    
+
     case 'md':
       return css`
         height: 40px;
-        padding: 0 ${({ theme }) => theme.spacing.md};
-        font-size: ${({ theme }) => theme.typography.fontSize.base};
+        padding: 0 16px;
+        font-size: 16px;
       `;
-    
+
     case 'lg':
       return css`
         height: 48px;
-        padding: 0 ${({ theme }) => theme.spacing.lg};
-        font-size: ${({ theme }) => theme.typography.fontSize.lg};
+        padding: 0 24px;
+        font-size: 18px;
       `;
-    
+
     default:
       return css``;
   }
 };
 
-const StyledButton = styled(motion.button).withConfig({
-  shouldForwardProp: (prop) => !['whileTap', 'whileHover', 'initial', 'animate', 'exit', 'transition'].includes(prop)
-})<{
+const StyledButton = styled.button<{
   $variant: ButtonVariant;
   $size: ButtonSize;
   $fullWidth: boolean;
@@ -130,15 +127,15 @@ const StyledButton = styled(motion.button).withConfig({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing.xs};
+  gap: 4px;
   
-  font-family: ${({ theme }) => theme.typography.fontFamily.primary};
-  font-weight: ${({ theme }) => theme.typography.fontWeight.medium};
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
   line-height: 1;
   
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: 6px;
   cursor: pointer;
-  transition: all ${({ theme }) => theme.animation.duration.fast} ${({ theme }) => theme.animation.easing.ease};
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
   
   ${({ $variant }) => getVariantStyles($variant)}
   ${({ $size }) => getSizeStyles($size)}
@@ -154,7 +151,7 @@ const StyledButton = styled(motion.button).withConfig({
   }
   
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.border.focus};
+    outline: 2px solid #667eea;
     outline-offset: 2px;
   }
 `;
@@ -196,7 +193,6 @@ export const Button = React.forwardRef<HTMLButtonElement, IButtonProps>(({
   ...props
 }, ref) => {
   return (
-    // @ts-expect-error styled-components v6 compatibility issue with framer-motion
     <StyledButton
       ref={ref}
       disabled={disabled || loading}
@@ -204,7 +200,6 @@ export const Button = React.forwardRef<HTMLButtonElement, IButtonProps>(({
       $size={size}
       $fullWidth={fullWidth}
       $loading={loading}
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
       {...props}
     >
       {loading && <LoadingSpinner />}

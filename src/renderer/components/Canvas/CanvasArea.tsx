@@ -1,97 +1,58 @@
 import React, { useEffect } from 'react';
-import { useCanvasStore } from '../../stores/canvasStore';
+// import { useCanvasStore } from '../../stores/canvasStore'; // 无限画布不需要
 import { useAppStore } from '../../stores/appStore';
 import CanvasComponent from './CanvasComponent';
 import CanvasToolbar from './CanvasToolbar';
+import FloatingToolbar from './FloatingToolbar';
+import CanvasMinimap from './CanvasMinimap';
+import InfiniteCanvasGuide from './InfiniteCanvasGuide';
+
+import styled from 'styled-components';
+
+const CanvasAreaContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f0f2f5;
+  position: relative;
+`;
+
+const InfiniteCanvasWrapper = styled.div`
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #e5e7eb;
+  /* 无限画布背景纹理 */
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+`;
 
 const CanvasArea: React.FC = () => {
-  const { canvas } = useCanvasStore();
+  // 移除对canvas属性的引用，因为无限画布不需要fabric.js实例
   const { setHasUnsavedChanges } = useAppStore();
 
-  // Setup canvas event listeners for app state changes
+  // 监听元素变化以更新保存状态
   useEffect(() => {
-    if (!canvas) return;
-
-    const handleObjectChange = () => {
-      setHasUnsavedChanges(true);
-    };
-
-    // Object modification events
-    canvas.on('object:added', handleObjectChange);
-    canvas.on('object:removed', handleObjectChange);
-    canvas.on('object:modified', handleObjectChange);
-
-    // Selection events for debugging
-    canvas.on('selection:created', (e: any) => {
-      console.log('Selection created:', e.selected);
-    });
-
-    canvas.on('selection:updated', (e: any) => {
-      console.log('Selection updated:', e.selected);
-    });
-
-    canvas.on('selection:cleared', () => {
-      console.log('Selection cleared');
-    });
-
-    // Path events for drawing
-    canvas.on('path:created', (e: any) => {
-      console.log('Path created:', e.path);
-      setHasUnsavedChanges(true);
-    });
-
-    // Cleanup function
-    return () => {
-      canvas.off('object:added', handleObjectChange);
-      canvas.off('object:removed', handleObjectChange);
-      canvas.off('object:modified', handleObjectChange);
-      canvas.off('selection:created');
-      canvas.off('selection:updated');
-      canvas.off('selection:cleared');
-      canvas.off('path:created');
-    };
-  }, [canvas, setHasUnsavedChanges]);
+    // 当有元素变化时标记为未保存
+    setHasUnsavedChanges(true);
+  }, [setHasUnsavedChanges]);
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#f0f2f5',
-        position: 'relative'
-      }}
-    >
+    <CanvasAreaContainer>
       <CanvasToolbar />
       
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          overflow: 'hidden',
-          padding: '20px'
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            maxWidth: '1200px',
-            maxHeight: '800px',
-            border: '1px solid #d9d9d9',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            background: 'white',
-            borderRadius: '8px',
-            overflow: 'hidden'
-          }}
-        >
-          <CanvasComponent />
-        </div>
-      </div>
-    </div>
+      <InfiniteCanvasWrapper>
+        <CanvasComponent />
+        {/* Figma风格的悬浮工具栏 */}
+        <FloatingToolbar />
+        {/* 无限画布小地图 */}
+        <CanvasMinimap />
+        {/* 无限画布使用指南 */}
+        <InfiniteCanvasGuide />
+      </InfiniteCanvasWrapper>
+    </CanvasAreaContainer>
   );
 };
 

@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { fabric } from 'fabric';
 
 // 简化的游戏素材预设
 const SIMPLE_GAME_ASSET_PRESETS = {
@@ -18,50 +16,49 @@ const SIMPLE_GAME_ASSET_PRESETS = {
 };
 
 export interface CanvasState {
-  // Canvas instance
-  canvas: any | null;
-  canvasContainer: HTMLElement | null;
+  // 无限画布属性
+  zoom: number; // 缩放级别 (25-400)
+  panX: number; // 水平平移
+  panY: number; // 垂直平移
   
-  // Canvas properties
-  width: number;
-  height: number;
-  zoom: number;
-  backgroundColor: string;
-  
-  // View state
-  panX: number;
-  panY: number;
-  
-  // Display options
+  // 显示选项
   showGrid: boolean;
   showRuler: boolean;
   snapToGrid: boolean;
   
-  // Performance tracking
+  // 画布设置
+  backgroundColor: string;
+  gridSize: number;
+  
+  // 性能跟踪
   fps: number;
   memoryUsage: number;
   objectCount: number;
   
-  // Canvas presets
+  // 画布预设
   presets: typeof SIMPLE_GAME_ASSET_PRESETS;
   
-  // Actions
+  // 操作方法
   initializeCanvas: () => Promise<void>;
-  setCanvas: (canvas: any | null) => void;
-  setCanvasContainer: (container: HTMLElement | null) => void;
-  setCanvasSize: (width: number, height: number) => void;
   setZoom: (zoom: number) => void;
-  setBackgroundColor: (color: string) => void;
   setPan: (x: number, y: number) => void;
   setShowGrid: (show: boolean) => void;
   setShowRuler: (show: boolean) => void;
   setSnapToGrid: (snap: boolean) => void;
-  fitToScreen: () => void;
-  resetView: () => void;
-  updatePerformanceMetrics: (fps: number, memory: number, objectCount?: number) => void;
-  destroyCanvas: () => void;
+  setBackgroundColor: (color: string) => void;
+  setGridSize: (size: number) => void;
   
-  // Preset actions
+  // 视图控制
+  zoomIn: () => void;
+  zoomOut: () => void;
+  zoomToFit: () => void;
+  resetView: () => void;
+  centerView: () => void;
+  
+  // 性能监控
+  updatePerformanceMetrics: (fps: number, memory: number, objectCount?: number) => void;
+  
+  // 预设操作
   applyPreset: (presetKey: keyof typeof SIMPLE_GAME_ASSET_PRESETS) => void;
   getPresetList: () => Array<{ key: string; name: string; width: number; height: number }>;
 }
@@ -69,28 +66,24 @@ export interface CanvasState {
 export const useCanvasStore = create<CanvasState>()(
   devtools(
     (set, get) => ({
-      // Initial state
-      canvas: null,
-      canvasContainer: null,
-      width: 1920,
-      height: 1080,
+      // 初始状态
       zoom: 100,
-      backgroundColor: '#ffffff',
       panX: 0,
       panY: 0,
       showGrid: true,
       showRuler: true,
       snapToGrid: false,
+      backgroundColor: '#ffffff',
+      gridSize: 20,
       fps: 60,
       memoryUsage: 0,
       objectCount: 0,
       presets: SIMPLE_GAME_ASSET_PRESETS,
 
-      // Actions
+      // 初始化画布
       initializeCanvas: async () => {
         try {
-          console.log('Canvas store initialized successfully');
-          // 初始化基本设置
+          console.log('无限画布系统初始化成功');
           set({ 
             fps: 60, 
             memoryUsage: 0, 
@@ -100,127 +93,90 @@ export const useCanvasStore = create<CanvasState>()(
             panY: 0
           });
         } catch (error) {
-          console.error('Failed to initialize canvas store:', error);
-          // 不抛出错误，让应用继续初始化
+          console.error('画布初始化失败:', error);
         }
       },
 
-      setCanvas: (canvas: unknown | null) => {
-        set({ canvas });
-      },
-
-      setCanvasContainer: (container: HTMLElement | null) => {
-        set({ canvasContainer: container });
-      },
-
-      setCanvasSize: (width: number, height: number) => {
-        const { canvas } = get();
-        if (canvas) {
-          canvas.setDimensions({ width, height });
-          canvas.renderAll();
-        }
-        set({ width, height });
-      },
-
+      // 缩放控制
       setZoom: (zoom: number) => {
-        const { canvas } = get();
         const clampedZoom = Math.max(25, Math.min(400, zoom));
-        
-        if (canvas) {
-          // Convert percentage to decimal for fabric.js
-          canvas.setZoom(clampedZoom / 100);
-          canvas.renderAll();
-        }
-        
         set({ zoom: clampedZoom });
       },
 
-      setBackgroundColor: (color: string) => {
-        const { canvas } = get();
-        if (canvas) {
-          canvas.setBackgroundColor(color, () => {
-            canvas.renderAll();
-          });
+      zoomIn: () => {
+        const { zoom } = get();
+        const zoomLevels = [25, 50, 75, 100, 125, 150, 200, 300, 400];
+        const currentIndex = zoomLevels.findIndex(level => level >= zoom);
+        const nextIndex = Math.min(currentIndex + 1, zoomLevels.length - 1);
+        const nextZoom = zoomLevels[nextIndex];
+        if (nextZoom !== undefined) {
+          set({ zoom: nextZoom });
         }
-        set({ backgroundColor: color });
       },
 
-      setPan: (x: number, y: number) => {
-        const { canvas } = get();
-        if (canvas) {
-          canvas.relativePan(new any(x - get().panX, y - get().panY));
-          canvas.renderAll();
+      zoomOut: () => {
+        const { zoom } = get();
+        const zoomLevels = [25, 50, 75, 100, 125, 150, 200, 300, 400];
+        const currentIndex = zoomLevels.findIndex(level => level >= zoom);
+        const prevIndex = Math.max(currentIndex - 1, 0);
+        const prevZoom = zoomLevels[prevIndex];
+        if (prevZoom !== undefined) {
+          set({ zoom: prevZoom });
         }
+      },
+
+      zoomToFit: () => {
+        // TODO: 根据元素范围计算合适的缩放级别
+        set({ zoom: 100, panX: 0, panY: 0 });
+      },
+
+      // 平移控制
+      setPan: (x: number, y: number) => {
         set({ panX: x, panY: y });
       },
 
+      centerView: () => {
+        set({ panX: 0, panY: 0 });
+      },
+
+      resetView: () => {
+        set({ zoom: 100, panX: 0, panY: 0 });
+      },
+
+      // 显示选项
       setShowGrid: (show: boolean) => {
         set({ showGrid: show });
-        // TODO: 实际显示/隐藏网格的逻辑
       },
 
       setShowRuler: (show: boolean) => {
         set({ showRuler: show });
-        // TODO: 实际显示/隐藏标尺的逻辑
       },
 
       setSnapToGrid: (snap: boolean) => {
         set({ snapToGrid: snap });
-        // TODO: 实际启用/禁用网格对齐的逻辑
       },
 
-      fitToScreen: () => {
-        const { canvas, canvasContainer, width, height } = get();
-        if (!canvas || !canvasContainer) return;
-
-        const containerRect = canvasContainer.getBoundingClientRect();
-        const scaleX = (containerRect.width - 40) / width;
-        const scaleY = (containerRect.height - 40) / height;
-        const scale = Math.min(scaleX, scaleY, 1);
-
-        canvas.setZoom(scale);
-        canvas.absolutePan(new any(
-          (containerRect.width - width * scale) / 2,
-          (containerRect.height - height * scale) / 2
-        ));
-        canvas.renderAll();
-
-        set({ zoom: Math.round(scale * 100), panX: 0, panY: 0 });
+      // 画布设置
+      setBackgroundColor: (color: string) => {
+        set({ backgroundColor: color });
       },
 
-      resetView: () => {
-        const { canvas } = get();
-        if (canvas) {
-          canvas.setZoom(1);
-          canvas.absolutePan(new any(0, 0));
-          canvas.renderAll();
-        }
-        set({ zoom: 100, panX: 0, panY: 0 });
+      setGridSize: (size: number) => {
+        const clampedSize = Math.max(10, Math.min(100, size));
+        set({ gridSize: clampedSize });
       },
 
+      // 性能监控
       updatePerformanceMetrics: (fps: number, memory: number, objectCount = 0) => {
         set({ fps, memoryUsage: memory, objectCount });
       },
 
-      destroyCanvas: () => {
-        const { canvas } = get();
-        if (canvas) {
-          canvas.dispose();
-        }
-        set({ 
-          canvas: null, 
-          canvasContainer: null,
-          panX: 0,
-          panY: 0,
-          zoom: 100
-        });
-      },
-
-      // Preset actions
+      // 预设操作
       applyPreset: (presetKey: keyof typeof SIMPLE_GAME_ASSET_PRESETS) => {
         const preset = SIMPLE_GAME_ASSET_PRESETS[presetKey];
         if (preset) {
-          get().setCanvasSize(preset.width, preset.height);
+          // 对于无限画布，预设主要用于参考尺寸
+          console.log(`应用预设: ${preset.name} (${preset.width}x${preset.height})`);
         }
       },
 
@@ -234,7 +190,7 @@ export const useCanvasStore = create<CanvasState>()(
       },
     }),
     {
-      name: 'canvas-store',
+      name: 'infinite-canvas-store',
     }
   )
 );

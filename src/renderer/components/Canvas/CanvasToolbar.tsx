@@ -16,39 +16,39 @@ import { useCanvasStore } from '../../stores/canvasStore';
 const ToolbarContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  background: ${({ theme }) => theme.colors.surface};
-  border-top: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
 `;
 
 const ToolGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.xs};
+  gap: 4px;
 `;
 
 const ZoomSelect = styled.select.attrs({
   'aria-required': 'false',
   'aria-expanded': 'false'
 })`
-  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
-  background: ${({ theme }) => theme.colors.background};
-  color: ${({ theme }) => theme.colors.text.primary};
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1e293b;
   font-size: 12px;
   min-width: 70px;
   
   &:focus {
-    outline: 2px solid ${({ theme }) => theme.colors.border.focus};
-    border-color: ${({ theme }) => theme.colors.primary};
+    outline: 2px solid #667eea;
+    border-color: #667eea;
   }
   
   /* Ensure accessibility compliance */
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.border.focus};
+    outline: 2px solid #667eea;
     outline-offset: 2px;
   }
 `;
@@ -56,19 +56,19 @@ const ZoomSelect = styled.select.attrs({
 const Separator = styled.div`
   width: 1px;
   height: 20px;
-  background: ${({ theme }) => theme.colors.border.default};
-  margin: 0 ${({ theme }) => theme.spacing.xs};
+  background: #e2e8f0;
+  margin: 0 4px;
 `;
 
 const ToggleButton = styled(IconButton)<{ $active: boolean }>`
-  background: ${({ $active, theme }) => $active ? theme.colors.primary : 'transparent'};
-  color: ${({ $active, theme }) => $active ? theme.colors.text.inverse : theme.colors.text.primary};
+  background: ${({ $active }) => $active ? '#667eea' : 'transparent'};
+  color: ${({ $active }) => $active ? 'white' : '#1e293b'};
   
   &:hover {
-    background: ${({ $active, theme }) => 
+    background: ${({ $active }) => 
       $active 
-        ? theme.colors.primary 
-        : theme.colors.border.hover
+        ? '#667eea' 
+        : '#cbd5e1'
     };
   }
 `;
@@ -79,51 +79,25 @@ interface CanvasToolbarProps {
 }
 
 const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ className, style }) => {
-  const canvasStore = useCanvasStore();
   const { 
-    zoom = 100,
-    setZoom,
-    showGrid = true,
+    zoom,
+    showGrid,
+    showRuler,
+    snapToGrid,
+    zoomIn,
+    zoomOut,
+    resetView,
+    zoomToFit,
     setShowGrid,
-    showRuler = true,
     setShowRuler,
-    snapToGrid = false,
     setSnapToGrid
-  } = canvasStore;
+  } = useCanvasStore();
 
   const zoomPresets = [25, 50, 75, 100, 125, 150, 200, 300, 400];
   
   const handleZoomChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = parseInt(e.target.value);
-    setZoom(value);
-  };
-
-  const handleZoomIn = () => {
-    const currentIndex = zoomPresets.findIndex(preset => preset >= zoom);
-    const nextIndex = Math.min(currentIndex + 1, zoomPresets.length - 1);
-    const nextZoom = zoomPresets[nextIndex];
-    if (nextZoom !== undefined) {
-      setZoom(nextZoom);
-    }
-  };
-
-  const handleZoomOut = () => {
-    const currentIndex = zoomPresets.findIndex(preset => preset >= zoom);
-    const prevIndex = Math.max(currentIndex - 1, 0);
-    const prevZoom = zoomPresets[prevIndex];
-    if (prevZoom !== undefined) {
-      setZoom(prevZoom);
-    }
-  };
-
-  const handleFitToWindow = () => {
-    // TODO: Implement fit to window logic
-    setZoom(100);
-  };
-
-  const handleResetView = () => {
-    setZoom(100);
-    // TODO: Reset canvas position
+    useCanvasStore.getState().setZoom(value);
   };
 
   return (
@@ -133,10 +107,10 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ className, style }) => {
         <Tooltip content="缩小">
           <IconButton
             icon={<ZoomOutIcon />}
-            onClick={handleZoomOut}
+            onClick={zoomOut}
             variant="ghost"
             size="sm"
-            disabled={zoom <= (zoomPresets[0] ?? 25)}
+            disabled={zoom <= 25}
           />
         </Tooltip>
         
@@ -160,10 +134,10 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ className, style }) => {
         <Tooltip content="放大">
           <IconButton
             icon={<ZoomInIcon />}
-            onClick={handleZoomIn}
+            onClick={zoomIn}
             variant="ghost"
             size="sm"
-            disabled={zoom >= (zoomPresets[zoomPresets.length - 1] ?? 400)}
+            disabled={zoom >= 400}
           />
         </Tooltip>
       </ToolGroup>
@@ -172,19 +146,19 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ className, style }) => {
 
       {/* View Controls */}
       <ToolGroup>
-        <Tooltip content="适应窗口 (Shift+1)">
+        <Tooltip content="适应所有对象 (Shift+1)">
           <IconButton
             icon={<AspectRatioIcon />}
-            onClick={handleFitToWindow}
+            onClick={zoomToFit}
             variant="ghost"
             size="sm"
           />
         </Tooltip>
         
-        <Tooltip content="重置视图 (Shift+0)">
+        <Tooltip content="重置视图到原点 (Shift+0)">
           <IconButton
             icon={<ResetIcon />}
-            onClick={handleResetView}
+            onClick={resetView}
             variant="ghost"
             size="sm"
           />

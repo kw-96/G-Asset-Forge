@@ -1,7 +1,6 @@
 // IconButton组件 - 基于Figma设计语言
 import React from 'react';
 import styled, { css } from 'styled-components';
-import { motion } from 'framer-motion';
 
 export type IconButtonVariant = 'default' | 'primary' | 'ghost' | 'danger';
 export type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
@@ -17,48 +16,48 @@ const getVariantStyles = (variant: IconButtonVariant) => {
   switch (variant) {
     case 'primary':
       return css`
-        background: ${({ theme }) => theme.colors.primary};
-        color: ${({ theme }) => theme.colors.text.inverse};
-        border: 1px solid ${({ theme }) => theme.colors.primary};
+        background: #667eea;
+        color: white;
+        border: 1px solid #667eea;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.primary}dd;
+          background: #667eeadd;
         }
       `;
     
     case 'ghost':
       return css`
         background: transparent;
-        color: ${({ theme }) => theme.colors.text.secondary};
+        color: #64748b;
         border: 1px solid transparent;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.surface};
-          color: ${({ theme }) => theme.colors.text.primary};
+          background: #f8fafc;
+          color: #1e293b;
         }
       `;
     
     case 'danger':
       return css`
         background: transparent;
-        color: ${({ theme }) => theme.colors.error};
+        color: #ef4444;
         border: 1px solid transparent;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.error}10;
+          background: #ef444410;
         }
       `;
     
     case 'default':
     default:
       return css`
-        background: ${({ theme }) => theme.colors.surface};
-        color: ${({ theme }) => theme.colors.text.primary};
-        border: 1px solid ${({ theme }) => theme.colors.border.default};
+        background: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
         
         &:hover:not(:disabled) {
-          background: ${({ theme }) => theme.colors.border.hover};
-          border-color: ${({ theme }) => theme.colors.border.hover};
+          background: #cbd5e1;
+          border-color: #cbd5e1;
         }
       `;
   }
@@ -115,7 +114,7 @@ const getSizeStyles = (size: IconButtonSize) => {
   }
 };
 
-const StyledIconButton = styled(motion.div)<{
+const StyledIconButton = styled.button<{
   $variant: IconButtonVariant;
   $size: IconButtonSize;
 }>`
@@ -123,9 +122,9 @@ const StyledIconButton = styled(motion.div)<{
   align-items: center;
   justify-content: center;
   
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: 6px;
   cursor: pointer;
-  transition: all ${({ theme }) => theme.transitions.duration.fast} ${({ theme }) => theme.transitions.easing.ease};
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
   
   ${({ $variant }) => getVariantStyles($variant)}
   ${({ $size }) => getSizeStyles($size)}
@@ -137,7 +136,7 @@ const StyledIconButton = styled(motion.div)<{
   }
   
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.border.focus};
+    outline: 2px solid #667eea;
     outline-offset: 2px;
   }
   
@@ -171,12 +170,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IIconButtonProps>(
 }, ref) => {
   return (
     <StyledIconButton
-      as="button"
       ref={ref}
       $variant={variant}
       $size={size}
       disabled={disabled || loading}
-      whileTap={{ scale: disabled || loading ? 1 : 0.95 }}
       {...props}
     >
       {loading ? <LoadingSpinner /> : icon}

@@ -1,5 +1,2 @@
-import { Theme } from '../theme/ThemeProvider';
-export declare const GlobalStyles: import("react").NamedExoticComponent<import("styled-components").ExecutionProps & {
-    theme: Theme;
-}>;
+export declare const GlobalStyles: import("react").NamedExoticComponent<import("styled-components").ExecutionProps & object>;
 //# sourceMappingURL=GlobalStyles.d.ts.map

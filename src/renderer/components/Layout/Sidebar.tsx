@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { IconButton } from '../../ui';
 import { useAppStore } from '../../stores/appStore';
+
 import {
   ComponentInstanceIcon,
   PlusIcon,
@@ -19,9 +20,9 @@ import {
 const SidebarContainer = styled.aside<{ $collapsed: boolean }>`
   width: ${({ $collapsed }) => ($collapsed ? '0px' : '240px')};
   min-width: ${({ $collapsed }) => ($collapsed ? '0px' : '240px')};
-  height: calc(100vh - 68px); /* 减去标题栏和工具栏高度 */
-  background: ${({ theme }) => theme.colors.surface};
-  border-right: 1px solid ${({ theme }) => theme.colors.border.default};
+  height: 100%;
+  background: ${({ theme }) => theme.colors.surface || '#ffffff'};
+  border-right: 1px solid ${({ theme }) => theme.colors.border?.default || '#e2e8f0'};
   display: flex;
   flex-direction: column;
   transition: all 0.2s ease;
@@ -30,24 +31,22 @@ const SidebarContainer = styled.aside<{ $collapsed: boolean }>`
 
 const SectionTabs = styled.div`
   display: flex;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border?.default || '#e2e8f0'};
 `;
 
 const SectionTab = styled.button<{ $active?: boolean }>`
   flex: 1;
-  padding: ${({ theme }) => theme.spacing.sm};
+  padding: 8px;
   border: none;
-  background: ${({ $active, theme }) =>
-    $active ? theme.colors.background : theme.colors.surface};
-  color: ${({ theme }) => theme.colors.text.primary};
+  background: ${({ $active }) => $active ? '#f8fafc' : '#ffffff'};
+  color: #1e293b;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border-bottom: 2px solid
-    ${({ $active, theme }) => ($active ? theme.colors.primary : 'transparent')};
+  border-bottom: 2px solid ${({ $active }) => ($active ? '#667eea' : 'transparent')};
 
   &:hover {
-    background: ${({ theme }) => theme.colors.background};
+    background: #f8fafc;
   }
 `;
 
@@ -57,31 +56,31 @@ const SectionContent = styled.div`
 `;
 
 const SearchBox = styled.div`
-  padding: ${({ theme }) => theme.spacing.sm};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
 `;
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
-  background: ${({ theme }) => theme.colors.background};
-  color: ${({ theme }) => theme.colors.text.primary};
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #1e293b;
   font-size: 12px;
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors.text.tertiary};
+    color: #94a3b8;
   }
 
   &:focus {
-    outline: 2px solid ${({ theme }) => theme.colors.border.focus};
-    border-color: ${({ theme }) => theme.colors.primary};
+    outline: 2px solid #667eea;
+    border-color: #667eea;
   }
 `;
 
 const LayersList = styled.div`
-  padding: ${({ theme }) => theme.spacing.sm};
+  padding: 8px;
   z-index: 10;
 `;
 
@@ -92,25 +91,26 @@ const LayerItem = styled.div<{
 }>`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.xs};
-  padding: 4px ${({ theme }) => theme.spacing.xs};
-  margin-left: ${({ $level = 0, theme }) => $level * parseInt(theme.spacing.md)}px;
-  border-radius: ${({ theme }) => theme.borderRadius.xs};
+  gap: 4px;
+  padding: 4px 8px;
+  margin-left: ${({ $level = 0 }) => $level * 16}px;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  color: ${({ theme }) => theme.colors.text.primary};
+  color: #1e293b;
 
   ${({ $depth }) => ($depth ? `margin-left: ${$depth * 2}px;` : '')}
 
   ${({ $selected }) =>
     $selected
       ? `
-      background: rgba(0, 0, 0, 0.1);
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
     `
       : ''}
 
   &:hover {
-    background: ${({ theme }) => theme.colors.background};
+    background: #f8fafc;
   }
 `;
 
@@ -121,7 +121,7 @@ const LayerIcon = styled.div`
   align-items: center;
   justify-content: center;
   border-radius: 2px;
-  background: ${({ theme }) => theme.colors.border.default};
+  background: #e2e8f0;
   font-size: 10px;
 `;
 
@@ -148,12 +148,12 @@ const PageTab = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing.sm};
-  background: ${({ theme }) => theme.colors.background};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
+  padding: 8px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
   font-size: 12px;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.text.primary};
+  color: #1e293b;
 `;
 
 const Sidebar: React.FC = () => {

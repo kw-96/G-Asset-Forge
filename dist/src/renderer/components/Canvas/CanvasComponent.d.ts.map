@@ -1,1 +1,1 @@
-{"version":3,"file":"CanvasComponent.d.ts","sourceRoot":"","sources":["../../../../../src/renderer/components/Canvas/CanvasComponent.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAoB1B,QAAA,MAAM,eAAe,EAAE,KAAK,CAAC,EAU5B,CAAC;AAEF,eAAe,eAAe,CAAC"}
+{"version":3,"file":"CanvasComponent.d.ts","sourceRoot":"","sources":["../../../../../src/renderer/components/Canvas/CanvasComponent.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAmD,MAAM,OAAO,CAAC;AAoNxE,QAAA,MAAM,eAAe,EAAE,KAAK,CAAC,EAia5B,CAAC;AAEF,eAAe,eAAe,CAAC"}

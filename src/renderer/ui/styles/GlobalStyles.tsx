@@ -1,8 +1,7 @@
 // 全局样式 - 替代Ant Design的基础样式
 import { createGlobalStyle } from 'styled-components';
-import { Theme } from '../theme/ThemeProvider';
 
-export const GlobalStyles = createGlobalStyle<{ theme: Theme }>`
+export const GlobalStyles = createGlobalStyle`
   * {
     margin: 0;
     padding: 0;
@@ -19,7 +18,7 @@ export const GlobalStyles = createGlobalStyle<{ theme: Theme }>`
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: ${({ theme }) => theme.colors.background.default};
+    background-color: ${({ theme }) => theme.colors.background};
     color: ${({ theme }) => theme.colors.text.primary};
     overflow: hidden;
   }
@@ -36,7 +35,7 @@ export const GlobalStyles = createGlobalStyle<{ theme: Theme }>`
   }
 
   ::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.colors.background.paper};
+    background: ${({ theme }) => theme.colors.surface};
   }
 
   ::-webkit-scrollbar-thumb {
@@ -109,7 +108,7 @@ export const GlobalStyles = createGlobalStyle<{ theme: Theme }>`
 
   /* Selection styles */
   ::selection {
-    background: ${({ theme }) => theme.colors.primary}40;
+    background-color: ${({ theme }) => theme.colors.primary}40;
   }
 
   /* Focus outline reset */

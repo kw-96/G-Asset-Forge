@@ -7,6 +7,6 @@ interface IIconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonEle
     icon: React.ReactNode;
     loading?: boolean;
 }
-export declare const IconButton: React.FC<IIconButtonProps>;
+export declare const IconButton: React.ForwardRefExoticComponent<IIconButtonProps & React.RefAttributes<HTMLButtonElement>>;
 export {};
 //# sourceMappingURL=IconButton.d.ts.map

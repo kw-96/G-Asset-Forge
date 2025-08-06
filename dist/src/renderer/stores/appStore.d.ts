@@ -1,6 +1,6 @@
 interface CanvasElement {
     id: string;
-    type: 'rectangle' | 'ellipse' | 'text' | 'image' | 'frame' | 'group';
+    type: 'rectangle' | 'ellipse' | 'text' | 'image' | 'frame' | 'group' | 'brush';
     name: string;
     x: number;
     y: number;
@@ -21,6 +21,30 @@ interface CanvasElement {
     fontFamily?: string;
     fontWeight?: number;
     textAlign?: 'left' | 'center' | 'right';
+    imageData?: {
+        src: string;
+        originalWidth: number;
+        originalHeight: number;
+        cropArea?: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        };
+    };
+    brushData?: {
+        points: Array<{
+            x: number;
+            y: number;
+            pressure?: number;
+        }>;
+        settings: {
+            size: number;
+            opacity: number;
+            color: string;
+            hardness: number;
+        };
+    };
 }
 interface AppState {
     version: string;

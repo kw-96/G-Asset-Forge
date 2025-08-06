@@ -1,143 +1,97 @@
 import React from 'react';
-import { Form, InputNumber, ColorPicker, Button, Space, Select } from 'antd';
+import styled from 'styled-components';
 import { useCanvasStore } from '../../stores/canvasStore';
+import { Button } from '../../ui';
 
-const { Option } = Select;
+const PropertiesContainer = styled.div`
+  padding: 16px;
+`;
+
+const PropertyGroup = styled.div`
+  margin-bottom: 16px;
+`;
+
+const PropertyLabel = styled.label`
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+`;
+
+const PropertyInput = styled.input`
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  }
+`;
+
+// PropertySelect 暂时不需要
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+`;
 
 const CanvasProperties: React.FC = () => {
   const {
-    width,
-    height,
-    backgroundColor,
     zoom,
-    setCanvasSize,
+    backgroundColor,
     setBackgroundColor,
-    setZoom,
-    fitToScreen
+    resetView,
+    zoomToFit
   } = useCanvasStore();
 
-  const [form] = Form.useForm();
-
-  const handleSizeChange = (field: 'width' | 'height', value: number | null) => {
-    if (value && value > 0) {
-      const newWidth = field === 'width' ? value : width;
-      const newHeight = field === 'height' ? value : height;
-      setCanvasSize(newWidth, newHeight);
-    }
-  };
-
-  const handleBackgroundColorChange = (color: any) => {
-    const hexColor = typeof color === 'string' ? color : color.toHexString();
-    setBackgroundColor(hexColor);
-  };
-
-  const handleZoomChange = (value: number | null) => {
-    if (value && value > 0) {
-      setZoom(value / 100);
-    }
-  };
-
-  const handlePresetSize = (preset: string) => {
-    const presets: Record<string, [number, number]> = {
-      'mobile-portrait': [375, 667],
-      'mobile-landscape': [667, 375],
-      'tablet-portrait': [768, 1024],
-      'tablet-landscape': [1024, 768],
-      'desktop': [1920, 1080],
-      'square': [1080, 1080],
-      'instagram-post': [1080, 1080],
-      'instagram-story': [1080, 1920],
-      'facebook-cover': [1200, 630],
-      'twitter-header': [1500, 500]
-    };
-
-    const [newWidth, newHeight] = presets[preset] || [width, height];
-    setCanvasSize(newWidth, newHeight);
-    form.setFieldsValue({ width: newWidth, height: newHeight });
+  const handleBackgroundColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBackgroundColor(e.target.value);
   };
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      size="small"
-      initialValues={{
-        width,
-        height,
-        backgroundColor,
-        zoom: Math.round(zoom * 100)
-      }}
-    >
-      <Form.Item label="预设尺寸">
-        <Select
-          placeholder="选择预设尺寸"
-          onChange={handlePresetSize}
-          style={{ width: '100%' }}
-        >
-          <Option value="mobile-portrait">手机竖屏 (375×667)</Option>
-          <Option value="mobile-landscape">手机横屏 (667×375)</Option>
-          <Option value="tablet-portrait">平板竖屏 (768×1024)</Option>
-          <Option value="tablet-landscape">平板横屏 (1024×768)</Option>
-          <Option value="desktop">桌面 (1920×1080)</Option>
-          <Option value="square">正方形 (1080×1080)</Option>
-          <Option value="instagram-post">Instagram帖子 (1080×1080)</Option>
-          <Option value="instagram-story">Instagram故事 (1080×1920)</Option>
-          <Option value="facebook-cover">Facebook封面 (1200×630)</Option>
-          <Option value="twitter-header">Twitter头图 (1500×500)</Option>
-        </Select>
-      </Form.Item>
+    <PropertiesContainer>
+      <PropertyGroup>
+        <PropertyLabel>缩放级别</PropertyLabel>
+        <PropertyInput
+          type="text"
+          value={`${zoom}%`}
+          readOnly
+        />
+      </PropertyGroup>
 
-      <Space.Compact style={{ width: '100%' }}>
-        <Form.Item label="宽度" name="width" style={{ flex: 1, marginRight: 8 }}>
-          <InputNumber
-            min={1}
-            max={10000}
-            value={width}
-            onChange={(value) => handleSizeChange('width', value)}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
-        <Form.Item label="高度" name="height" style={{ flex: 1 }}>
-          <InputNumber
-            min={1}
-            max={10000}
-            value={height}
-            onChange={(value) => handleSizeChange('height', value)}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
-      </Space.Compact>
-
-      <Form.Item label="背景颜色" name="backgroundColor">
-        <ColorPicker
+      <PropertyGroup>
+        <PropertyLabel>背景颜色</PropertyLabel>
+        <PropertyInput
+          type="color"
           value={backgroundColor}
           onChange={handleBackgroundColorChange}
-          showText
-          style={{ width: '100%' }}
         />
-      </Form.Item>
+      </PropertyGroup>
 
-      <Form.Item label="缩放 (%)" name="zoom">
-        <InputNumber
-          min={10}
-          max={500}
-          value={Math.round(zoom * 100)}
-          onChange={handleZoomChange}
-          style={{ width: '100%' }}
-        />
-      </Form.Item>
-
-      <Form.Item>
-        <Space style={{ width: '100%' }}>
-          <Button onClick={fitToScreen} size="small">
-            适应屏幕
+      <PropertyGroup>
+        <ButtonGroup>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={zoomToFit}
+          >
+            适应窗口
           </Button>
-          <Button onClick={() => setZoom(1)} size="small">
-            100%
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetView}
+          >
+            重置视图
           </Button>
-        </Space>
-      </Form.Item>
-    </Form>
+        </ButtonGroup>
+      </PropertyGroup>
+    </PropertiesContainer>
   );
 };
 

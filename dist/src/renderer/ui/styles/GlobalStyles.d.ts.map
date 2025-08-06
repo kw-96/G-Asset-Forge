@@ -1,1 +1,1 @@
-{"version":3,"file":"GlobalStyles.d.ts","sourceRoot":"","sources":["../../../../../src/renderer/ui/styles/GlobalStyles.tsx"],"names":[],"mappings":"AAEA,OAAO,EAAE,KAAK,EAAE,MAAM,wBAAwB,CAAC;AAE/C,eAAO,MAAM,YAAY;WAA8B,KAAK;EA+O3D,CAAC"}
+{"version":3,"file":"GlobalStyles.d.ts","sourceRoot":"","sources":["../../../../../src/renderer/ui/styles/GlobalStyles.tsx"],"names":[],"mappings":"AAGA,eAAO,MAAM,YAAY,2FA+OxB,CAAC"}

@@ -57,18 +57,18 @@ const slideLeftAndFade = keyframes`
 `;
 
 const TooltipContent = styled(TooltipPrimitive.Content)`
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
-  font-size: ${({ theme }) => theme.typography.fontSize.sm};
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
   line-height: 1;
-  color: ${({ theme }) => theme.colors.text.inverse};
-  background-color: ${({ theme }) => theme.colors.text.primary};
-  box-shadow: ${({ theme }) => theme.colors.shadow.medium};
+  color: white;
+  background-color: #1e293b;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   user-select: none;
   animation-duration: 400ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
-  z-index: ${({ theme }) => theme.zIndex.tooltip};
+  z-index: 1070;
   
   &[data-state='delayed-open'][data-side='top'] {
     animation-name: ${slideDownAndFade};
@@ -85,7 +85,7 @@ const TooltipContent = styled(TooltipPrimitive.Content)`
 `;
 
 const TooltipArrow = styled(TooltipPrimitive.Arrow)`
-  fill: ${({ theme }) => theme.colors.text.primary};
+  fill: #1e293b;
 `;
 
 export const Tooltip: React.FC<ITooltipProps> = ({

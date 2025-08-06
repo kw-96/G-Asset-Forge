@@ -30,7 +30,6 @@ const ContentArea = styled.div`
 
 const Layout: React.FC = () => {
   const { 
-    sidebarCollapsed,
     propertiesPanelCollapsed
   } = useAppStore();
 
@@ -41,7 +40,7 @@ const Layout: React.FC = () => {
         <Sidebar />
         <ContentArea>
           <MainContent />
-          <PropertiesPanel />
+          <PropertiesPanel collapsed={propertiesPanelCollapsed} />
         </ContentArea>
       </MainArea>
       <StatusBar />
