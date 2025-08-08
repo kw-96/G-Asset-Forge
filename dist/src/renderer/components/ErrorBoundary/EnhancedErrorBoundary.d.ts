@@ -110,7 +110,7 @@ export declare class EnhancedErrorBoundary extends Component<EnhancedErrorBounda
      * 生成错误报告
      */
     private generateErrorReport;
-    render(): string | number | boolean | Iterable<ReactNode> | import("react/jsx-runtime").JSX.Element | null | undefined;
+    render(): string | number | boolean | import("react/jsx-runtime").JSX.Element | Iterable<ReactNode> | null | undefined;
 }
 export {};
 //# sourceMappingURL=EnhancedErrorBoundary.d.ts.map
