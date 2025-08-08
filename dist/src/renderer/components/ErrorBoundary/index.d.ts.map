@@ -1,0 +1,1 @@
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../../src/renderer/components/ErrorBoundary/index.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,OAAO,EAAE,qBAAqB,EAAE,MAAM,yBAAyB,CAAC;AAChE,YAAY,EACV,0BAA0B,EAC1B,iBAAiB,EACjB,qBAAqB,EACrB,SAAS,EACT,aAAa,GACd,MAAM,yBAAyB,CAAC;AAGjC,OAAO,EAAE,qBAAqB,IAAI,OAAO,EAAE,MAAM,yBAAyB,CAAC"}

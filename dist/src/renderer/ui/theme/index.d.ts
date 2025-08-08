@@ -1,4 +1,9 @@
-export interface ITheme {
+/**
+ * 主题系统 - 基于Figma UI3设计系统
+ * 提供完整的设计令牌和主题配置
+ */
+import { typography, borderRadius, shadows, animation, zIndex } from './tokens';
+export interface Theme {
     colors: {
         primary: string;
         secondary: string;
@@ -31,32 +36,8 @@ export interface ITheme {
             background: string;
             grid: string;
             selection: string;
-        };
-    };
-    typography: {
-        fontFamily: {
-            primary: string;
-            mono: string;
-        };
-        fontSize: {
-            xs: string;
-            sm: string;
-            base: string;
-            lg: string;
-            xl: string;
-            '2xl': string;
-            '3xl': string;
-        };
-        fontWeight: {
-            normal: number;
-            medium: number;
-            semibold: number;
-            bold: number;
-        };
-        lineHeight: {
-            tight: number;
-            normal: number;
-            relaxed: number;
+            selectionBg: string;
+            guide: string;
         };
     };
     spacing: {
@@ -67,36 +48,27 @@ export interface ITheme {
         xl: string;
         '2xl': string;
         '3xl': string;
-        xxl: string;
     };
-    borderRadius: {
-        none: string;
-        xs: string;
-        sm: string;
-        md: string;
-        lg: string;
-        full: string;
-    };
-    zIndex: {
-        dropdown: number;
-        modal: number;
-        popover: number;
-        tooltip: number;
-    };
-    animation: {
-        duration: {
-            fast: string;
-            normal: string;
-            slow: string;
+    typography: {
+        fontFamily: {
+            primary: string;
+            mono: string;
         };
-        easing: {
-            ease: string;
-            easeIn: string;
-            easeOut: string;
-            easeInOut: string;
-        };
+        fontSize: typeof typography.fontSize;
+        fontWeight: typeof typography.fontWeight;
+        lineHeight: typeof typography.lineHeight;
     };
+    borderRadius: typeof borderRadius;
+    shadows: typeof shadows;
+    animation: typeof animation;
+    zIndex: typeof zIndex;
 }
-export declare const lightTheme: ITheme;
-export declare const darkTheme: ITheme;
+export declare const lightTheme: Theme;
+export declare const darkTheme: Theme;
+export declare const theme: Theme;
+export default theme;
+export type ThemeColors = Theme['colors'];
+export type ThemeSpacing = Theme['spacing'];
+export * from './tokens';
+export * from './ThemeProvider';
 //# sourceMappingURL=index.d.ts.map

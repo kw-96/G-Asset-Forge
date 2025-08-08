@@ -2,7 +2,7 @@
 
 ## 概述
 
-G-Asset Forge 是一个基于 Electron 的桌面应用程序，专为企业内网环境中的游戏素材创作而设计。该应用采用模块化架构，集成了基于Suika的高性能画布系统、H5-Editor的移动端编辑功能，以及参考Figma和Penpot设计的现代化UI界面，为游戏开发团队提供完整的素材制作解决方案。
+G-Asset Forge 是一个基于 Electron 的桌面应用程序，专为企业内网环境中的游戏素材创作而设计。该应用采用模块化架构，集成了基于Suika的高性能无限画布系统、H5-Editor的移动端编辑功能，以及参考Figma和Penpot设计的现代化UI界面。核心特色是无限画布设计，让用户可以在无边界的创作空间中自由设计，获得类似专业设计工具的体验。
 
 ## 架构设计
 
@@ -26,9 +26,12 @@ G-Asset Forge 是一个基于 Electron 的桌面应用程序，专为企业内�
 ├─────────────────────────────────────────────────────────────┤
 │  Business Logic Layer                                      │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────┐  │
-│  │Canvas Engine│Design Tools │H5 Editor    │Asset Library│  │
-│  │(Suika)      │Manager      │Manager      │Manager      │  │
-│  │             │             │(H5-Editor)  │             │  │
+│  │Infinite     │Design Tools │H5 Editor    │Asset Library│  │
+│  │Canvas Engine│Manager      │Manager      │Manager      │  │
+│  │(Suika)      │             │(H5-Editor)  │             │  │
+│  │- Viewport   │             │             │             │  │
+│  │- Spatial    │             │             │             │  │
+│  │- Navigator  │             │             │             │  │
 │  └─────────────┴─────────────┴─────────────┴─────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │  Data Access Layer                                         │
@@ -106,28 +109,48 @@ interface UIDesignSystem {
 }
 ```
 
-### 1. 画布引擎 (Canvas Engine - 基于Suika)
+### 1. 无限画布引擎 (Infinite Canvas Engine - 基于Suika)
 
 ```typescript
-interface SuikaCanvasEngine {
+interface SuikaInfiniteCanvasEngine {
   // Suika核心集成
   suikaEditor: SuikaEditor;
   suikaScene: SuikaScene;
   
-  // 画布管理 (基于Suika)
-  createCanvas(options: SuikaCanvasOptions): Promise<SuikaCanvas>;
+  // 无限画布管理 (基于Suika)
+  createInfiniteCanvas(options: InfiniteCanvasOptions): Promise<SuikaInfiniteCanvas>;
   destroyCanvas(canvasId: string): void;
-  resizeCanvas(canvasId: string, width: number, height: number): void;
+  
+  // 视口管理 (无限画布核心)
+  getViewport(canvasId: string): ViewportInfo;
+  setViewport(canvasId: string, viewport: ViewportInfo): void;
+  panViewport(canvasId: string, deltaX: number, deltaY: number): void;
+  zoomViewport(canvasId: string, scale: number, centerPoint?: Point): void;
   
   // 视图控制 (Suika原生性能)
   setZoom(canvasId: string, scale: number): void;
   panCanvas(canvasId: string, deltaX: number, deltaY: number): void;
+  fitToContent(canvasId: string): void;
   fitToScreen(canvasId: string): void;
   
+  // 空间索引和查询
+  spatialIndex: SpatialIndex;
+  queryObjectsInRegion(canvasId: string, region: Rectangle): SuikaGraph[];
+  getVisibleObjects(canvasId: string): SuikaGraph[];
+  
   // 对象操作 (Suika Graph系统)
-  addGraph(canvasId: string, graph: SuikaGraph): string;
+  addGraph(canvasId: string, graph: SuikaGraph, position?: Point): string;
   removeGraph(canvasId: string, graphId: string): void;
   updateGraph(canvasId: string, graphId: string, properties: Partial<SuikaGraph>): void;
+  
+  // 渲染优化
+  enableViewportCulling(canvasId: string, enabled: boolean): void;
+  setRenderRegion(canvasId: string, region: Rectangle): void;
+  
+  // 导航和概览
+  createOverviewNavigator(canvasId: string): OverviewNavigator;
+  showWelcomeArea(canvasId: string, templates: CanvasTemplate[]): void;
+  hideWelcomeArea(canvasId: string): void;
   
   // 事件处理 (React适配)
   on(event: SuikaEvent, callback: SuikaEventCallback): void;
@@ -137,25 +160,85 @@ interface SuikaCanvasEngine {
   migrateFromFabric(fabricCanvas: fabric.Canvas): Promise<void>;
 }
 
-interface CanvasOptions {
-  width: number;
-  height: number;
+interface InfiniteCanvasOptions {
   backgroundColor?: string;
-  preserveObjectStacking?: boolean;
+  gridEnabled?: boolean;
+  gridSize?: number;
+  snapToGrid?: boolean;
+  enableSpatialIndex?: boolean;
+  viewportCulling?: boolean;
 }
 
-interface CanvasObject {
-  id: string;
-  type: 'text' | 'image' | 'shape' | 'group';
+interface ViewportInfo {
   x: number;
   y: number;
+  width: number;
+  height: number;
+  zoom: number;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Rectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface SpatialIndex {
+  insert(object: SuikaGraph): void;
+  remove(objectId: string): void;
+  query(region: Rectangle): SuikaGraph[];
+  update(objectId: string, newBounds: Rectangle): void;
+}
+
+interface OverviewNavigator {
+  show(): void;
+  hide(): void;
+  updateThumbnail(): void;
+  onViewportChange(callback: (viewport: ViewportInfo) => void): void;
+}
+
+interface CanvasTemplate {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  category: 'mobile' | 'desktop' | 'game' | 'social';
+  thumbnail?: string;
+}
+
+interface InfiniteCanvasObject {
+  id: string;
+  type: 'text' | 'image' | 'shape' | 'group' | 'template';
+  // 世界坐标系位置（无限画布中的绝对位置）
+  worldX: number;
+  worldY: number;
   width: number;
   height: number;
   rotation?: number;
   opacity?: number;
   visible?: boolean;
   locked?: boolean;
+  // 空间索引边界框
+  bounds: Rectangle;
+  // 层级（用于渲染顺序）
+  zIndex: number;
   properties: Record<string, any>;
+  
+  // 无限画布特有属性
+  isTemplate?: boolean; // 是否为模板对象
+  templateCategory?: string;
+  snapToGrid?: boolean;
+  
+  // 计算在当前视口中的屏幕坐标
+  getScreenPosition(viewport: ViewportInfo): Point;
+  // 更新空间索引
+  updateSpatialIndex(): void;
 }
 ```
 
@@ -394,12 +477,14 @@ interface Project {
   updatedAt: Date;
   version: string;
   
-  // 画布配置
-  canvas: {
-    width: number;
-    height: number;
+  // 无限画布配置
+  infiniteCanvas: {
     backgroundColor: string;
     backgroundImage?: string;
+    // 内容边界框（所有对象的包围盒）
+    contentBounds: Rectangle;
+    // 默认视口位置
+    defaultViewport: ViewportInfo;
   };
   
   // 图层数据
@@ -412,6 +497,18 @@ interface Project {
     gridSize: number;
     rulers: boolean;
     guides: Guide[];
+    // 无限画布特有设置
+    viewportCulling: boolean;
+    spatialIndexEnabled: boolean;
+    overviewNavigatorEnabled: boolean;
+    welcomeAreaEnabled: boolean;
+  };
+  
+  // 视图状态
+  viewState: {
+    currentViewport: ViewportInfo;
+    zoomHistory: ViewportInfo[];
+    bookmarks: ViewportBookmark[];
   };
   
   // 元数据
@@ -419,19 +516,39 @@ interface Project {
     author: string;
     tags: string[];
     category: string;
+    // 统计信息
+    objectCount: number;
+    canvasArea: number; // 实际使用的画布面积
   };
+}
+
+interface ViewportBookmark {
+  id: string;
+  name: string;
+  viewport: ViewportInfo;
+  thumbnail?: string;
+  createdAt: Date;
 }
 
 interface Layer {
   id: string;
   name: string;
-  type: 'object' | 'group';
+  type: 'object' | 'group' | 'template';
   visible: boolean;
   locked: boolean;
   opacity: number;
   blendMode: string;
-  objects: CanvasObject[];
+  objects: InfiniteCanvasObject[];
   children?: Layer[]; // for group layers
+  
+  // 无限画布特有属性
+  bounds: Rectangle; // 图层内容的边界框
+  isTemplate: boolean; // 是否为模板图层
+  spatiallyIndexed: boolean; // 是否参与空间索引
+  
+  // 图层在无限画布中的可见性管理
+  isVisibleInViewport(viewport: ViewportInfo): boolean;
+  getVisibleObjects(viewport: ViewportInfo): InfiniteCanvasObject[];
 }
 
 interface Guide {
@@ -553,28 +670,76 @@ const errorHandlingStrategies = {
 ### 关键测试场景
 
 ```typescript
-// 画布操作测试
-describe('Canvas Operations', () => {
-  test('should create canvas with specified dimensions', async () => {
-    const canvas = await canvasEngine.createCanvas({
-      width: 1920,
-      height: 1080
+// 无限画布操作测试
+describe('Infinite Canvas Operations', () => {
+  test('should create infinite canvas without dimension limits', async () => {
+    const canvas = await infiniteCanvasEngine.createInfiniteCanvas({
+      backgroundColor: '#ffffff',
+      gridEnabled: true,
+      viewportCulling: true
     });
-    expect(canvas.getWidth()).toBe(1920);
-    expect(canvas.getHeight()).toBe(1080);
+    expect(canvas.isInfinite()).toBe(true);
+    expect(canvas.hasDimensionLimits()).toBe(false);
   });
   
-  test('should maintain 60fps during zoom operations', async () => {
+  test('should maintain 60fps during zoom operations across wide range', async () => {
     const performanceMonitor = new PerformanceMonitor();
     performanceMonitor.start();
     
-    for (let i = 0.5; i <= 2.0; i += 0.1) {
-      await canvasEngine.setZoom('canvas-1', i);
+    // 测试更大的缩放范围 (10%-500%)
+    for (let i = 0.1; i <= 5.0; i += 0.2) {
+      await infiniteCanvasEngine.setZoom('canvas-1', i);
       await waitForFrame();
     }
     
     const avgFps = performanceMonitor.getAverageFPS();
     expect(avgFps).toBeGreaterThanOrEqual(60);
+  });
+  
+  test('should efficiently handle viewport culling with many objects', async () => {
+    const canvas = await infiniteCanvasEngine.createInfiniteCanvas({
+      viewportCulling: true
+    });
+    
+    // 创建1000个分散在大范围内的对象
+    for (let i = 0; i < 1000; i++) {
+      await canvas.addObject({
+        type: 'shape',
+        worldX: Math.random() * 10000,
+        worldY: Math.random() * 10000,
+        width: 100,
+        height: 100
+      });
+    }
+    
+    // 设置小视口
+    canvas.setViewport({ x: 0, y: 0, width: 800, height: 600, zoom: 1 });
+    
+    const visibleObjects = canvas.getVisibleObjects();
+    const memoryUsage = process.memoryUsage().heapUsed;
+    
+    // 只应该渲染视口内的对象
+    expect(visibleObjects.length).toBeLessThan(100);
+    expect(memoryUsage).toBeLessThan(100 * 1024 * 1024); // < 100MB
+  });
+  
+  test('should provide smooth infinite panning', async () => {
+    const canvas = await infiniteCanvasEngine.createInfiniteCanvas();
+    const startPosition = { x: 0, y: 0 };
+    
+    // 测试大范围平移
+    await canvas.panViewport(10000, 10000);
+    const viewport = canvas.getViewport();
+    
+    expect(viewport.x).toBe(10000);
+    expect(viewport.y).toBe(10000);
+    
+    // 测试负方向平移
+    await canvas.panViewport(-20000, -20000);
+    const newViewport = canvas.getViewport();
+    
+    expect(newViewport.x).toBe(-10000);
+    expect(newViewport.y).toBe(-10000);
   });
 });
 
@@ -600,23 +765,43 @@ describe('File Operations', () => {
 ### 性能测试指标
 
 ```typescript
-interface PerformanceMetrics {
+interface InfiniteCanvasPerformanceMetrics {
   // 启动性能
   appStartupTime: number; // < 5秒
-  canvasInitTime: number; // < 1秒
+  infiniteCanvasInitTime: number; // < 1秒
   
   // 运行时性能
-  memoryUsage: number;    // < 500MB
+  memoryUsage: number;    // < 500MB (总体)
+  canvasMemoryUsage: number; // < 100MB (画布部分)
   canvasFPS: number;      // >= 60fps
+  
+  // 无限画布特有性能指标
+  viewportCullingEfficiency: number; // 视口裁剪效率 > 90%
+  spatialIndexQueryTime: number;     // 空间索引查询 < 1ms
+  objectLoadTime: number;            // 对象加载时间 < 50ms
+  panSmoothness: number;             // 平移流畅度 >= 60fps
+  zoomSmoothness: number;            // 缩放流畅度 >= 60fps
+  
+  // 大数据量性能
+  maxObjectsWithoutDegradation: number; // 不降级的最大对象数 >= 1000
+  largeCanvasNavigationTime: number;    // 大画布导航时间 < 200ms
+  overviewThumbnailUpdateTime: number;  // 概览缩略图更新 < 100ms
   
   // 操作响应时间
   toolSwitchTime: number; // < 100ms
+  objectSelectionTime: number; // < 50ms (在大量对象中)
   fileSaveTime: number;   // < 1秒
   exportTime: number;     // < 3秒
   
   // 资源使用
   cpuUsage: number;       // < 30%
   diskIORate: number;     // 监控磁盘读写
+  gpuUsage: number;       // GPU使用率 (如果可用)
+  
+  // 用户体验指标
+  firstContentfulPaint: number;    // 首次内容绘制 < 500ms
+  timeToInteractive: number;       // 可交互时间 < 2秒
+  navigationResponseTime: number;  // 导航响应时间 < 100ms
 }
 ```
 

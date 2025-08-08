@@ -1,12 +1,10 @@
-// Card组件 - 基于Figma设计语言
 import React from 'react';
 import styled, { css } from 'styled-components';
-import { motion } from 'framer-motion';
 
 export type CardVariant = 'default' | 'outlined' | 'elevated';
 export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
-interface ICardProps {
+interface CardProps {
   variant?: CardVariant;
   padding?: CardPadding;
   hoverable?: boolean;
@@ -20,24 +18,27 @@ const getVariantStyles = (variant: CardVariant) => {
   switch (variant) {
     case 'outlined':
       return css`
-        background: ${({ theme }) => theme.colors.background};
+        background: ${({ theme }) => theme.colors.surface};
         border: 1px solid ${({ theme }) => theme.colors.border.default};
         box-shadow: none;
+        backdrop-filter: blur(8px);
       `;
     
     case 'elevated':
       return css`
-        background: ${({ theme }) => theme.colors.background};
-        border: none;
-        box-shadow: ${({ theme }) => theme.colors.shadow.large};
+        background: ${({ theme }) => theme.colors.surface};
+        border: 1px solid ${({ theme }) => theme.colors.border.default}40;
+        box-shadow: ${({ theme }) => theme.shadows.lg};
+        backdrop-filter: blur(12px);
       `;
     
     case 'default':
     default:
       return css`
         background: ${({ theme }) => theme.colors.surface};
-        border: 1px solid ${({ theme }) => theme.colors.border.default};
-        box-shadow: ${({ theme }) => theme.colors.shadow.small};
+        border: 1px solid ${({ theme }) => theme.colors.border.default}60;
+        box-shadow: ${({ theme }) => theme.shadows.md};
+        backdrop-filter: blur(4px);
       `;
   }
 };
@@ -71,7 +72,7 @@ const getPaddingStyles = (padding: CardPadding) => {
   }
 };
 
-const StyledCard = styled(motion.div)<{
+const StyledCard = styled.div<{
   $variant: CardVariant;
   $padding: CardPadding;
   $hoverable: boolean;
@@ -85,8 +86,9 @@ const StyledCard = styled(motion.div)<{
   
   ${({ $hoverable, theme }) => $hoverable && css`
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: ${theme.colors.shadow.large};
+      transform: translateY(-4px);
+      box-shadow: ${theme.shadows.lg};
+      border-color: ${theme.colors.border.hover};
     }
   `}
   
@@ -100,7 +102,7 @@ const StyledCard = styled(motion.div)<{
   `}
 `;
 
-export const Card: React.FC<ICardProps> = ({
+export const Card: React.FC<CardProps> = ({
   variant = 'default',
   padding = 'md',
   hoverable = false,
@@ -117,7 +119,6 @@ export const Card: React.FC<ICardProps> = ({
       $clickable={clickable}
       className={className}
       onClick={onClick}
-      whileTap={clickable ? { scale: 0.98 } : { scale: 1 }}
     >
       {children}
     </StyledCard>

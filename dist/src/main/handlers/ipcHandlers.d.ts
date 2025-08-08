@@ -11,5 +11,6 @@ export declare class IpcHandlers {
     getHandlerCount(): number;
     hasHandler(channel: string): boolean;
     getChannels(): string[];
+    private setupWindowEvents;
 }
 //# sourceMappingURL=ipcHandlers.d.ts.map

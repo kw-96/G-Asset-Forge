@@ -1,12 +1,11 @@
 import React, { ReactNode, createContext, useContext, useState } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import { ITheme, lightTheme, darkTheme } from './index';
+import { lightTheme, darkTheme } from './index';
 
-export type Theme = ITheme;
 export type ThemeMode = 'light' | 'dark';
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: typeof lightTheme;
   mode: ThemeMode;
   toggleTheme: () => void;
   setTheme: (mode: ThemeMode) => void;

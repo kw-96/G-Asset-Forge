@@ -1,11 +1,10 @@
-// Button组件 - 基于Figma设计语言
 import React from 'react';
 import styled, { css } from 'styled-components';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
-interface IButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragEnd' | 'onDragStart'> {
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragEnd' | 'onDragStart'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
@@ -19,12 +18,68 @@ const getVariantStyles = (variant: ButtonVariant) => {
   switch (variant) {
     case 'primary':
       return css`
-        background: #667eea;
+        background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary} 0%, ${({ theme }) => theme.colors.secondary} 100%);
         color: white;
-        border: 1px solid #667eea;
+        border: 1px solid ${({ theme }) => theme.colors.primary};
+        box-shadow: ${({ theme }) => theme.shadows.sm};
         
         &:hover:not(:disabled) {
-          background: #667eeadd;
+          background: linear-gradient(135deg, ${({ theme }) => theme.colors.secondary} 0%, ${({ theme }) => theme.colors.primary} 100%);
+          transform: translateY(-1px);
+          box-shadow: ${({ theme }) => theme.shadows.md};
+        }
+        
+        &:active:not(:disabled) {
+          transform: translateY(0);
+          box-shadow: ${({ theme }) => theme.shadows.sm};
+        }
+      `;
+
+    case 'secondary':
+      return css`
+        background: ${({ theme }) => theme.colors.surface};
+        color: ${({ theme }) => theme.colors.text.primary};
+        border: 1px solid ${({ theme }) => theme.colors.border.default};
+        box-shadow: ${({ theme }) => theme.shadows.sm};
+        
+        &:hover:not(:disabled) {
+          background: ${({ theme }) => theme.colors.background};
+          border-color: ${({ theme }) => theme.colors.border.hover};
+          transform: translateY(-1px);
+          box-shadow: ${({ theme }) => theme.shadows.md};
+        }
+        
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+      `;
+
+    case 'outline':
+      return css`
+        background: transparent;
+        color: ${({ theme }) => theme.colors.primary};
+        border: 1px solid ${({ theme }) => theme.colors.primary};
+        
+        &:hover:not(:disabled) {
+          background: ${({ theme }) => theme.colors.primary}15;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px ${({ theme }) => theme.colors.primary}25;
+        }
+        
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+      `;
+
+    case 'ghost':
+      return css`
+        background: transparent;
+        color: ${({ theme }) => theme.colors.text.primary};
+        border: 1px solid transparent;
+        
+        &:hover:not(:disabled) {
+          background: ${({ theme }) => theme.colors.surface};
+          border-color: ${({ theme }) => theme.colors.border.default};
           transform: translateY(-1px);
         }
         
@@ -33,48 +88,21 @@ const getVariantStyles = (variant: ButtonVariant) => {
         }
       `;
 
-    case 'secondary':
-      return css`
-        background: #f8fafc;
-        color: #1e293b;
-        border: 1px solid #e2e8f0;
-        
-        &:hover:not(:disabled) {
-          background: #cbd5e1;
-          border-color: #cbd5e1;
-        }
-      `;
-
-    case 'outline':
-      return css`
-        background: transparent;
-        color: #667eea;
-        border: 1px solid #667eea;
-        
-        &:hover:not(:disabled) {
-          background: #667eea10;
-        }
-      `;
-
-    case 'ghost':
-      return css`
-        background: transparent;
-        color: #1e293b;
-        border: 1px solid transparent;
-        
-        &:hover:not(:disabled) {
-          background: #f8fafc;
-        }
-      `;
-
     case 'danger':
       return css`
-        background: #ef4444;
+        background: linear-gradient(135deg, ${({ theme }) => theme.colors.error} 0%, #dc2626 100%);
         color: white;
-        border: 1px solid #ef4444;
+        border: 1px solid ${({ theme }) => theme.colors.error};
+        box-shadow: ${({ theme }) => theme.shadows.sm};
         
         &:hover:not(:disabled) {
-          background: #ef4444dd;
+          background: linear-gradient(135deg, #dc2626 0%, ${({ theme }) => theme.colors.error} 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px ${({ theme }) => theme.colors.error}25;
+        }
+        
+        &:active:not(:disabled) {
+          transform: translateY(0);
         }
       `;
 
@@ -88,29 +116,29 @@ const getSizeStyles = (size: ButtonSize) => {
     case 'xs':
       return css`
         height: 28px;
-        padding: 0 8px;
-        font-size: 12px;
+        padding: 0 ${({ theme }) => theme.spacing.sm};
+        font-size: ${({ theme }) => theme.typography.fontSize.xs};
       `;
 
     case 'sm':
       return css`
         height: 32px;
-        padding: 0 12px;
-        font-size: 14px;
+        padding: 0 ${({ theme }) => theme.spacing.md};
+        font-size: ${({ theme }) => theme.typography.fontSize.sm};
       `;
 
     case 'md':
       return css`
         height: 40px;
-        padding: 0 16px;
-        font-size: 16px;
+        padding: 0 ${({ theme }) => theme.spacing.lg};
+        font-size: ${({ theme }) => theme.typography.fontSize.base};
       `;
 
     case 'lg':
       return css`
         height: 48px;
-        padding: 0 24px;
-        font-size: 18px;
+        padding: 0 ${({ theme }) => theme.spacing.xl};
+        font-size: ${({ theme }) => theme.typography.fontSize.lg};
       `;
 
     default:
@@ -127,15 +155,15 @@ const StyledButton = styled.button<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: ${({ theme }) => theme.spacing.xs};
   
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 500;
+  font-family: ${({ theme }) => theme.typography.fontFamily.primary};
+  font-weight: ${({ theme }) => theme.typography.fontWeight.medium};
   line-height: 1;
   
-  border-radius: 6px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   cursor: pointer;
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all ${({ theme }) => theme.animation.duration.fast} ${({ theme }) => theme.animation.easing.ease};
   
   ${({ $variant }) => getVariantStyles($variant)}
   ${({ $size }) => getSizeStyles($size)}
@@ -151,7 +179,7 @@ const StyledButton = styled.button<{
   }
   
   &:focus-visible {
-    outline: 2px solid #667eea;
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
     outline-offset: 2px;
   }
 `;
@@ -181,7 +209,7 @@ const IconWrapper = styled.span<{ $position: 'left' | 'right' }>`
   `}
 `;
 
-export const Button = React.forwardRef<HTMLButtonElement, IButtonProps>(({
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   variant = 'primary',
   size = 'md',
   loading = false,

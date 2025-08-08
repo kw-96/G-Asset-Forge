@@ -1,0 +1,1 @@
+{"version":3,"file":"useDebugPanel.d.ts","sourceRoot":"","sources":["../../../../src/renderer/hooks/useDebugPanel.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAKH,MAAM,WAAW,oBAAoB;IACnC,OAAO,CAAC,EAAE,OAAO,CAAC;IAClB,WAAW,CAAC,EAAE,MAAM,CAAC;IACrB,UAAU,CAAC,EAAE,OAAO,CAAC;CACtB;AAED,eAAO,MAAM,aAAa,GAAI,UAAS,oBAAyB;;;;;;gCA0Bf,OAAO;;CA2DvD,CAAC"}

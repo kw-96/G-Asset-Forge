@@ -1,54 +1,13 @@
-interface CanvasElement {
-    id: string;
-    type: 'rectangle' | 'ellipse' | 'text' | 'image' | 'frame' | 'group' | 'brush';
-    name: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    fill?: string;
-    stroke?: string;
-    strokeWidth?: number;
-    strokeStyle?: 'solid' | 'dashed' | 'dotted';
-    borderRadius?: number;
-    opacity?: number;
-    visible: boolean;
-    locked: boolean;
-    children?: string[];
-    parent?: string;
-    text?: string;
-    fontSize?: number;
-    fontFamily?: string;
-    fontWeight?: number;
-    textAlign?: 'left' | 'center' | 'right';
-    imageData?: {
-        src: string;
-        originalWidth: number;
-        originalHeight: number;
-        cropArea?: {
-            x: number;
-            y: number;
-            width: number;
-            height: number;
-        };
-    };
-    brushData?: {
-        points: Array<{
-            x: number;
-            y: number;
-            pressure?: number;
-        }>;
-        settings: {
-            size: number;
-            opacity: number;
-            color: string;
-            hardness: number;
-        };
-    };
-}
+import { CanvasElement } from '../types/canvas';
+type AppPage = 'home' | 'editor' | 'settings';
 interface AppState {
     version: string;
     platform: string;
+    isInitialized: boolean;
+    isInitializing: boolean;
+    initializationError: string | null;
+    currentPage: AppPage;
+    isFirstTime: boolean;
     sidebarCollapsed: boolean;
     toolbarCollapsed: boolean;
     propertiesPanelCollapsed: boolean;
@@ -65,8 +24,12 @@ interface AppState {
     currentProject: any | null;
     hasUnsavedChanges: boolean;
     initializeApp: () => Promise<void>;
+    initializeAppOnce: () => Promise<void>;
+    batchUpdate: (updates: Partial<AppState>) => void;
     setAppVersion: (version: string) => void;
     setPlatform: (platform: string) => void;
+    setCurrentPage: (page: AppPage) => void;
+    setFirstTime: (isFirstTime: boolean) => void;
     setSidebarCollapsed: (collapsed: boolean) => void;
     setToolbarCollapsed: (collapsed: boolean) => void;
     setPropertiesPanelCollapsed: (collapsed: boolean) => void;

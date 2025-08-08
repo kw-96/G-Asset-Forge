@@ -112,3 +112,6 @@ export const H5EditorCanvas = forwardRef<IH5EditorCanvasRef, IH5EditorCanvasProp
 );
 
 H5EditorCanvas.displayName = 'H5EditorCanvas';
+
+// 别名导出，用于向后兼容
+export const H5EditorReactAdapter = H5EditorCanvas;

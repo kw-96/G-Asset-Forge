@@ -1,11 +1,10 @@
-// IconButton组件 - 基于Figma设计语言
 import React from 'react';
 import styled, { css } from 'styled-components';
 
 export type IconButtonVariant = 'default' | 'primary' | 'ghost' | 'danger';
 export type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
-interface IIconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragEnd' | 'onDragStart'> {
+interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragEnd' | 'onDragStart'> {
   variant?: IconButtonVariant;
   size?: IconButtonSize;
   icon: React.ReactNode;
@@ -16,48 +15,47 @@ const getVariantStyles = (variant: IconButtonVariant) => {
   switch (variant) {
     case 'primary':
       return css`
-        background: #667eea;
+        background: ${({ theme }) => theme.colors.primary};
         color: white;
-        border: 1px solid #667eea;
+        border: 1px solid ${({ theme }) => theme.colors.primary};
         
         &:hover:not(:disabled) {
-          background: #667eeadd;
+          opacity: 0.9;
         }
       `;
     
     case 'ghost':
       return css`
         background: transparent;
-        color: #64748b;
+        color: ${({ theme }) => theme.colors.text.secondary};
         border: 1px solid transparent;
         
         &:hover:not(:disabled) {
-          background: #f8fafc;
-          color: #1e293b;
+          background: ${({ theme }) => theme.colors.surface};
+          color: ${({ theme }) => theme.colors.text.primary};
         }
       `;
     
     case 'danger':
       return css`
         background: transparent;
-        color: #ef4444;
+        color: ${({ theme }) => theme.colors.error};
         border: 1px solid transparent;
         
         &:hover:not(:disabled) {
-          background: #ef444410;
+          background: ${({ theme }) => theme.colors.error}10;
         }
       `;
     
     case 'default':
     default:
       return css`
-        background: #f8fafc;
-        color: #1e293b;
-        border: 1px solid #e2e8f0;
+        background: ${({ theme }) => theme.colors.surface};
+        color: ${({ theme }) => theme.colors.text.primary};
+        border: 1px solid ${({ theme }) => theme.colors.border.default};
         
         &:hover:not(:disabled) {
-          background: #cbd5e1;
-          border-color: #cbd5e1;
+          background: ${({ theme }) => theme.colors.border.hover};
         }
       `;
   }
@@ -122,9 +120,9 @@ const StyledIconButton = styled.button<{
   align-items: center;
   justify-content: center;
   
-  border-radius: 6px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   cursor: pointer;
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all ${({ theme }) => theme.animation.duration.fast} ${({ theme }) => theme.animation.easing.ease};
   
   ${({ $variant }) => getVariantStyles($variant)}
   ${({ $size }) => getSizeStyles($size)}
@@ -136,7 +134,7 @@ const StyledIconButton = styled.button<{
   }
   
   &:focus-visible {
-    outline: 2px solid #667eea;
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
     outline-offset: 2px;
   }
   
@@ -160,7 +158,7 @@ const LoadingSpinner = styled.div`
   }
 `;
 
-export const IconButton = React.forwardRef<HTMLButtonElement, IIconButtonProps>(({
+export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(({
   variant = 'default',
   size = 'md',
   icon,

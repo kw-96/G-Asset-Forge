@@ -35,6 +35,10 @@ export declare class ViewportManager {
     endPan(): void;
     private applyInertia;
     private clampViewport;
+    /**
+     * 获取内容边界框
+     */
+    private getContentBounds;
     private easeOutCubic;
     getOptions(): IViewportOptions;
     setOptions(options: Partial<IViewportOptions>): void;

@@ -1,9 +1,8 @@
 import React, { ReactNode } from 'react';
-import { ITheme } from './index';
-export type Theme = ITheme;
+import { lightTheme } from './index';
 export type ThemeMode = 'light' | 'dark';
 interface ThemeContextType {
-    theme: Theme;
+    theme: typeof lightTheme;
     mode: ThemeMode;
     toggleTheme: () => void;
     setTheme: (mode: ThemeMode) => void;

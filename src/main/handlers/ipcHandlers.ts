@@ -46,11 +46,12 @@ export class IpcHandlers {
       });
 
       this.registerHandler('window:maximize', async () => {
-        if (this.mainWindow?.isMaximized()) {
-          this.mainWindow.unmaximize();
-        } else {
-          this.mainWindow?.maximize();
-        }
+        this.mainWindow?.maximize();
+        return { success: true };
+      });
+
+      this.registerHandler('window:restore', async () => {
+        this.mainWindow?.unmaximize();
         return { success: true };
       });
 
@@ -63,12 +64,39 @@ export class IpcHandlers {
         return this.mainWindow?.isMaximized() || false;
       });
 
+      // 设置窗口事件监听器
+      this.setupWindowEvents();
+
       this.registerHandler('window:getSize', async () => {
         if (this.mainWindow) {
           const [width, height] = this.mainWindow.getSize();
           return { width, height };
         }
         return { width: 0, height: 0 };
+      });
+
+      this.registerHandler('window:setSize', async (_event, width: number, height: number, animate: boolean = true) => {
+        if (this.mainWindow) {
+          this.mainWindow.setSize(width, height, animate);
+          return { success: true };
+        }
+        return { success: false, error: 'Main window not available' };
+      });
+
+      this.registerHandler('window:setResizable', async (_event, resizable: boolean) => {
+        if (this.mainWindow) {
+          this.mainWindow.setResizable(resizable);
+          return { success: true };
+        }
+        return { success: false, error: 'Main window not available' };
+      });
+
+      this.registerHandler('window:center', async () => {
+        if (this.mainWindow) {
+          this.mainWindow.center();
+          return { success: true };
+        }
+        return { success: false, error: 'Main window not available' };
       });
 
       // App information
@@ -216,5 +244,30 @@ export class IpcHandlers {
   // 获取所有注册的通道名称
   public getChannels(): string[] {
     return Array.from(this.handlers.keys());
+  }
+
+  // 设置窗口事件监听器
+  private setupWindowEvents(): void {
+    if (!this.mainWindow) return;
+
+    // 监听窗口最大化事件
+    this.mainWindow.on('maximize', () => {
+      this.mainWindow?.webContents.send('window:maximized');
+    });
+
+    // 监听窗口取消最大化事件
+    this.mainWindow.on('unmaximize', () => {
+      this.mainWindow?.webContents.send('window:unmaximized');
+    });
+
+    // 监听全屏进入事件
+    this.mainWindow.on('enter-full-screen', () => {
+      this.mainWindow?.webContents.send('window:enter-full-screen');
+    });
+
+    // 监听全屏退出事件
+    this.mainWindow.on('leave-full-screen', () => {
+      this.mainWindow?.webContents.send('window:leave-full-screen');
+    });
   }
 }

@@ -68,12 +68,42 @@ contextBridge.exposeInMainWorld('electronAPI', {
     close: () => safeInvoke('window:close'),
     isMaximized: () => safeInvoke('window:isMaximized'),
     getSize: () => safeInvoke('window:getSize'),
+    setSize: (width: number, height: number, animate?: boolean) => safeInvoke('window:setSize', width, height, animate),
+    setResizable: (resizable: boolean) => safeInvoke('window:setResizable', resizable),
+    center: () => safeInvoke('window:center'),
     
     // Window state listeners with cleanup support
     onMaximized: (callback: () => void) => safeOn('window:maximized', callback),
     onUnmaximized: (callback: () => void) => safeOn('window:unmaximized', callback),
     onEnterFullScreen: (callback: () => void) => safeOn('window:enter-full-screen', callback),
     onLeaveFullScreen: (callback: () => void) => safeOn('window:leave-full-screen', callback)
+  },
+
+  windowControl: {
+    minimize: () => safeInvoke('window:minimize'),
+    maximize: () => safeInvoke('window:maximize'),
+    restore: () => safeInvoke('window:restore'),
+    close: () => safeInvoke('window:close'),
+    isMaximized: () => safeInvoke('window:isMaximized'),
+    
+    // 监听窗口最大化状态变化
+    onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
+      const unsubscribeMaximized = safeOn('window:maximized', () => callback(true));
+      const unsubscribeUnmaximized = safeOn('window:unmaximized', () => callback(false));
+      
+      // 返回清理函数
+      return () => {
+        unsubscribeMaximized();
+        unsubscribeUnmaximized();
+      };
+    },
+    
+    // 移除最大化状态变化监听器
+    removeMaximizeChangeListener: (_callback: (isMaximized: boolean) => void) => {
+      // 这个方法主要用于向后兼容，实际清理由 onMaximizeChange 返回的函数处理
+      ipcRenderer.removeAllListeners('window:maximized');
+      ipcRenderer.removeAllListeners('window:unmaximized');
+    }
   },
 
   // App information
@@ -123,10 +153,24 @@ export interface ElectronAPI {
     minimize: () => Promise<void>;
     maximize: () => Promise<void>;
     close: () => Promise<void>;
+    isMaximized: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
+    getSize: () => Promise<{ success: boolean; data?: { width: number; height: number }; error?: string }>;
+    setSize: (width: number, height: number, animate?: boolean) => Promise<{ success: boolean; error?: string }>;
+    setResizable: (resizable: boolean) => Promise<{ success: boolean; error?: string }>;
+    center: () => Promise<{ success: boolean; error?: string }>;
     onMaximized: (callback: () => void) => void;
     onUnmaximized: (callback: () => void) => void;
     onEnterFullScreen: (callback: () => void) => void;
     onLeaveFullScreen: (callback: () => void) => void;
+  };
+  windowControl: {
+    minimize: () => Promise<{ success: boolean; data?: any; error?: string }>;
+    maximize: () => Promise<{ success: boolean; data?: any; error?: string }>;
+    restore: () => Promise<{ success: boolean; data?: any; error?: string }>;
+    close: () => Promise<{ success: boolean; data?: any; error?: string }>;
+    isMaximized: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
+    onMaximizeChange: (callback: (isMaximized: boolean) => void) => () => void;
+    removeMaximizeChangeListener: (callback: (isMaximized: boolean) => void) => void;
   };
   app: {
     getVersion: () => Promise<string>;

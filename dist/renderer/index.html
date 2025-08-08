@@ -1,19 +1,7 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSP will be set dynamically by the main process -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' http://localhost:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:*; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
-    <title>G-Asset Forge - 游戏资产创建工具</title>
-    <script>
-        // Global polyfill - must be executed before any other scripts
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' http://localhost:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:*; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';"><title>G-Asset Forge - 游戏资产创建工具</title><script>// Global polyfill - must be executed before any other scripts
         if (typeof global === 'undefined') {
             window.global = globalThis || window;
-        }
-    </script>
-    <style>
-        body {
+        }</script><style>body {
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -70,16 +58,4 @@
             margin-top: 1rem;
             font-size: 1rem;
             opacity: 0.9;
-        }
-    </style>
-<script defer src="./main.js"></script></head>
-<body>
-    <div id="root">
-        <div class="loading-screen" id="loading-screen">
-            <div class="loading-logo">G-Asset Forge</div>
-            <div class="loading-spinner"></div>
-            <div class="loading-text">正在加载应用程序...</div>
-        </div>
-    </div>
-</body>
-</html>
+        }</style><script defer="defer" src="./vendors.06793a5a4e5243869a25.js"></script><script defer="defer" src="./main.5778d586efdb9260da34.js"></script></head><body><div id="root"><div class="loading-screen" id="loading-screen"><div class="loading-logo">G-Asset Forge</div><div class="loading-spinner"></div><div class="loading-text">正在加载应用程序...</div></div></div></body></html>

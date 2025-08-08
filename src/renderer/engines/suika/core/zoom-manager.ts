@@ -22,8 +22,8 @@ export class ZoomManager {
     this.editor = editor;
     
     this.options = {
-      minZoom: 0.5,      // 50% 最小缩放
-      maxZoom: 2.0,      // 200% 最大缩放
+      minZoom: 0.1,      // 10% 最小缩放 - 支持更大的缩放范围
+      maxZoom: 5.0,      // 500% 最大缩放 - 支持更大的缩放范围
       zoomStep: 0.1,     // 缩放步长
       smoothZoom: true,   // 平滑缩放
       zoomDuration: 300   // 缩放动画持续时间

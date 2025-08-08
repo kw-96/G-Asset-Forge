@@ -1,11 +1,10 @@
-// Input组件 - 基于Figma设计语言
 import React, { forwardRef } from 'react';
 import styled, { css } from 'styled-components';
 
 export type InputSize = 'sm' | 'md' | 'lg';
 export type InputVariant = 'default' | 'filled';
 
-interface IInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   size?: InputSize;
   variant?: InputVariant;
   error?: boolean;
@@ -131,7 +130,10 @@ const StyledInput = styled.input<{
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.border.focus}20;
+    border-color: ${({ theme }) => theme.colors.border.focus};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.border.focus}20, 
+                ${({ theme }) => theme.shadows.sm};
+    transform: translateY(-1px);
   }
   
   &:disabled {
@@ -141,7 +143,7 @@ const StyledInput = styled.input<{
   }
   
   &::placeholder {
-    color: ${({ theme }) => theme.colors.text.disabled};
+    color: ${({ theme }) => theme.colors.text.tertiary};
   }
 `;
 
@@ -167,7 +169,7 @@ const HelperText = styled.div<{ $error: boolean }>`
   color: ${({ $error, theme }) => $error ? theme.colors.error : theme.colors.text.secondary};
 `;
 
-export const Input = forwardRef<HTMLInputElement, IInputProps>(({
+export const Input = forwardRef<HTMLInputElement, InputProps>(({
   size = 'md',
   variant = 'default',
   error = false,
@@ -210,3 +212,5 @@ export const Input = forwardRef<HTMLInputElement, IInputProps>(({
     </InputContainer>
   );
 });
+
+Input.displayName = 'Input';

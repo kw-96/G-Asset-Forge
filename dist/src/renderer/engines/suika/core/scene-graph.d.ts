@@ -21,7 +21,9 @@ export interface ISuikaObject {
 export declare class SceneGraph {
     private objects;
     private renderOrder;
-    constructor(_editor: SuikaEditor);
+    private spatialIndex;
+    private editor;
+    constructor(editor: SuikaEditor);
     addObject(object: ISuikaObject): void;
     removeObject(id: string): void;
     getObject(id: string): ISuikaObject | undefined;
@@ -48,6 +50,17 @@ export declare class SceneGraph {
     findObjectAtPoint(x: number, y: number): ISuikaObject | null;
     private pointInBounds;
     clear(): void;
+    private calculateObjectBounds;
+    getVisibleObjects(viewportBounds: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }): ISuikaObject[];
+    getSpatialIndexStats(): {
+        totalObjects: number;
+        indexedObjects: number;
+    };
     getStats(): {
         objectCount: number;
         visibleCount: number;

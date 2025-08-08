@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../../src/renderer/engines/h5-editor/index.ts"],"names":[],"mappings":"AACA,cAAc,kBAAkB,CAAC;AACjC,cAAc,SAAS,CAAC;AACxB,cAAc,yBAAyB,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../../src/renderer/engines/h5-editor/index.ts"],"names":[],"mappings":"AAGA,OAAO,EAAE,oBAAoB,EAAE,MAAM,2BAA2B,CAAC;AAGjE,OAAO,EAAE,QAAQ,EAAE,MAAM,kBAAkB,CAAC;AAG5C,OAAO,EAAE,cAAc,EAAE,oBAAoB,EAAE,MAAM,yBAAyB,CAAC;AAG/E,cAAc,SAAS,CAAC;AAGxB,cAAc,uBAAuB,CAAC"}

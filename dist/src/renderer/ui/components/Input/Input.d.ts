@@ -1,7 +1,7 @@
 import React from 'react';
 export type InputSize = 'sm' | 'md' | 'lg';
 export type InputVariant = 'default' | 'filled';
-interface IInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
     size?: InputSize;
     variant?: InputVariant;
     error?: boolean;
@@ -11,6 +11,6 @@ interface IInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 
     rightIcon?: React.ReactNode;
     fullWidth?: boolean;
 }
-export declare const Input: React.ForwardRefExoticComponent<IInputProps & React.RefAttributes<HTMLInputElement>>;
+export declare const Input: React.ForwardRefExoticComponent<InputProps & React.RefAttributes<HTMLInputElement>>;
 export {};
 //# sourceMappingURL=Input.d.ts.map

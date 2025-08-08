@@ -1,99 +1,121 @@
-// Tooltip组件 - 基于Radix UI和Figma设计语言
 import React from 'react';
-import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 
-interface ITooltipProps {
+interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactNode;
   side?: 'top' | 'right' | 'bottom' | 'left';
-  align?: 'start' | 'center' | 'end';
-  delayDuration?: number;
   disabled?: boolean;
 }
 
-const slideUpAndFade = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
+// const fadeIn = keyframes`
+//   from {
+//     opacity: 0;
+//     transform: translateY(2px);
+//   }
+//   to {
+//     opacity: 1;
+//     transform: translateY(0);
+//   }
+// `;
 
-const slideRightAndFade = keyframes`
-  from {
-    opacity: 0;
-    transform: translateX(-2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-`;
-
-const slideDownAndFade = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(-2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
-
-const slideLeftAndFade = keyframes`
-  from {
-    opacity: 0;
-    transform: translateX(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-`;
-
-const TooltipContent = styled(TooltipPrimitive.Content)`
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12px;
-  line-height: 1;
-  color: white;
-  background-color: #1e293b;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  user-select: none;
-  animation-duration: 400ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity;
-  z-index: 1070;
+const TooltipContainer = styled.div`
+  position: relative;
+  display: inline-block;
   
-  &[data-state='delayed-open'][data-side='top'] {
-    animation-name: ${slideDownAndFade};
-  }
-  &[data-state='delayed-open'][data-side='right'] {
-    animation-name: ${slideLeftAndFade};
-  }
-  &[data-state='delayed-open'][data-side='bottom'] {
-    animation-name: ${slideUpAndFade};
-  }
-  &[data-state='delayed-open'][data-side='left'] {
-    animation-name: ${slideRightAndFade};
+  &:hover .tooltip-content {
+    opacity: 1;
+    visibility: visible;
   }
 `;
 
-const TooltipArrow = styled(TooltipPrimitive.Arrow)`
-  fill: #1e293b;
+const TooltipContent = styled.div<{ $side: 'top' | 'right' | 'bottom' | 'left' }>`
+  position: absolute;
+  z-index: 9999;
+  padding: 6px 8px;
+  background: #1a202c;
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  
+  /* 添加小箭头 */
+  &::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 4px solid transparent;
+  }
+  
+  ${({ $side }) => {
+    switch ($side) {
+      case 'top':
+        return `
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          
+          &::after {
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-top-color: #1a202c;
+          }
+        `;
+      case 'right':
+        return `
+          left: calc(100% + 8px);
+          top: 50%;
+          transform: translateY(-50%);
+          
+          &::after {
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border-right-color: #1a202c;
+          }
+        `;
+      case 'bottom':
+        return `
+          top: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          
+          &::after {
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-bottom-color: #1a202c;
+          }
+        `;
+      case 'left':
+        return `
+          right: calc(100% + 8px);
+          top: 50%;
+          transform: translateY(-50%);
+          
+          &::after {
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left-color: #1a202c;
+          }
+        `;
+      default:
+        return '';
+    }
+  }}
 `;
 
-export const Tooltip: React.FC<ITooltipProps> = ({
+export const Tooltip: React.FC<TooltipProps> = ({
   content,
   children,
   side = 'top',
-  align = 'center',
-  delayDuration = 700,
   disabled = false,
 }) => {
   if (disabled) {
@@ -101,18 +123,11 @@ export const Tooltip: React.FC<ITooltipProps> = ({
   }
 
   return (
-    <TooltipPrimitive.Provider>
-      <TooltipPrimitive.Root delayDuration={delayDuration}>
-        <TooltipPrimitive.Trigger asChild>
-          {children}
-        </TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal>
-          <TooltipContent side={side} align={align} sideOffset={5}>
-            {content}
-            <TooltipArrow />
-          </TooltipContent>
-        </TooltipPrimitive.Portal>
-      </TooltipPrimitive.Root>
-    </TooltipPrimitive.Provider>
+    <TooltipContainer>
+      {children}
+      <TooltipContent $side={side} className="tooltip-content">
+        {content}
+      </TooltipContent>
+    </TooltipContainer>
   );
 };

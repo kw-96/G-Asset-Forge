@@ -118,8 +118,85 @@ export declare class SuikaCanvasEngine implements ICanvasEngine {
     updateObject(id: string, updates: Partial<ICanvasObject>): void;
     selectObjects(ids: string[]): void;
     clearSelection(): void;
-    zoom(level: number): void;
-    pan(x: number, y: number): void;
+    /**
+     * 设置缩放级别 - 支持10%-500%缩放范围和60fps性能优化
+     */
+    zoom(level: number, centerPoint?: {
+        x: number;
+        y: number;
+    }): void;
+    /**
+     * 平移画布 - 支持无限制平移功能，支持平滑的增量移动
+     */
+    pan(deltaX: number, deltaY: number, smooth?: boolean): void;
+    /**
+     * 适应内容功能 - 自动调整到所有对象的最佳查看尺寸
+     */
+    fitToContent(padding?: number): void;
+    /**
+     * 适应屏幕功能
+     */
+    fitToScreen(): void;
+    /**
+     * 重置视图到默认状态
+     */
+    resetView(): void;
+    /**
+     * 获取当前视口信息
+     */
+    getViewportInfo(): {
+        x: number;
+        y: number;
+        zoom: number;
+        width: number;
+        height: number;
+    };
+    /**
+     * 设置视口信息
+     */
+    setViewportInfo(viewportInfo: {
+        x?: number;
+        y?: number;
+        zoom?: number;
+    }): void;
+    /**
+     * 智能网格系统
+     */
+    enableGrid(enabled: boolean, gridSize?: number): void;
+    /**
+     * 参考线对齐功能
+     */
+    addGuide(type: 'horizontal' | 'vertical', position: number): string;
+    /**
+     * 移除参考线
+     */
+    removeGuide(guideId: string): void;
+    /**
+     * 视口边界检测
+     */
+    isPointInViewport(worldX: number, worldY: number): boolean;
+    /**
+     * 内容定位功能
+     */
+    getVisibleObjects(): any[];
+    /**
+     * 检查矩形是否与视口相交
+     */
+    private isRectIntersectingViewport;
+    /**
+     * 坐标转换：屏幕坐标到世界坐标
+     */
+    screenToWorld(screenX: number, screenY: number): {
+        x: number;
+        y: number;
+    };
+    /**
+     * 坐标转换：世界坐标到屏幕坐标
+     */
+    worldToScreen(worldX: number, worldY: number): {
+        x: number;
+        y: number;
+    };
     render(): void;
     exportImage(format: 'png' | 'jpg', quality?: number): string;
     getPerformanceInfo(): {

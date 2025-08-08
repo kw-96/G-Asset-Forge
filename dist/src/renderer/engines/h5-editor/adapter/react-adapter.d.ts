@@ -19,4 +19,5 @@ export interface IH5EditorCanvasRef {
     exportAsImage: (format?: 'png' | 'jpg', quality?: number) => string;
 }
 export declare const H5EditorCanvas: React.ForwardRefExoticComponent<IH5EditorCanvasProps & React.RefAttributes<IH5EditorCanvasRef>>;
+export declare const H5EditorReactAdapter: React.ForwardRefExoticComponent<IH5EditorCanvasProps & React.RefAttributes<IH5EditorCanvasRef>>;
 //# sourceMappingURL=react-adapter.d.ts.map

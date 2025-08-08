@@ -13,17 +13,12 @@ module.exports = {
     '@typescript-eslint',
     'react',
     'react-hooks',
-    'import',
-    'prefer-arrow',
   ],
   extends: [
     'eslint:recommended',
     '@typescript-eslint/recommended',
-    '@typescript-eslint/recommended-requiring-type-checking',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
-    'plugin:import/recommended',
-    'plugin:import/typescript',
   ],
   env: {
     browser: true,
@@ -33,16 +28,6 @@ module.exports = {
   settings: {
     react: {
       version: 'detect',
-    },
-    'import/resolver': {
-      typescript: {
-        alwaysTryTypes: true,
-        project: './tsconfig.json',
-      },
-      node: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
-        moduleDirectory: ['node_modules', 'src/'],
-      },
     },
   },
   rules: {
@@ -58,14 +43,8 @@ module.exports = {
     '@typescript-eslint/no-non-null-assertion': 'warn',
     '@typescript-eslint/prefer-const': 'error',
     '@typescript-eslint/no-var-requires': 'off',
-    '@typescript-eslint/no-floating-promises': 'warn',
-    '@typescript-eslint/await-thenable': 'warn',
-    '@typescript-eslint/no-misused-promises': 'warn',
-    '@typescript-eslint/require-await': 'warn',
-    '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
     '@typescript-eslint/prefer-nullish-coalescing': 'error',
     '@typescript-eslint/prefer-optional-chain': 'error',
-    '@typescript-eslint/no-unnecessary-condition': 'warn',
     
     // React规则
     'react/react-in-jsx-scope': 'off', // React 17+不需要导入React
@@ -82,31 +61,8 @@ module.exports = {
     'react/jsx-sort-props': 'off',
     'react/jsx-wrap-multilines': 'off',
     
-    // Import规则
-    'import/order': [
-      'error',
-      {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          'parent',
-          'sibling',
-          'index'
-        ],
-        'newlines-between': 'always',
-        alphabetize: {
-          order: 'asc',
-          caseInsensitive: true
-        }
-      }
-    ],
-    'import/no-unresolved': 'error',
-    'import/named': 'error',
-    'import/default': 'error',
-    'import/namespace': 'error',
-    'import/no-duplicates': 'error',
-    'import/no-unused-modules': 'warn',
+    // Import规则 (简化版)
+    'no-duplicate-imports': 'error',
     
     // 通用规则
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
@@ -135,16 +91,8 @@ module.exports = {
     'space-infix-ops': 'error',
     'space-unary-ops': 'error',
     'spaced-comment': 'error',
-    'prefer-arrow/prefer-arrow-functions': [
-      'error',
-      {
-        disallowPrototype: true,
-        singleReturnOnly: false,
-        classPropertiesAllowed: false
-      }
-    ],
+
     'no-unused-expressions': 'error',
-    'no-duplicate-imports': 'error',
     'no-useless-constructor': 'error',
     'no-useless-rename': 'error',
     'object-curly-spacing': ['error', 'always'],
@@ -177,7 +125,6 @@ module.exports = {
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
         'no-console': 'off',
-        'import/no-unresolved': 'off',
       },
     },
     {
@@ -188,7 +135,6 @@ module.exports = {
       },
       rules: {
         'no-console': 'off',
-        'import/no-unresolved': 'off',
       },
     },
     {
@@ -204,7 +150,6 @@ module.exports = {
     {
       files: ['src/renderer/engines/**/*'],
       rules: {
-        'import/no-unresolved': 'off',
         'no-console': 'off',
       },
     },

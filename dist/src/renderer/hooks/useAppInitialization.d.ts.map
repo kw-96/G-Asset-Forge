@@ -1,0 +1,1 @@
+{"version":3,"file":"useAppInitialization.d.ts","sourceRoot":"","sources":["../../../../src/renderer/hooks/useAppInitialization.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAMH,MAAM,WAAW,2BAA2B;IAC1C,cAAc,CAAC,EAAE,OAAO,CAAC;IACzB,aAAa,CAAC,EAAE,MAAM,IAAI,CAAC;IAC3B,OAAO,CAAC,EAAE,CAAC,KAAK,EAAE,KAAK,KAAK,IAAI,CAAC;CAClC;AAED,wBAAgB,oBAAoB,CAAC,OAAO,GAAE,2BAAgC;;;;;;;;;EAuI7E"}

@@ -2,7 +2,7 @@
 export interface CanvasElement {
   id: string;
   name: string;
-  type: 'rectangle' | 'ellipse' | 'text' | 'image' | 'frame' | 'brush' | 'crop';
+  type: 'rectangle' | 'ellipse' | 'text' | 'image' | 'frame' | 'brush' | 'crop' | 'group';
   x: number;
   y: number;
   width: number;
@@ -12,6 +12,7 @@ export interface CanvasElement {
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
+  strokeStyle?: 'solid' | 'dashed' | 'dotted';
   borderRadius?: number;
   opacity?: number;
   

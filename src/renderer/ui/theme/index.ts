@@ -1,23 +1,30 @@
-// 主题系统 - 基于Figma和Penpot设计语言
-export interface ITheme {
+/**
+ * 主题系统 - 基于Figma UI3设计系统
+ * 提供完整的设计令牌和主题配置
+ */
+
+import { colors, spacing, typography, borderRadius, shadows, animation, zIndex } from './tokens';
+
+// 简化的主题接口
+export interface Theme {
   colors: {
-    // 基础颜色
+    // 主色系
     primary: string;
     secondary: string;
     accent: string;
-    
-    // 语义颜色
+
+    // 语义色
     success: string;
     warning: string;
     error: string;
     info: string;
-    
-    // 中性色
+
+    // 背景色
     background: string;
     surface: string;
     overlay: string;
-    
-    // 文本颜色
+
+    // 文本色
     text: {
       primary: string;
       secondary: string;
@@ -25,56 +32,30 @@ export interface ITheme {
       disabled: string;
       inverse: string;
     };
-    
-    // 边框颜色
+
+    // 边框色
     border: {
       default: string;
       focus: string;
       hover: string;
     };
-    
+
     // 阴影
     shadow: {
       small: string;
       medium: string;
       large: string;
     };
-    
-    // 画布特定颜色
+
+    // 画布专用色
     canvas: {
       background: string;
       grid: string;
       selection: string;
+      selectionBg: string;
+      guide: string;
     };
   };
-  
-  typography: {
-    fontFamily: {
-      primary: string;
-      mono: string;
-    };
-    fontSize: {
-      xs: string;
-      sm: string;
-      base: string;
-      lg: string;
-      xl: string;
-      '2xl': string;
-      '3xl': string;
-    };
-    fontWeight: {
-      normal: number;
-      medium: number;
-      semibold: number;
-      bold: number;
-    };
-    lineHeight: {
-      tight: number;
-      normal: number;
-      relaxed: number;
-    };
-  };
-  
   spacing: {
     xs: string;
     sm: string;
@@ -83,186 +64,124 @@ export interface ITheme {
     xl: string;
     '2xl': string;
     '3xl': string;
-    xxl: string;
   };
-  
-  borderRadius: {
-    none: string;
-    xs: string;
-    sm: string;
-    md: string;
-    lg: string;
-    full: string;
-  };
-  
-  zIndex: {
-    dropdown: number;
-    modal: number;
-    popover: number;
-    tooltip: number;
-  };
-  
-  animation: {
-    duration: {
-      fast: string;
-      normal: string;
-      slow: string;
+  typography: {
+    fontFamily: {
+      primary: string;
+      mono: string;
     };
-    easing: {
-      ease: string;
-      easeIn: string;
-      easeOut: string;
-      easeInOut: string;
-    };
+    fontSize: typeof typography.fontSize;
+    fontWeight: typeof typography.fontWeight;
+    lineHeight: typeof typography.lineHeight;
   };
+  borderRadius: typeof borderRadius;
+  shadows: typeof shadows;
+  animation: typeof animation;
+  zIndex: typeof zIndex;
 }
 
-// 亮色主题 - 基于Figma设计语言
-export const lightTheme: ITheme = {
+// 亮色主题 - 优化视觉层次和对比度
+export const lightTheme: Theme = {
   colors: {
-    primary: '#667eea',
-    secondary: '#764ba2',
-    accent: '#f093fb',
-    
-    success: '#10b981',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    info: '#3b82f6',
-    
-    background: '#ffffff',
-    surface: '#f8fafc',
-    overlay: 'rgba(0, 0, 0, 0.5)',
-    
+    primary: colors.primary[500],
+    secondary: colors.primary[600],
+    accent: colors.primary[400],
+    success: colors.semantic.success[500],
+    warning: colors.semantic.warning[500],
+    error: colors.semantic.error[500],
+    info: colors.semantic.info[500],
+    background: '#fafbfc', // 更温和的背景色
+    surface: '#ffffff', // 纯白表面
+    overlay: 'rgba(15, 23, 42, 0.6)', // 更深的遮罩层
     text: {
-      primary: '#1e293b',
-      secondary: '#64748b',
-      tertiary: '#94a3b8',
-      disabled: '#cbd5e1',
-      inverse: '#ffffff',
+      primary: colors.neutral[900],
+      secondary: colors.neutral[700], // 增强对比度
+      tertiary: colors.neutral[500],
+      disabled: colors.neutral[400],
+      inverse: colors.neutral[0],
     },
-    
     border: {
-      default: '#e2e8f0',
-      focus: '#667eea',
-      hover: '#cbd5e1',
+      default: colors.neutral[200],
+      focus: colors.primary[500],
+      hover: colors.neutral[300],
     },
-    
     shadow: {
       small: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       medium: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       large: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     },
-    
     canvas: {
-      background: '#f1f5f9',
-      grid: '#e2e8f0',
-      selection: '#667eea',
+      ...colors.canvas,
+      background: '#f8fafc', // 更柔和的画布背景
     },
   },
-  
+  spacing: {
+    xs: spacing[1],
+    sm: spacing[2],
+    md: spacing[4],
+    lg: spacing[6],
+    xl: spacing[8],
+    '2xl': spacing[12],
+    '3xl': spacing[16],
+  },
   typography: {
     fontFamily: {
-      primary: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      mono: 'SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      primary: typography.fontFamily.sans,
+      mono: typography.fontFamily.mono,
     },
-    fontSize: {
-      xs: '0.75rem',
-      sm: '0.875rem',
-      base: '1rem',
-      lg: '1.125rem',
-      xl: '1.25rem',
-      '2xl': '1.5rem',
-      '3xl': '1.875rem',
-    },
-    fontWeight: {
-      normal: 400,
-      medium: 500,
-      semibold: 600,
-      bold: 700,
-    },
-    lineHeight: {
-      tight: 1.25,
-      normal: 1.5,
-      relaxed: 1.75,
-    },
+    fontSize: typography.fontSize,
+    fontWeight: typography.fontWeight,
+    lineHeight: typography.lineHeight,
   },
-  
-  spacing: {
-    xs: '0.25rem',
-    sm: '0.5rem',
-    md: '1rem',
-    lg: '1.5rem',
-    xl: '2rem',
-    '2xl': '3rem',
-    '3xl': '4rem',
-    xxl: '5rem',
-  },
-  
-  borderRadius: {
-    none: '0',
-    xs: '0.125rem',
-    sm: '0.25rem',
-    md: '0.375rem',
-    lg: '0.5rem',
-    full: '9999px',
-  },
-  
-  zIndex: {
-    dropdown: 1000,
-    modal: 1050,
-    popover: 1030,
-    tooltip: 1070,
-  },
-  
-  animation: {
-    duration: {
-      fast: '150ms',
-      normal: '300ms',
-      slow: '500ms',
+  borderRadius,
+  shadows,
+  animation,
+  zIndex,
+};
+
+// 暗色主题 - 优化对比度和视觉舒适度
+export const darkTheme: Theme = {
+  ...lightTheme,
+  colors: {
+    ...lightTheme.colors,
+    background: '#0f172a', // 更深的背景色
+    surface: '#1e293b', // 更有层次的表面色
+    overlay: 'rgba(0, 0, 0, 0.8)', // 更深的遮罩
+    text: {
+      primary: '#f8fafc', // 更亮的主文本
+      secondary: '#cbd5e1', // 更好的对比度
+      tertiary: '#94a3b8',
+      disabled: '#64748b',
+      inverse: '#0f172a',
     },
-    easing: {
-      ease: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-      easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
-      easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    border: {
+      default: '#334155', // 更明显的边框
+      focus: colors.primary[400], // 暗色模式下使用更亮的焦点色
+      hover: '#475569',
+    },
+    shadow: {
+      small: '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
+      medium: '0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
+      large: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
+    },
+    canvas: {
+      background: '#1e293b',
+      grid: '#334155',
+      selection: '#6366f1',
+      selectionBg: 'rgba(99, 102, 241, 0.15)', // 稍微增强选择背景
+      guide: '#f59e0b',
     },
   },
 };
 
-// 暗色主题 - 基于Penpot设计语言
-export const darkTheme: ITheme = {
-  ...lightTheme,
-  colors: {
-    ...lightTheme.colors,
-    
-    background: '#0f172a',
-    surface: '#1e293b',
-    overlay: 'rgba(0, 0, 0, 0.8)',
-    
-    text: {
-      primary: '#f1f5f9',
-      secondary: '#cbd5e1',
-      tertiary: '#64748b',
-      disabled: '#475569',
-      inverse: '#1e293b',
-    },
-    
-    border: {
-      default: '#334155',
-      focus: '#667eea',
-      hover: '#475569',
-    },
-    
-    shadow: {
-      small: '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
-      medium: '0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
-      large: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
-    },
-    
-    canvas: {
-      background: '#1e293b',
-      grid: '#334155',
-      selection: '#667eea',
-    },
-  },
-};
+// 默认导出亮色主题
+export const theme = lightTheme;
+export default theme;
+
+// 类型导出
+export type ThemeColors = Theme['colors'];
+export type ThemeSpacing = Theme['spacing'];
+
+// 导出所有相关内容
+export * from './tokens';
+export * from './ThemeProvider';

@@ -22,13 +22,13 @@ export class WindowManager {
         safeDialogs: true, // 启用安全对话框
         safeDialogsMessage: 'G-Asset-Forge检测到不安全的对话框尝试', // 安全对话框消息
       },
-      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+      frame: false, // 隐藏系统窗口框架，使用自定义标题栏
       show: false, // Don't show until ready
       icon: process.platform === 'win32' 
         ? path.join(__dirname, '../../assets/icon.ico')
         : path.join(__dirname, '../../assets/icon.png'),
       // 额外的窗口安全设置
-      frame: true, // 保持窗口框架
       transparent: false, // 不允许透明窗口
       thickFrame: true, // 允许厚框架调整大小
       acceptFirstMouse: false, // 提高安全性

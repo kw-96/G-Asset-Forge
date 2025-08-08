@@ -250,18 +250,64 @@ export class ViewportManager {
     requestAnimationFrame(animate);
   }
 
-  // 限制视口范围
+  // 无限画布不限制视口范围 - 支持无限制平移
   private clampViewport(): void {
-    const canvas = this.editor.canvasElement;
-    const container = this.editor.containerElement;
+    // 无限画布模式下不限制视口范围，允许无限制平移
+    // 这是无限画布的核心特性之一
     
-    const maxX = container.clientWidth;
-    const maxY = container.clientHeight;
-    const minX = -canvas.width * this.editor.zoomManager.getZoom();
-    const minY = -canvas.height * this.editor.zoomManager.getZoom();
+    // 可选：添加性能优化，当视口距离内容过远时给出警告
+    const contentBounds = this.getContentBounds();
+    const maxDistance = 50000; // 最大合理距离
+    
+    if (contentBounds && (
+      Math.abs(this.viewport.x - contentBounds.centerX) > maxDistance ||
+      Math.abs(this.viewport.y - contentBounds.centerY) > maxDistance
+    )) {
+      console.warn('视口距离内容过远，可能影响性能');
+    }
+    
+    // 无限画布不进行位置限制
+  }
 
-    this.viewport.x = Math.max(minX, Math.min(maxX, this.viewport.x));
-    this.viewport.y = Math.max(minY, Math.min(maxY, this.viewport.y));
+  /**
+   * 获取内容边界框
+   */
+  private getContentBounds(): { centerX: number; centerY: number; width: number; height: number } | null {
+    const objects = this.editor.sceneGraph.getObjects();
+    
+    if (objects.length === 0) {
+      return null;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    objects.forEach((obj: any) => {
+      if (obj.x !== undefined && obj.y !== undefined) {
+        const objMinX = obj.x;
+        const objMinY = obj.y;
+        const objMaxX = obj.x + (obj.width || 0);
+        const objMaxY = obj.y + (obj.height || 0);
+
+        minX = Math.min(minX, objMinX);
+        minY = Math.min(minY, objMinY);
+        maxX = Math.max(maxX, objMaxX);
+        maxY = Math.max(maxY, objMaxY);
+      }
+    });
+
+    if (minX === Infinity) {
+      return null;
+    }
+
+    return {
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2,
+      width: maxX - minX,
+      height: maxY - minY
+    };
   }
 
   // 缓动函数
