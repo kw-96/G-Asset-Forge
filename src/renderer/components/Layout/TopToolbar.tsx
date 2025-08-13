@@ -39,12 +39,13 @@ const ToolbarSection = styled.div`
   -webkit-app-region: no-drag;
 `;
 
-const ToolbarDivider = styled.div`
-  width: 1px;
-  height: 24px;
-  background: ${({ theme }) => theme.colors.border.default};
-  margin: 0 ${({ theme }) => theme.spacing.sm};
-`;
+// 保留分隔符定义以备将来使用（当前未使用）
+// const ToolbarDivider = styled.div`
+//   width: 1px;
+//   height: 24px;
+//   background: ${({ theme }) => theme.colors.border.default};
+//   margin: 0 ${({ theme }) => theme.spacing.sm};
+// `;
 
 const CenterSection = styled.div`
   flex: 1;
@@ -54,16 +55,16 @@ const CenterSection = styled.div`
   -webkit-app-region: no-drag;
 `;
 
-const ProjectInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
+// const ProjectInfo = styled.div`
+//   display: flex;
+//   align-items: center;
+//   gap: ${({ theme }) => theme.spacing.sm};
+// `;
 
-const ProjectName = styled.span`
-  font-weight: ${({ theme }) => theme.typography.fontWeight.medium};
-  color: ${({ theme }) => theme.colors.text.primary};
-`;
+// const ProjectName = styled.span`
+//   font-weight: ${({ theme }) => theme.typography.fontWeight.medium};
+//   color: ${({ theme }) => theme.colors.text.primary};
+// `;
 
 const NoDrag = styled.div`
   -webkit-app-region: no-drag;
@@ -118,7 +119,7 @@ const TabItem = styled.button<{ $active: boolean }>`
   max-width: 220px;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid ${({ theme, $active }) => $active ? theme.colors.border.emphasized : theme.colors.border.subtle};
+  border: 1px solid ${({ theme, $active }) => $active ? theme.colors.border.default : theme.colors.border.subtle};
   background: ${({ theme, $active }) => $active ? theme.colors.surface : theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.primary};
   cursor: pointer;
@@ -191,7 +192,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
       const idx = prev.findIndex(t => t.id === id);
       const next = prev.filter(t => t.id !== id);
       if (id === activeTabId && next.length > 0) {
-        const newActive = next[Math.max(0, idx - 1)].id;
+        const newIndex = Math.max(0, Math.min(idx, next.length - 1));
+        const newActive = next[newIndex]?.id || next[0]?.id || 'tab-1';
         setActiveTabId(newActive);
       }
       return next.length > 0 ? next : [{ id: 'tab-1', title: '无标题' }];
