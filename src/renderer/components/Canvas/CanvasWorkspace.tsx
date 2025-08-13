@@ -83,41 +83,6 @@ const CanvasObject = styled.div<{ $x: number; $y: number; $width: number; $heigh
   ` : ''}
 `;
 
-const WelcomeArea = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  color: ${({ theme }) => theme.colors.text.secondary};
-  pointer-events: none;
-  z-index: 1;
-`;
-
-const TemplateGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: ${({ theme }) => theme.spacing.md};
-  margin-top: ${({ theme }) => theme.spacing.lg};
-  max-width: 600px;
-`;
-
-const TemplateCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  padding: ${({ theme }) => theme.spacing.md};
-  cursor: pointer;
-  pointer-events: auto;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.primary};
-    transform: translateY(-2px);
-    box-shadow: ${({ theme }) => theme.shadows.md};
-  }
-`;
-
 const OverviewNavigator = styled.div<{ $visible: boolean }>`
   position: absolute;
   top: ${({ theme }) => theme.spacing.lg};
@@ -267,14 +232,14 @@ export const CanvasWorkspace: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // 常用模板
-  const templates: CanvasTemplate[] = [
-    { id: 'mobile', name: '移动端', width: 375, height: 667, category: 'mobile', emoji: '📱' },
-    { id: 'tablet', name: '平板', width: 768, height: 1024, category: 'mobile', emoji: '📱' },
-    { id: 'desktop', name: '桌面', width: 1920, height: 1080, category: 'desktop', emoji: '🖥️' },
-    { id: 'icon', name: '游戏图标', width: 256, height: 256, category: 'game', emoji: '🎮' },
-    { id: 'button', name: '按钮', width: 200, height: 60, category: 'game', emoji: '🔘' },
-    { id: 'banner', name: '横幅', width: 728, height: 90, category: 'social', emoji: '🎯' },
-  ];
+  // const templates: CanvasTemplate[] = [
+  //   { id: 'mobile', name: '移动端', width: 375, height: 667, category: 'mobile', emoji: '📱' },
+  //   { id: 'tablet', name: '平板', width: 768, height: 1024, category: 'mobile', emoji: '📱' },
+  //   { id: 'desktop', name: '桌面', width: 1920, height: 1080, category: 'desktop', emoji: '🖥️' },
+  //   { id: 'icon', name: '游戏图标', width: 256, height: 256, category: 'game', emoji: '🎮' },
+  //   { id: 'button', name: '按钮', width: 200, height: 60, category: 'game', emoji: '🔘' },
+  //   { id: 'banner', name: '横幅', width: 728, height: 90, category: 'social', emoji: '🎯' },
+  // ];
 
   // 缩放处理 - 支持10%-500%缩放范围和60fps性能优化
   const handleZoomChange = useCallback((delta: number, centerPoint?: { x: number; y: number }) => {
@@ -513,93 +478,93 @@ export const CanvasWorkspace: React.FC = () => {
     handleFitToContent();
   }, [handleFitToContent]);
 
-  // 创建模板对象
-  const handleCreateTemplate = useCallback((template: CanvasTemplate) => {
-    try {
-      // 计算初始位置（屏幕中心转换为世界坐标）
-      const canvasRect = canvasRef.current?.getBoundingClientRect();
-      if (!canvasRect) return;
+  // 创建模板对象（预留实现）
+  // const handleCreateTemplate = useCallback((template: CanvasTemplate) => {
+  //   try {
+  //     // 计算初始位置（屏幕中心转换为世界坐标）
+  //     const canvasRect = canvasRef.current?.getBoundingClientRect();
+  //     if (!canvasRect) return;
     
-    const centerX = canvasRect.width / 2;
-    const centerY = canvasRect.height / 2;
+  //   const centerX = canvasRect.width / 2;
+  //   const centerY = canvasRect.height / 2;
     
-    // 转换为世界坐标，防止除零错误
-    const safeZoom = Math.max(viewport.zoom, 0.01);
-    const worldPosition = {
-      x: (centerX - viewport.x) / safeZoom - template.width / 2,
-      y: (centerY - viewport.y) / safeZoom - template.height / 2
-    };
+  //   // 转换为世界坐标，防止除零错误
+  //   const safeZoom = Math.max(viewport.zoom, 0.01);
+  //   const worldPosition = {
+  //     x: (centerX - viewport.x) / safeZoom - template.width / 2,
+  //     y: (centerY - viewport.y) / safeZoom - template.height / 2
+  //   };
     
-    // 首先应用参考线对齐，然后应用网格对齐
-    let screenPosition = { x: centerX, y: centerY };
+  //   // 首先应用参考线对齐，然后应用网格对齐
+  //   let screenPosition = { x: centerX, y: centerY };
     
-    // 应用参考线对齐
-    if (showGuides && guides.length > 0) {
-      const threshold = 5;
-      guides.forEach(guide => {
-        const guideScreenPos = guide.position * viewport.zoom + 
-          (guide.type === 'vertical' ? viewport.x : viewport.y);
+  //   // 应用参考线对齐
+  //   if (showGuides && guides.length > 0) {
+  //     const threshold = 5;
+  //     guides.forEach(guide => {
+  //       const guideScreenPos = guide.position * viewport.zoom + 
+  //         (guide.type === 'vertical' ? viewport.x : viewport.y);
         
-        const distance = Math.abs(
-          (guide.type === 'vertical' ? screenPosition.x : screenPosition.y) - guideScreenPos
-        );
+  //       const distance = Math.abs(
+  //         (guide.type === 'vertical' ? screenPosition.x : screenPosition.y) - guideScreenPos
+  //       );
         
-        if (distance < threshold) {
-          if (guide.type === 'vertical') {
-            screenPosition.x = guideScreenPos;
-          } else {
-            screenPosition.y = guideScreenPos;
-          }
-        }
-      });
-    }
+  //       if (distance < threshold) {
+  //         if (guide.type === 'vertical') {
+  //           screenPosition.x = guideScreenPos;
+  //         } else {
+  //           screenPosition.y = guideScreenPos;
+  //         }
+  //       }
+  //     });
+  //   }
     
-    // 应用网格对齐
-    if (snapToGrid) {
-      const safeZoomForGrid = Math.max(viewport.zoom, 0.01);
-      const worldPoint = {
-        x: (screenPosition.x - viewport.x) / safeZoomForGrid,
-        y: (screenPosition.y - viewport.y) / safeZoomForGrid
-      };
+  //   // 应用网格对齐
+  //   if (snapToGrid) {
+  //     const safeZoomForGrid = Math.max(viewport.zoom, 0.01);
+  //     const worldPoint = {
+  //       x: (screenPosition.x - viewport.x) / safeZoomForGrid,
+  //       y: (screenPosition.y - viewport.y) / safeZoomForGrid
+  //     };
       
-      const snappedWorld = {
-        x: Math.round(worldPoint.x / gridSize) * gridSize,
-        y: Math.round(worldPoint.y / gridSize) * gridSize
-      };
+  //     const snappedWorld = {
+  //       x: Math.round(worldPoint.x / gridSize) * gridSize,
+  //       y: Math.round(worldPoint.y / gridSize) * gridSize
+  //     };
       
-      screenPosition = {
-        x: snappedWorld.x * safeZoomForGrid + viewport.x,
-        y: snappedWorld.y * safeZoomForGrid + viewport.y
-      };
-    }
+  //     screenPosition = {
+  //       x: snappedWorld.x * safeZoomForGrid + viewport.x,
+  //       y: snappedWorld.y * safeZoomForGrid + viewport.y
+  //     };
+  //   }
     
-    const alignedWorldPosition = {
-      x: (screenPosition.x - viewport.x) / safeZoom - template.width / 2,
-      y: (screenPosition.y - viewport.y) / safeZoom - template.height / 2
-    };
+  //   const alignedWorldPosition = {
+  //     x: (screenPosition.x - viewport.x) / safeZoom - template.width / 2,
+  //     y: (screenPosition.y - viewport.y) / safeZoom - template.height / 2
+  //   };
 
-    const newObject: CanvasObject = {
-      id: `template-${Date.now()}`,
-      type: 'template',
-      worldX: (snapToGrid || showGuides) ? alignedWorldPosition.x : worldPosition.x,
-      worldY: (snapToGrid || showGuides) ? alignedWorldPosition.y : worldPosition.y,
-      width: template.width,
-      height: template.height,
-      content: template.name,
-    };
+  //   const newObject: CanvasObject = {
+  //     id: `template-${Date.now()}`,
+  //     type: 'template',
+  //     worldX: (snapToGrid || showGuides) ? alignedWorldPosition.x : worldPosition.x,
+  //     worldY: (snapToGrid || showGuides) ? alignedWorldPosition.y : worldPosition.y,
+  //     width: template.width,
+  //     height: template.height,
+  //     content: template.name,
+  //   };
 
-      setObjects(prev => [...prev, newObject]);
-      setSelectedObjectId(newObject.id);
-    } catch (error) {
-      console.error('Error in handleCreateTemplate:', error);
-    }
-  }, [viewport, snapToGrid, showGuides, guides, gridSize]);
+  //     setObjects(prev => [...prev, newObject]);
+  //     setSelectedObjectId(newObject.id);
+  //   } catch (error) {
+  //     console.error('Error in handleCreateTemplate:', error);
+  //   }
+  // }, [viewport, snapToGrid, showGuides, guides, gridSize]);
 
-  // 对象点击处理
-  const handleObjectClick = useCallback((objectId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedObjectId(objectId);
-  }, []);
+  // // 对象点击处理
+  // const handleObjectClick = useCallback((objectId: string, e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   setSelectedObjectId(objectId);
+  // }, []);
 
 
 
@@ -869,35 +834,6 @@ export const CanvasWorkspace: React.FC = () => {
           ))}
         </InfiniteCanvas>
 
-        {/* 欢迎区域 - 当画布为空时显示 */}
-        {objects.length === 0 && (
-          <WelcomeArea>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎨</div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '24px' }}>欢迎使用无限画布</h2>
-            <p style={{ margin: '0 0 24px 0', fontSize: '16px', opacity: 0.8 }}>
-              选择模板开始创作，或使用工具在任意位置添加内容
-            </p>
-
-            <TemplateGrid>
-              {templates.map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  onClick={() => handleCreateTemplate(template)}
-                >
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>
-                    {template.emoji}
-                  </div>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
-                    {template.name}
-                  </div>
-                  <div style={{ fontSize: '12px', opacity: 0.7 }}>
-                    {template.width} × {template.height}
-                  </div>
-                </TemplateCard>
-              ))}
-            </TemplateGrid>
-          </WelcomeArea>
-        )}
 
         {/* 概览导航器 */}
         <OverviewNavigator $visible={showOverview}>
