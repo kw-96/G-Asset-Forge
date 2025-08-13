@@ -155,10 +155,10 @@ const FigmaCenterSection = styled.div<{ $padding: number }>`
   background: ${({ theme }) => theme.colors.canvas?.background || theme.colors.background};
 `;
 
-// 浮动工具栏
+// 浮动工具栏（放置在底部居中）
 const FloatingToolbar = styled.div`
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;

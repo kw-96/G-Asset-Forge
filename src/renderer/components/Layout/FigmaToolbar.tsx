@@ -119,7 +119,7 @@ export const FigmaToolbar: React.FC<FigmaToolbarProps> = ({
       {toolGroups.map((group, groupIndex) => (
         <ToolGroup key={groupIndex}>
           {group.tools.map((tool) => (
-            <Tooltip key={tool.id} content={`${tool.name} (${tool.shortcut})`} side="bottom">
+            <Tooltip key={tool.id} content={`${tool.name} (${tool.shortcut})`} side="top">
               <ToolButton
                 $active={activeTool === tool.id}
                 onClick={() => onToolChange(tool.id)}
