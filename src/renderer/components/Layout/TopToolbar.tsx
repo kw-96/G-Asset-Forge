@@ -12,6 +12,29 @@ import { Dropdown, type DropdownItem as DropdownItemType } from '../../ui/compon
 import { SettingsModal } from '../Settings/SettingsModal';
 import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
 import { WindowControls } from './WindowControls';
+import { useAppStore } from '../../stores/appStore';
+
+// 简单创建空项目的辅助方法（与 ProjectManager 对齐的最小结构）
+const createEmptyProject = (name: string) => ({
+  metadata: {
+    id: `project_${Date.now()}`,
+    name,
+    description: '',
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    tags: [] as string[],
+  },
+  settings: {
+    canvas: { width: 800, height: 600, backgroundColor: '#ffffff', gridEnabled: true, gridSize: 20, snapToGrid: false, rulers: true },
+    tools: { defaultTool: 'select', brushSize: 5, brushOpacity: 1, textFont: 'Arial', textSize: 16, textColor: '#000000' },
+    export: { format: 'png', quality: 90, scale: 1, transparent: false },
+    custom: {} as Record<string, any>
+  },
+  canvas: { objects: [] as any[], layers: [] as any[], history: [] as any[] },
+  assets: { used: [] as string[], embedded: [] as any[] },
+  version: { appVersion: '1.0.0', fileVersion: '1.0', compatibility: ['1.0'] }
+});
 
 interface TopToolbarProps {
   onToggleLeftPanel: () => void;
@@ -164,8 +187,9 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   rightPanelCollapsed,
 }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [tabs, setTabs] = useState<Array<{ id: string; title: string; icon?: string }>>([
-    { id: 'tab-1', title: '无标题' },
+  const setCurrentProject = useAppStore(s => s.setCurrentPage) ? useAppStore(s => s.setCurrentProject) : (() => {} as any);
+  const [tabs, setTabs] = useState<Array<{ id: string; title: string; icon?: string; project?: any }>>([
+    { id: 'tab-1', title: '无标题', project: createEmptyProject('无标题') },
   ]);
   const [activeTabId, setActiveTabId] = useState<string>('tab-1');
 
@@ -183,8 +207,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
   const handleNewTab = useCallback(() => {
     const id = `tab-${Date.now()}`;
-    setTabs(prev => [...prev, { id, title: '无标题' }]);
+    const project = createEmptyProject('无标题');
+    setTabs(prev => [...prev, { id, title: project.metadata.name, project }]);
     setActiveTabId(id);
+    try { (setCurrentProject as any)(project); } catch {}
   }, []);
 
   const handleCloseTab = useCallback((id: string) => {
@@ -201,6 +227,14 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   }, [activeTabId]);
 
   const handleActivateTab = useCallback((id: string) => setActiveTabId(id), []);
+  
+  // 同步当前项目到全局store
+  React.useEffect(() => {
+    const active = tabs.find(t => t.id === activeTabId);
+    if (active?.project) {
+      try { (setCurrentProject as any)(active.project); } catch {}
+    }
+  }, [activeTabId, tabs, setCurrentProject]);
 
   // 统一下拉菜单条目（文件/编辑/设置/帮助关于）
   const unifiedMenuItems: DropdownItemType[] = [
