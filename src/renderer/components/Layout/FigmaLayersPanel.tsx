@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Input } from '../../ui/components/Input/Input';
+import { AssetsPanel } from '../Assets/AssetsPanel';
 import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
 import { useUIIntegration, UIFeature } from '../UIIntegration/UIIntegrationProvider';
 
@@ -50,19 +51,15 @@ const PanelContainer = styled.div`
 const TopToolsBar = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
   gap: 0;
   padding: 6px 8px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.interface.divider.light};
   background: ${({ theme }) => theme.colors.surface};
-  
-  & > * {
-    flex: 1 1 20%;
-  }
 `;
 
 const TopToolButton = styled(EnhancedIconButton)`
-  height: 40px;
+  height: 100%;
   border: none !important;
   box-shadow: none !important;
   background: transparent;
@@ -406,20 +403,24 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
         </ControlButton>
       </PanelHeader>
       
-      <LayersList>
-        {layers.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            color: '#9ca3af', 
-            padding: '40px 20px',
-            fontSize: '12px'
-          }}>
-            画布中没有对象
-          </div>
-        ) : (
-          layers.map(layer => renderLayer(layer))
-        )}
-      </LayersList>
+      {activePanel === 'assets' ? (
+        <AssetsPanel />
+      ) : (
+        <LayersList>
+          {layers.length === 0 ? (
+            <div style={{ 
+              textAlign: 'center', 
+              color: '#9ca3af', 
+              padding: '40px 20px',
+              fontSize: '12px'
+            }}>
+              画布中没有对象
+            </div>
+          ) : (
+            layers.map(layer => renderLayer(layer))
+          )}
+        </LayersList>
+      )}
     </PanelContainer>
   );
 };

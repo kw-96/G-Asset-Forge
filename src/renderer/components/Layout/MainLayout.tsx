@@ -645,9 +645,6 @@ export const MainLayout: React.FC = () => {
                   activePanel={activeLeftPanel}
                   onSwitchPanel={setActiveLeftPanel}
                 />
-                {activeLeftPanel !== 'layers' && (
-                  <AssetsPanel />
-                )}
               </FigmaSidePanel>
 
               {/* 左侧面板调整大小手柄 */}
