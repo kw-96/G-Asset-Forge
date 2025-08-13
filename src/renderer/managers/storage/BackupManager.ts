@@ -427,7 +427,7 @@ export class BackupManager {
           const newName = `${name}_conflict_${Date.now()}${ext}`;
           const newPath = path.join(dir, newName);
           
-          await fs.move(conflict.filePath, newPath);
+          await window.electronAPI.fs.move(conflict.filePath, newPath);
           break;
 
         case 'merge':
@@ -503,7 +503,7 @@ export class BackupManager {
     try {
       // 对所有监控的文件执行备份
       for (const filePath of this.watchedFiles.keys()) {
-        if (await fs.pathExists(filePath)) {
+        if (await fsBridge.pathExists(filePath)) {
           try {
             await this.createBackup(filePath, {
               description: '自动备份',
@@ -530,8 +530,9 @@ export class BackupManager {
    * 添加文件到监控列表
    */
   async addFileToWatch(filePath: string): Promise<void> {
-    if (await fs.pathExists(filePath)) {
-      const stats = await fs.stat(filePath);
+    if (await fsBridge.pathExists(filePath)) {
+      const statsRes = await fsBridge.stat(filePath);
+      const stats = { mtime: new Date((statsRes.data as any).mtime) } as any;
       const checksum = await this.calculateChecksum(filePath);
       
       this.watchedFiles.set(filePath, {
@@ -558,7 +559,7 @@ export class BackupManager {
         backups: Array.from(this.backups.values()),
         lastUpdated: new Date().toISOString()
       };
-      await fs.writeJson(metadataPath, data, { spaces: 2 });
+      await fsBridge.writeJson(metadataPath, data);
     } catch (error) {
       console.error('保存备份元数据失败:', error);
     }
@@ -571,8 +572,8 @@ export class BackupManager {
     try {
       const metadataPath = path.join(this.config.backupPath, 'metadata', 'backups.json');
       
-      if (await fs.pathExists(metadataPath)) {
-        const data = await fs.readJson(metadataPath);
+      if (await fsBridge.pathExists(metadataPath)) {
+        const data = await fsBridge.readJson(metadataPath);
         
         if (data.backups && Array.isArray(data.backups)) {
           this.backups.clear();
@@ -599,7 +600,7 @@ export class BackupManager {
         conflicts: Array.from(this.conflicts.values()),
         lastUpdated: new Date().toISOString()
       };
-      await fs.writeJson(conflictsPath, data, { spaces: 2 });
+      await fsBridge.writeJson(conflictsPath, data);
     } catch (error) {
       console.error('保存冲突数据失败:', error);
     }
@@ -612,8 +613,8 @@ export class BackupManager {
     try {
       const conflictsPath = path.join(this.config.backupPath, 'metadata', 'conflicts.json');
       
-      if (await fs.pathExists(conflictsPath)) {
-        const data = await fs.readJson(conflictsPath);
+      if (await fsBridge.pathExists(conflictsPath)) {
+        const data = await fsBridge.readJson(conflictsPath);
         
         if (data.conflicts && Array.isArray(data.conflicts)) {
           this.conflicts.clear();
