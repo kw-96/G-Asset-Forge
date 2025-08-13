@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
+import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 
 const Container = styled.div`
   display: flex;
@@ -9,17 +10,14 @@ const Container = styled.div`
 `;
 
 const CtrlBtn = styled.button<{ $danger?: boolean }>`
-  width: 28px;
-  height: 28px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   background: ${({ theme }) => theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.secondary};
-  border-radius: ${({ theme }) => theme.borderRadius.small};
   cursor: pointer;
-  padding: 0;
+  padding: 12px;
 
   &:hover {
     background: ${({ theme }) => theme.colors.interaction?.hover || 'rgba(0,0,0,0.04)'};
@@ -67,11 +65,17 @@ export const WindowControls: React.FC = () => {
 
   return (
     <Container>
-      <CtrlBtn aria-label="最小化" title="最小化" onClick={handleMinimize}>—</CtrlBtn>
-      <CtrlBtn aria-label={isMaximized ? '还原' : '最大化'} title={isMaximized ? '还原' : '最大化'} onClick={handleMaxToggle}>
-        {isMaximized ? '▢' : '□'}
+      <CtrlBtn aria-label="最小化" title="最小化" onClick={handleMinimize}>
+        <SvgIcon name="icon.24.collapse" size={16} title="最小化" />
       </CtrlBtn>
-      <CtrlBtn aria-label="关闭" title="关闭" onClick={handleClose} $danger>×</CtrlBtn>
+      <CtrlBtn aria-label={isMaximized ? '还原' : '最大化'} title={isMaximized ? '还原' : '最大化'} onClick={handleMaxToggle}>
+        {isMaximized
+          ? <SvgIcon name="icon.24.frame" size={16} title="还原" />
+          : <SvgIcon name="icon.24.expand" size={16} title="最大化" />}
+      </CtrlBtn>
+      <CtrlBtn aria-label="关闭" title="关闭" onClick={handleClose} $danger>
+        <SvgIcon name="icon.24.close" size={16} title="关闭" />
+      </CtrlBtn>
     </Container>
   );
 };
