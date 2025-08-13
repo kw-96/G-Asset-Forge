@@ -96,13 +96,7 @@ export class UIEnhancementManager {
       });
 
       console.log(`UI功能 ${feature} 已启用 (${initTime.toFixed(2)}ms)`);
-      
-      // 显示功能启用通知（除了通知功能本身）
-      if (feature !== UIFeature.NOTIFICATIONS) {
-        setTimeout(() => {
-          this.showFeatureRecovery(feature);
-        }, 100); // 延迟确保通知系统已初始化
-      }
+      // 关闭“功能已启用”通知弹窗
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.features.set(feature, {
@@ -360,16 +354,7 @@ export class UIEnhancementManager {
     try {
       // 初始化通知系统
       console.log('通知功能已初始化');
-      
-      // 延迟显示初始化完成通知，确保通知系统已准备好
-      setTimeout(() => {
-        this.showNotification({
-          type: 'success',
-          title: 'UI增强功能已启用',
-          message: '所有增强功能已成功初始化',
-          duration: 3000
-        });
-      }, 500);
+      // 关闭“UI增强功能已启用”全局提示
     } catch (error) {
       console.warn('通知系统初始化失败:', error);
       throw error;
@@ -515,6 +500,11 @@ export class UIEnhancementManager {
       interactionDelay: { warning: 100, critical: 300 }
     };
 
+    // 首次指标为0时跳过（避免误报）
+    if (!metrics || metrics.fps === 0) {
+      return;
+    }
+
     let needsOptimization = false;
     const issues: string[] = [];
 
@@ -539,7 +529,8 @@ export class UIEnhancementManager {
     }
 
     if (needsOptimization) {
-      console.warn('性能问题检测到:', issues);
+      // 降低噪音：仅记录调试日志，默认不弹窗
+      console.debug('性能问题检测到:', issues);
       this.triggerPerformanceOptimization(issues);
     }
   }
@@ -562,8 +553,7 @@ export class UIEnhancementManager {
       console.log('已启用批量更新以提升性能');
     }
 
-    // 显示性能警告通知
-    this.showPerformanceWarning(issues);
+    // 默认不展示性能警告弹窗，避免干扰
   }
 
   /**
