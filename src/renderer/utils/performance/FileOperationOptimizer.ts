@@ -374,15 +374,15 @@ export class FileOperationOptimizer {
           }
         }
 
-        // 确保目录存在
-        const fs = await import('fs-extra');
-       await fs.ensureDir((await import('path-browserify')).default.dirname(filePath));
+        // 确保目录存在（通过 preload 暴露的安全 API）
+        const pathMod = (await import('path-browserify')).default;
+        await window.electronAPI.fs.createDirectory(pathMod.dirname(filePath));
 
         // 执行文件写入
-        if (typeof data === 'string') {
-          await fs.writeFile(filePath, data, 'utf8');
-        } else {
-          await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+        const payload = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        const writeRes = await window.electronAPI.fs.writeFile(filePath, payload);
+        if (!writeRes.success) {
+          throw new Error(writeRes.error || '写入失败');
         }
 
         clearTimeout(timeout);
@@ -424,15 +424,16 @@ export class FileOperationOptimizer {
           }
         }
 
-        // 执行文件读取
-        const fs = await import('fs-extra');
-        
-        // 检查文件是否存在
-        if (!await fs.pathExists(filePath)) {
+        // 执行文件读取（通过 preload API）
+        const exists = await window.electronAPI.fs.exists(filePath);
+        if (!exists) {
           throw new Error(`文件不存在: ${filePath}`);
         }
-
-        const fileContent = await fs.readFile(filePath, 'utf8');
+        const readRes = await window.electronAPI.fs.readFile(filePath);
+        if (!readRes.success) {
+          throw new Error(readRes.error || '读取失败');
+        }
+        const fileContent = String(readRes.data ?? '');
 
         clearTimeout(timeout);
         resolve(fileContent);
@@ -551,14 +552,10 @@ export class FileOperationOptimizer {
    */
   private async checkNetworkAvailability(filePath: string): Promise<boolean> {
     try {
-      const fs = await import('fs-extra');
-      const path = await import('path');
-      
-      // 尝试访问父目录
-      const parentDir = path.dirname(filePath);
-      await fs.access(parentDir);
-      
-      return true;
+      const pathMod = (await import('path-browserify')).default;
+      const parentDir = pathMod.dirname(filePath);
+      const exists = await window.electronAPI.fs.exists(parentDir);
+      return !!exists;
     } catch (error) {
       console.warn(`网络驱动器不可用: ${filePath}`, error);
       return false;

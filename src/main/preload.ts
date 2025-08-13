@@ -58,7 +58,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     readFile: (filePath: string) => safeInvoke('fs:readFile', filePath),
     writeFile: (filePath: string, data: unknown) => safeInvoke('fs:writeFile', filePath, data),
     exists: (filePath: string) => safeInvoke('fs:exists', filePath),
-    createDirectory: (dirPath: string) => safeInvoke('fs:createDirectory', dirPath)
+    createDirectory: (dirPath: string) => safeInvoke('fs:createDirectory', dirPath),
+    stat: (filePath: string) => safeInvoke('fs:stat', filePath),
+    copy: (src: string, dest: string, options?: any) => safeInvoke('fs:copy', src, dest, options),
+    remove: (targetPath: string) => safeInvoke('fs:remove', targetPath),
+    move: (src: string, dest: string, options?: any) => safeInvoke('fs:move', src, dest, options),
+    readJson: (filePath: string) => safeInvoke('fs:readJson', filePath),
+    writeJson: (filePath: string, data: any, spaces?: number) => safeInvoke('fs:writeJson', filePath, data, spaces)
   },
 
   // Configuration management
@@ -166,6 +172,12 @@ export interface ElectronAPI {
     writeFile: (filePath: string, data: unknown) => Promise<{ success: boolean; path?: string; error?: string }>;
     exists: (filePath: string) => Promise<boolean>;
     createDirectory: (dirPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+    stat: (filePath: string) => Promise<{ success: boolean; data?: { size: number; mtime: number; isFile: boolean; isDirectory: boolean }; error?: string }>;
+    copy: (src: string, dest: string, options?: any) => Promise<{ success: boolean; error?: string }>;
+    remove: (targetPath: string) => Promise<{ success: boolean; error?: string }>;
+    move: (src: string, dest: string, options?: any) => Promise<{ success: boolean; error?: string }>;
+    readJson: (filePath: string) => Promise<{ success: boolean; data?: any; error?: string }>;
+    writeJson: (filePath: string, data: any, spaces?: number) => Promise<{ success: boolean; path?: string; error?: string }>;
   };
   config: {
     save: (configKey: string, configData: unknown) => Promise<{ success: boolean; path?: string; size?: number; timestamp?: number; error?: string }>;

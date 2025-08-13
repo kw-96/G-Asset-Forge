@@ -1,4 +1,6 @@
 import { ipcMain, app, BrowserWindow, dialog } from 'electron';
+import * as fs from 'fs-extra';
+import * as path from 'path';
 import { FileSystemManager } from '../managers/FileSystemManager';
 
 interface IpcResponse<T = any> {
@@ -177,6 +179,38 @@ export class IpcHandlers {
         const win = this.mainWindow ?? BrowserWindow.getFocusedWindow() ?? undefined;
         const result = await dialog.showSaveDialog(win!, options);
         return result;
+      });
+
+      // fs-extra bridge (renderer-safe)
+      this.registerHandler('fs:stat', async (_event, filePath: string) => {
+        const stat = await fs.stat(filePath);
+        return { size: stat.size, mtime: stat.mtime.getTime(), isFile: stat.isFile(), isDirectory: stat.isDirectory() };
+      });
+
+      this.registerHandler('fs:copy', async (_event, src: string, dest: string, options?: fs.CopyOptions) => {
+        await fs.copy(src, dest, options);
+        return { success: true };
+      });
+
+      this.registerHandler('fs:remove', async (_event, targetPath: string) => {
+        await fs.remove(targetPath);
+        return { success: true };
+      });
+
+      this.registerHandler('fs:move', async (_event, src: string, dest: string, options?: fs.MoveOptions) => {
+        await fs.move(src, dest, options);
+        return { success: true };
+      });
+
+      this.registerHandler('fs:readJson', async (_event, filePath: string) => {
+        const data = await fs.readJson(filePath);
+        return data;
+      });
+
+      this.registerHandler('fs:writeJson', async (_event, filePath: string, data: any, spaces: number = 2) => {
+        await fs.ensureDir(path.dirname(filePath));
+        await fs.writeJson(filePath, data, { spaces });
+        return { success: true, path: filePath };
       });
 
       // Health check - 用于测试IPC通信是否正常
