@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run clean:dist:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm start:*)",
+      "Bash(taskkill:*)",
+      "Bash(start npm run dev:renderer)",
+      "Bash(start npm run dev:electron)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx cross-env:*)",
+      "Bash(npx electron:*)",
+      "Bash(where:*)",
+      "Bash(echo:*)",
+      "Bash(start npm run dev:main)",
+      "Bash(cmd //c \"npx cross-env NODE_ENV=development electron dist/main/main.js\")",
+      "Bash(cmd //c \"npm run dev\")",
+      "Bash(cmd //c \"npm run build\":*)"
+    ],
+    "deny": []
+  }
+}
