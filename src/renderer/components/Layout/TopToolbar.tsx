@@ -5,7 +5,6 @@
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Button } from '../../ui/components/Button/Button';
 import { IconButton } from '../../ui/components/IconButton/IconButton';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Dropdown, type DropdownItem as DropdownItemType } from '../../ui/components/Dropdown/Dropdown';
