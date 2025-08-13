@@ -32,7 +32,9 @@ module.exports = (env, argv) => {
     resolve: {
       fallback: {
         path: require.resolve('path-browserify'),
-        buffer: require.resolve('buffer/')
+        buffer: require.resolve('buffer/'),
+        constants: require.resolve('constants-browserify'),
+        fs: false
       }
     },
     plugins: [
