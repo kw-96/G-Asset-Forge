@@ -10,6 +10,7 @@ import styled from 'styled-components';
 import { Button } from '../../ui/components/Button/Button';
 // import { Badge } from '../../ui/components/Badge/Badge';
 import { canvasEvents } from '../../utils/events/canvasEvents';
+import { useCanvasStore } from '../../stores/canvasStore';
 
 const WorkspaceContainer = styled.div`
   flex: 1;
@@ -36,6 +37,13 @@ const WorkspaceContainer = styled.div`
 //   align-items: center;
 //   gap: ${({ theme }) => theme.spacing.sm};
 // `;
+
+const CanvasAreaWrapper = styled.div<{ $showRuler: boolean; $rulerSize: number }>`
+  position: relative;
+  flex: 1;
+  padding-top: ${({ $showRuler, $rulerSize }) => ($showRuler ? `${$rulerSize}px` : '0')};
+  padding-left: ${({ $showRuler, $rulerSize }) => ($showRuler ? `${$rulerSize}px` : '0')};
+`;
 
 const InfiniteCanvasArea = styled.div<{ $showGrid: boolean; $gridSize: number; $panX: number; $panY: number; $zoom: number }>`
   flex: 1;
@@ -110,6 +118,42 @@ const ViewportIndicator = styled.div<{ $x: number; $y: number; $width: number; $
   cursor: move;
 `;
 
+const RulerCanvasHorizontal = styled.canvas<{ $visible: boolean; $rulerSize: number }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: ${({ $rulerSize }) => $rulerSize}px;
+  right: 0;
+  display: ${({ $visible }) => ($visible ? 'block' : 'none')};
+  background: ${({ theme }) => theme.colors.surface};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
+  z-index: ${({ theme }) => theme.zIndex.banner};
+`;
+
+const RulerCanvasVertical = styled.canvas<{ $visible: boolean; $rulerSize: number }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: ${({ $rulerSize }) => $rulerSize}px;
+  bottom: 0;
+  display: ${({ $visible }) => ($visible ? 'block' : 'none')};
+  background: ${({ theme }) => theme.colors.surface};
+  border-right: 1px solid ${({ theme }) => theme.colors.border.default};
+  z-index: ${({ theme }) => theme.zIndex.banner};
+`;
+
+const GuideLine = styled.div<{ $orientation: 'vertical' | 'horizontal'; $positionPx: number }>`
+  position: absolute;
+  ${({ $orientation, $positionPx }) =>
+    $orientation === 'vertical'
+      ? `left: ${$positionPx}px; top: 0; bottom: 0; width: 1px;`
+      : `top: ${$positionPx}px; left: 0; right: 0; height: 1px;`}
+  background: #4f46e5;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: ${({ theme }) => theme.zIndex.overlay};
+`;
+
 // 无限画布对象接口
 interface CanvasObject {
   id: string;
@@ -160,8 +204,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   const [gridSize] = useState(20);
   // const [snapToGrid, setSnapToGrid] = useState(false);
   const [showGuides, setShowGuides] = useState(true);
-  // const [guides, setGuides] = useState<Array<{
-  const [guides] = useState<Array<{
+  const [guides, setGuides] = useState<Array<{
     id: string;
     type: 'horizontal' | 'vertical';
     position: number;
@@ -183,6 +226,12 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   const [draggedObjectStart, setDraggedObjectStart] = useState({ x: 0, y: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const rulerHRef = useRef<HTMLCanvasElement>(null);
+  const rulerVRef = useRef<HTMLCanvasElement>(null);
+  const RULER_SIZE = 20;
+  // 从全局画布Store读取标尺可见性
+  const showRuler = useCanvasStore(s => s.showRuler);
+
 
   // 常用模板
   // const templates: CanvasTemplate[] = [
@@ -430,6 +479,163 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   const handleDoubleClick = useCallback(() => {
     handleFitToContent();
   }, [handleFitToContent]);
+
+  // 计算合适刻度步长（世界坐标单位），保证屏幕像素间距在 50-100 像素
+  const computeStep = useCallback((zoom: number) => {
+    const minPx = 50;
+    const maxPx = 100;
+    const targetWorld = minPx / Math.max(zoom, 0.01);
+    const pow = Math.pow(10, Math.floor(Math.log10(targetWorld)));
+    const candidates = [1, 2, 5, 10].map(m => m * pow);
+    const base = (candidates[0] ?? pow);
+    let best: number = base;
+    let bestPx: number = best * zoom;
+    for (const c of candidates) {
+      const px = c * zoom;
+      if (px >= minPx && px <= maxPx) return c;
+      if (Math.abs(px - (minPx + maxPx) / 2) < Math.abs(bestPx - (minPx + maxPx) / 2)) {
+        best = c; bestPx = px;
+      }
+    }
+    return best || pow; // 类型保护，确保有返回值
+  }, []);
+
+  // 绘制水平/垂直标尺
+  useEffect(() => {
+    if (!showRuler) return;
+    const devicePixelRatio = window.devicePixelRatio || 1;
+
+    const drawHorizontal = () => {
+      const canvas = rulerHRef.current;
+      const host = canvas?.parentElement as HTMLElement | null;
+      if (!canvas || !host) return;
+      const width = host.clientWidth;
+      const height = RULER_SIZE;
+      canvas.width = Math.max(1, Math.floor(width * devicePixelRatio));
+      canvas.height = Math.max(1, Math.floor(height * devicePixelRatio));
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.fillStyle = '#475569';
+      ctx.font = '10px sans-serif';
+
+      const stepWorld = computeStep(viewport.zoom);
+      const startWorld = Math.floor((-viewport.x) / stepWorld) * stepWorld;
+      for (let world = startWorld; ; world += stepWorld) {
+        const x = Math.round(world * viewport.zoom + viewport.x);
+        if (x > width) break;
+        if (x >= 0) {
+          const isMajor = Math.abs((world / (stepWorld * 5)) - Math.round(world / (stepWorld * 5))) < 1e-6;
+          const tick = isMajor ? height : Math.floor(height * 0.6);
+          ctx.beginPath();
+          ctx.moveTo(x + 0.5, height);
+          ctx.lineTo(x + 0.5, height - tick + 2);
+          ctx.stroke();
+          if (isMajor) {
+            const label = Math.round(world).toString();
+            ctx.fillText(label, x + 2, 10);
+          }
+        }
+        if (world > (width - viewport.x) / viewport.zoom) break;
+      }
+    };
+
+    const drawVertical = () => {
+      const canvas = rulerVRef.current;
+      const host = canvas?.parentElement as HTMLElement | null;
+      if (!canvas || !host) return;
+      const height = host.clientHeight;
+      const width = RULER_SIZE;
+      canvas.width = Math.max(1, Math.floor(width * devicePixelRatio));
+      canvas.height = Math.max(1, Math.floor(height * devicePixelRatio));
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.fillStyle = '#475569';
+      ctx.font = '10px sans-serif';
+
+      const stepWorld = computeStep(viewport.zoom);
+      const startWorld = Math.floor((-viewport.y) / stepWorld) * stepWorld;
+      for (let world = startWorld; ; world += stepWorld) {
+        const y = Math.round(world * viewport.zoom + viewport.y);
+        if (y > height) break;
+        if (y >= 0) {
+          const isMajor = Math.abs((world / (stepWorld * 5)) - Math.round(world / (stepWorld * 5))) < 1e-6;
+          const tick = isMajor ? width : Math.floor(width * 0.6);
+          ctx.beginPath();
+          ctx.moveTo(width, y + 0.5);
+          ctx.lineTo(width - tick + 2, y + 0.5);
+          ctx.stroke();
+          if (isMajor) {
+            const label = Math.round(world).toString();
+            ctx.save();
+            ctx.translate(0, y + 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(label, 2, 10);
+            ctx.restore();
+          }
+        }
+        if (world > (height - viewport.y) / viewport.zoom) break;
+      }
+    };
+
+    drawHorizontal();
+    drawVertical();
+  }, [viewport.x, viewport.y, viewport.zoom, showRuler, computeStep]);
+
+  // 从标尺拖拽创建参考线（简单实现）
+  useEffect(() => {
+    if (!showRuler) return;
+    const wrapper = canvasRef.current?.parentElement as HTMLElement | null;
+    if (!wrapper) return;
+
+    let dragging: null | { type: 'vertical' | 'horizontal' } = null;
+
+    const onMouseDown = (e: MouseEvent) => {
+      const rect = wrapper.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if (x >= 0 && x <= RULER_SIZE) {
+        dragging = { type: 'vertical' };
+      } else if (y >= 0 && y <= RULER_SIZE) {
+        dragging = { type: 'horizontal' };
+      }
+    };
+    const onMouseUp = (e: MouseEvent) => {
+      if (!dragging) return;
+      const rect = wrapper.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if (dragging.type === 'vertical') {
+        const world = (x - viewport.x - (showRuler ? RULER_SIZE : 0)) / Math.max(viewport.zoom, 0.01);
+        setGuides(prev => [...prev, { id: `gv-${Date.now()}`, type: 'vertical', position: world, color: '#4f46e5' }]);
+      } else {
+        const world = (y - viewport.y - (showRuler ? RULER_SIZE : 0)) / Math.max(viewport.zoom, 0.01);
+        setGuides(prev => [...prev, { id: `gh-${Date.now()}`, type: 'horizontal', position: world, color: '#4f46e5' }]);
+      }
+      dragging = null;
+    };
+    wrapper.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      wrapper.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [showRuler, viewport.x, viewport.y, viewport.zoom]);
 
   // 创建模板对象（预留实现）
   // const handleCreateTemplate = useCallback((template: CanvasTemplate) => {
@@ -727,22 +933,26 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
         </ToolbarSection>
       </CanvasToolbar> */}
 
-      {/* 无限画布区域 */}
-      <InfiniteCanvasArea
-        key={`${containerSize.width}x${containerSize.height}`}
-        ref={canvasRef}
-        $showGrid={showGrid}
-        $gridSize={gridSize}
-        $panX={viewport.x}
-        $panY={viewport.y}
-        $zoom={viewport.zoom}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
-        onDoubleClick={handleDoubleClick}
-      >
+      {/* 标尺 + 画布区域 */}
+      <CanvasAreaWrapper $showRuler={showRuler} $rulerSize={RULER_SIZE}>
+        <RulerCanvasHorizontal ref={rulerHRef} $visible={showRuler} $rulerSize={RULER_SIZE} />
+        <RulerCanvasVertical ref={rulerVRef} $visible={showRuler} $rulerSize={RULER_SIZE} />
+
+        <InfiniteCanvasArea
+          key={`${containerSize.width}x${containerSize.height}`}
+          ref={canvasRef}
+          $showGrid={showGrid}
+          $gridSize={gridSize}
+          $panX={viewport.x}
+          $panY={viewport.y}
+          $zoom={viewport.zoom}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+          onDoubleClick={handleDoubleClick}
+        >
         {/* 无限画布内容 */}
         <InfiniteCanvas
           $panX={viewport.x}
@@ -785,8 +995,21 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
               )}
             </CanvasObject>
           ))}
-        </InfiniteCanvas>
+          </InfiniteCanvas>
+        </InfiniteCanvasArea>
 
+        {/* 参考线渲染（世界->屏幕转换） */}
+        {guides.map(g => (
+          <GuideLine
+            key={g.id}
+            $orientation={g.type}
+            $positionPx={
+              g.type === 'vertical'
+                ? Math.round(g.position * viewport.zoom + viewport.x)
+                : Math.round(g.position * viewport.zoom + viewport.y)
+            }
+          />
+        ))}
 
         {/* 概览导航器 */}
         <OverviewNavigator $visible={showOverview}>
@@ -826,8 +1049,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
             />
           </div>
         </OverviewNavigator>
-
-      </InfiniteCanvasArea>
+      </CanvasAreaWrapper>
     </WorkspaceContainer>
   );
 };
