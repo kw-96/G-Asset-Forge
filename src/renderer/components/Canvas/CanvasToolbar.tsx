@@ -161,7 +161,7 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ className, style }) => {
 
       {/* Display Options */}
       <ToolGroup>
-        <Tooltip content="显示网格 (Ctrl+')">
+        <Tooltip content="显示网格 (G)">
           <ToggleButton
             icon={<SvgIcon name="icon.24.grid.svg" size={16} title="显示网格" />}
             onClick={() => setShowGrid(!showGrid)}

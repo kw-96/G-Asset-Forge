@@ -843,6 +843,15 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
               st.setShowGrid(!st.showGrid);
             }
             break;
+          case 'R':
+            if (e.shiftKey) {
+              e.preventDefault();
+              {
+                const st = useCanvasStore.getState();
+                st.setShowRuler(!st.showRuler);
+              }
+            }
+            break;
           case 'r':
             e.preventDefault();
             setShowGuides(prev => !prev);
