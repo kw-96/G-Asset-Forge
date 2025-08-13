@@ -282,6 +282,52 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     }
   }, [setCurrentProject]);
 
+  /**
+   * 获取当前激活标签的项目
+   */
+  const getActiveProject = useCallback((): IProjectData | null => {
+    const active = tabs.find(t => t.id === activeTabId);
+    return (active?.project as IProjectData) || null;
+  }, [tabs, activeTabId]);
+
+  /**
+   * 默认保存：保存到应用本地缓存目录（不弹窗）
+   */
+  const handleSaveProjectDefault = useCallback(async () => {
+    try {
+      const project = getActiveProject();
+      if (!project || !projectManagerRef.current) return;
+      // 强制将当期项目写入管理器后保存
+      (projectManagerRef.current as any).currentProject = project;
+      await projectManagerRef.current.saveProject();
+      // 更新标签标题（若名称变化）
+      setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, title: (project as any).metadata?.name || t.title } : t));
+    } catch (e) {
+      console.error('保存项目失败:', e);
+    }
+  }, [getActiveProject, activeTabId]);
+
+  /**
+   * 导出/另存为：弹出对话框选择路径
+   */
+  const handleExportProjectAs = useCallback(async () => {
+    try {
+      const project = getActiveProject();
+      if (!project || !projectManagerRef.current) return;
+      (projectManagerRef.current as any).currentProject = project;
+      const { dialog } = require('electron').remote;
+      const result = await dialog.showSaveDialog({
+        title: '另存为项目',
+        defaultPath: `${project.metadata?.name || '未命名'}.gaf`,
+        filters: [ { name: 'G-Asset Forge 项目', extensions: ['gaf'] } ]
+      });
+      if (result.canceled || !result.filePath) return;
+      await projectManagerRef.current.saveProjectAs(result.filePath);
+    } catch (e) {
+      console.error('另存为失败:', e);
+    }
+  }, [getActiveProject]);
+
   const handleCloseTab = useCallback((id: string) => {
     setTabs(prev => {
       const idx = prev.findIndex(t => t.id === id);
@@ -313,8 +359,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     // 文件
     { id: 'file__new', label: '新建项目', group: '文件', shortcut: 'Ctrl+N', onSelect: () => { void handleNewTab(); } },
     { id: 'file__open', label: '打开项目', group: '文件', shortcut: 'Ctrl+O', onSelect: () => { void handleOpenProjectToTab(); } },
-    { id: 'file__save', label: '保存项目', group: '文件', shortcut: 'Ctrl+S', onSelect: () => handleFileAction('save') },
-    { id: 'file__export', label: '导出图像', group: '文件', shortcut: 'Ctrl+E', onSelect: () => handleFileAction('export') },
+    { id: 'file__save', label: '保存项目', group: '文件', shortcut: 'Ctrl+S', onSelect: () => { void handleSaveProjectDefault(); } },
+    { id: 'file__export', label: '另存为(.gaf)', group: '文件', shortcut: 'Ctrl+E', onSelect: () => { void handleExportProjectAs(); } },
 
     // 编辑
     { id: 'edit__undo', label: '撤销', group: '编辑', shortcut: 'Ctrl+Z', onSelect: () => handleEditAction('undo') },
