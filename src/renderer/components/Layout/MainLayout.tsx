@@ -13,7 +13,7 @@ import { FigmaLayersPanel } from './FigmaLayersPanel';
 import { FigmaPropertiesPanel } from '../Properties/FigmaPropertiesPanel';
 import { CanvasWorkspace } from '../Canvas/CanvasWorkspace';
 import { StatusBar } from './StatusBar';
-import { AssetsPanel } from '../Assets/AssetsPanel';
+// import { AssetsPanel } from '../Assets/AssetsPanel';
 import { useTheme } from '../../ui/theme/ThemeProvider';
 import { useLayoutConfig } from '../../contexts/LayoutContext';
 
