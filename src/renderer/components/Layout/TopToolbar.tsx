@@ -63,6 +63,7 @@ const ToolbarSection = styled.div<{ $leftDivider?: boolean; $rightDivider?: bool
   ${({ $rightDivider, theme }) => $rightDivider ? `
     border-right: 1px solid ${theme.colors.border.default};
     padding: 0 12px;
+    height: 100%;
   ` : ''}
 `;
 
@@ -145,8 +146,6 @@ const TabItem = styled.button<{ $active: boolean }>`
   max-width: 220px;
   height: 100%;
   padding: 12px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme, $active }) => $active ? theme.colors.border.default : theme.colors.border.subtle};
   background: ${({ theme, $active }) => $active ? theme.colors.surface : theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.primary};
   cursor: pointer;
@@ -292,7 +291,9 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
                 <TabClose onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }} title="关闭">×</TabClose>
               </TabItem>
             ))}
-            <NewTabButton onClick={handleNewTab} aria-label="新建标签" title="新建标签">＋</NewTabButton>
+            <NewTabButton onClick={handleNewTab} aria-label="新建标签" title="新建标签">
+              <SvgIcon name="icon.24.plus.small" size={16} title="新建" />
+            </NewTabButton>
           </TabsScroll>
         </TabsContainer>
       </CenterSection>
