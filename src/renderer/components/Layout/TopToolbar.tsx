@@ -3,12 +3,12 @@
  * 包含文件操作、编辑操作、视图控制等功能
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { IconButton } from '../../ui/components/IconButton/IconButton';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Dropdown, type DropdownItem as DropdownItemType } from '../../ui/components/Dropdown/Dropdown';
-import { Badge } from '../../ui/components/Badge/Badge';
+// import { Badge } from '../../ui/components/Badge/Badge';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
 import { WindowControls } from './WindowControls';
@@ -49,9 +49,9 @@ const ToolbarDivider = styled.div`
 const CenterSection = styled.div`
   flex: 1;
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.sm};
+  -webkit-app-region: no-drag;
 `;
 
 const ProjectInfo = styled.div`
@@ -92,6 +92,70 @@ const MenuTriggerButton = styled.button`
   }
 `;
 
+// 标签条样式
+const TabsContainer = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+`;
+
+const TabsScroll = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  min-width: 0;
+  &::-webkit-scrollbar { display: none; }
+`;
+
+const TabItem = styled.button<{ $active: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme, $active }) => $active ? theme.colors.border.emphasized : theme.colors.border.subtle};
+  background: ${({ theme, $active }) => $active ? theme.colors.surface : theme.colors.background.secondary};
+  color: ${({ theme }) => theme.colors.text.primary};
+  cursor: pointer;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+
+  &:hover { background: ${({ theme }) => theme.colors.interaction?.hover || 'rgba(0,0,0,0.04)'}; }
+`;
+
+const TabTitle = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const TabClose = styled.span`
+  margin-left: 4px;
+  opacity: 0.7;
+  &:hover { opacity: 1; }
+`;
+
+const NewTabButton = styled.button`
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px dashed ${({ theme }) => theme.colors.border.subtle};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  &:hover { background: ${({ theme }) => theme.colors.interaction?.hover || 'rgba(0,0,0,0.04)'}; }
+`;
+
 export const TopToolbar: React.FC<TopToolbarProps> = ({
   // onToggleLeftPanel,
   onToggleRightPanel,
@@ -99,6 +163,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   rightPanelCollapsed,
 }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tabs, setTabs] = useState<Array<{ id: string; title: string; icon?: string }>>([
+    { id: 'tab-1', title: '无标题' },
+  ]);
+  const [activeTabId, setActiveTabId] = useState<string>('tab-1');
 
   const handleFileAction = (action: string) => {
     console.log('File action:', action);
@@ -111,6 +179,26 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   const handleSettingsClick = () => {
     setIsSettingsOpen(true);
   };
+
+  const handleNewTab = useCallback(() => {
+    const id = `tab-${Date.now()}`;
+    setTabs(prev => [...prev, { id, title: '无标题' }]);
+    setActiveTabId(id);
+  }, []);
+
+  const handleCloseTab = useCallback((id: string) => {
+    setTabs(prev => {
+      const idx = prev.findIndex(t => t.id === id);
+      const next = prev.filter(t => t.id !== id);
+      if (id === activeTabId && next.length > 0) {
+        const newActive = next[Math.max(0, idx - 1)].id;
+        setActiveTabId(newActive);
+      }
+      return next.length > 0 ? next : [{ id: 'tab-1', title: '无标题' }];
+    });
+  }, [activeTabId]);
+
+  const handleActivateTab = useCallback((id: string) => setActiveTabId(id), []);
 
   // 统一下拉菜单条目（文件/编辑/设置/帮助关于）
   const unifiedMenuItems: DropdownItemType[] = [
@@ -135,41 +223,38 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   return (
     <>
     <ToolbarContainer>
-      {/* 左侧：面板切换（文件/编辑已合并至右侧统一菜单） */}
+      {/* 左侧：主页按钮 */}
       <ToolbarSection>
-        <ToolbarDivider />
-
+        <NoDrag>
+          <IconButton
+            icon={<SvgIcon name="icon.24.home" size={20} title="主页" />}
+            variant="ghost"
+            size="sm"
+            onClick={() => console.log('open home')}
+            aria-label="主页"
+            title="主页"
+          />
+        </NoDrag>
       </ToolbarSection>
 
-      {/* 中央：项目信息和缩放控制 */}
+      {/* 中央：标签栏 */}
       <CenterSection>
-        <ProjectInfo>
-          <ProjectName>未命名项目</ProjectName>
-          <Badge variant="success" size="sm"></Badge>
-        </ProjectInfo>
+        <TabsContainer>
+          <TabsScroll>
+            {tabs.map(tab => (
+              <TabItem key={tab.id} $active={tab.id === activeTabId} onClick={() => handleActivateTab(tab.id)} title={tab.title}>
+                {tab.icon && <SvgIcon name={tab.icon} size={14} title="文件" />}
+                <TabTitle>{tab.title}</TabTitle>
+                <TabClose onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }} title="关闭">×</TabClose>
+              </TabItem>
+            ))}
+            <NewTabButton onClick={handleNewTab} aria-label="新建标签" title="新建标签">＋</NewTabButton>
+          </TabsScroll>
+        </TabsContainer>
       </CenterSection>
 
       {/* 右侧：视图控制和面板切换 */}
       <ToolbarSection>
-        <NoDrag>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            icon={<SvgIcon name="icon.24.design" size={16} title="设计模式" />}
-            onClick={() => console.log('Switch to design mode')}
-          />
-        </NoDrag>
-
-        <NoDrag>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            icon={<SvgIcon name="icon.24.mobile" size={16} title="H5模式" />}
-            onClick={() => console.log('Switch to H5 mode')}
-          />
-        </NoDrag>
-
-        <ToolbarDivider />
 
         {/* 统一下拉菜单按钮（窗口控制左侧） */}
         <NoDrag>
