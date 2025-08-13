@@ -644,8 +644,6 @@ export const MainLayout: React.FC = () => {
                   onLayerToggleExpanded={handleLayerToggleExpanded}
                   activePanel={activeLeftPanel}
                   onSwitchPanel={setActiveLeftPanel}
-                  onTogglePanel={handleToggleLeftPanel}
-                  panelCollapsed={leftPanelCollapsed}
                 />
                 {activeLeftPanel !== 'layers' && (
                   <AssetsPanel />

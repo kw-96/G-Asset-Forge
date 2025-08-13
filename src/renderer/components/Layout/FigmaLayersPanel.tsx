@@ -31,8 +31,6 @@ interface FigmaLayersPanelProps {
   // 可选：嵌入原 LeftToolPanel 的顶部工具区
   activePanel?: 'layers' | 'assets';
   onSwitchPanel?: (panel: 'layers' | 'assets') => void;
-  onTogglePanel?: () => void;
-  panelCollapsed?: boolean;
 }
 
 const PanelContainer = styled.div`
@@ -206,8 +204,6 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
   onLayerToggleExpanded,
   activePanel,
   onSwitchPanel,
-  onTogglePanel,
-  panelCollapsed,
 }) => {
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -322,16 +318,6 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
     <PanelContainer>
       {onSwitchPanel && (
         <TopToolsBar>
-          <EnhancedIconButton
-            icon={<SvgIcon name={panelCollapsed ? 'icon.16.chevron.right' : 'icon.16.chevron.right'} size={16} title={panelCollapsed ? '展开' : '折叠'} />}
-            onClick={() => onTogglePanel && onTogglePanel()}
-            enableFigmaInteractions={true}
-            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
-            tooltipContent={panelCollapsed ? '展开面板' : '折叠面板'}
-            tooltipPlacement="bottom"
-            interactionVariant="tool"
-            aria-label={panelCollapsed ? '展开面板' : '折叠面板'}
-          />
           <EnhancedIconButton
             icon={<SvgIcon name="icon.16.frame" size={16} title="图层" />}
             onClick={() => onSwitchPanel && onSwitchPanel('layers')}
