@@ -634,7 +634,7 @@ export const MainLayout: React.FC = () => {
                 animate={reducedMotion ? false : { opacity: leftPanelCollapsed ? 0 : 1 }}
                 transition={{ duration: 0.2 }}
               >
-                <FigmaLayersPanel
+              <FigmaLayersPanel
                   layers={layers}
                   selectedLayerId={selectedObject?.id}
                   onLayerSelect={handleLayerSelect}
@@ -642,8 +642,14 @@ export const MainLayout: React.FC = () => {
                   onLayerToggleLock={handleLayerToggleLock}
                   onLayerRename={handleLayerRename}
                   onLayerToggleExpanded={handleLayerToggleExpanded}
-                  activePanel={activeLeftPanel}
                   onSwitchPanel={setActiveLeftPanel}
+                  onSwitchMode={(m) => {
+                    // 触发中心画布切换到 H5 编辑器模式
+                    if (m === 'h5') {
+                      // 这里可扩展为设置全局状态或路由到 H5 编辑器视图
+                      // 当前实现：通过 CanvasWorkspace 的 onModeChange 实现联动（已保留接口）
+                    }
+                  }}
                 />
               </FigmaSidePanel>
 
@@ -668,7 +674,12 @@ export const MainLayout: React.FC = () => {
             />
           </FloatingToolbar>
           
-          <CanvasWorkspace />
+          <CanvasWorkspace
+            mode={actualMode === 'dark' ? undefined : undefined}
+            onModeChange={(m) => {
+              // 将 H5 切换统一由顶部左侧图标按钮控制
+            }}
+          />
         </FigmaCenterSection>
 
         {/* 右侧面板区域 */}

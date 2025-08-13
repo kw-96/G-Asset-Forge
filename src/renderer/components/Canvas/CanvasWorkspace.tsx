@@ -198,11 +198,22 @@ interface ViewportInfo {
 //   emoji: string;
 // }
 
-export const CanvasWorkspace: React.FC = () => {
+interface CanvasWorkspaceProps {
+  mode?: 'design' | 'h5';
+  onModeChange?: (mode: 'design' | 'h5') => void;
+}
+
+export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controlledMode, onModeChange }) => {
   // 无限画布状态
   const [viewport, setViewport] = useState<ViewportInfo>({ x: 0, y: 0, zoom: 1 });
   const [hasError, setHasError] = useState(false);
-  const [mode, setMode] = useState<'design' | 'h5'>('design');
+  const [mode, setMode] = useState<'design' | 'h5'>(controlledMode || 'design');
+  // 受控模式同步
+  useEffect(() => {
+    if (controlledMode && controlledMode !== mode) {
+      setMode(controlledMode);
+    }
+  }, [controlledMode]);
   const [showGrid, setShowGrid] = useState(true);
   // const [gridSize, setGridSize] = useState(20);
   const [gridSize] = useState(20);
@@ -922,7 +933,7 @@ export const CanvasWorkspace: React.FC = () => {
               $active={mode === 'design'}
               variant="ghost"
               size="sm"
-              onClick={() => setMode('design')}
+              onClick={() => (onModeChange ? onModeChange('design') : setMode('design'))}
             >
               <SvgIcon name="icon.16.design" size={12} title="设计" />
             </ModeButton>
@@ -930,7 +941,7 @@ export const CanvasWorkspace: React.FC = () => {
               $active={mode === 'h5'}
               variant="ghost"
               size="sm"
-              onClick={() => setMode('h5')}
+              onClick={() => (onModeChange ? onModeChange('h5') : setMode('h5'))}
             >
               <SvgIcon name="icon.16.mobile" size={12} title="H5" />
             </ModeButton>
