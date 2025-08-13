@@ -50,10 +50,25 @@ const PanelContainer = styled.div`
 const TopToolsBar = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 8px;
+  justify-content: space-between;
+  gap: 0;
+  padding: 6px 8px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.interface.divider.light};
   background: ${({ theme }) => theme.colors.surface};
+  
+  & > * {
+    flex: 1 1 20%;
+  }
+`;
+
+const TopToolButton = styled(EnhancedIconButton)`
+  height: 40px;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const PanelHeader = styled.div`
@@ -327,8 +342,8 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
     <PanelContainer>
       {onSwitchPanel && (
         <TopToolsBar>
-          <EnhancedIconButton
-            icon={<SvgIcon name="icon.24.file.design" size={16} title="设计模式" />}
+          <TopToolButton
+            icon={<SvgIcon name="icon.24.file.design" size={24} title="设计模式" />}
             onClick={() => onSwitchMode && onSwitchMode('design')}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
@@ -336,9 +351,10 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
             tooltipPlacement="bottom"
             interactionVariant="tool"
             aria-label="设计模式"
+            variant="ghost"
           />
-          <EnhancedIconButton
-            icon={<SvgIcon name="icon.24.file.H5" size={16} title="H5模式" />}
+          <TopToolButton
+            icon={<SvgIcon name="icon.24.file.H5" size={24} title="H5模式" />}
             onClick={() => onSwitchMode && onSwitchMode('h5')}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
@@ -346,9 +362,10 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
             tooltipPlacement="bottom"
             interactionVariant="tool"
             aria-label="H5模式"
+            variant="ghost"
           />
-          <EnhancedIconButton
-            icon={<SvgIcon name="icon.24.file.design.mods" size={16} title="模板库" />}
+          <TopToolButton
+            icon={<SvgIcon name="icon.24.file.design.mods" size={24} title="模板库" />}
             onClick={() => onOpenTemplateLibrary && onOpenTemplateLibrary()}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
@@ -356,20 +373,21 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
             tooltipPlacement="bottom"
             interactionVariant="tool"
             aria-label="模板库"
+            variant="ghost"
           />
-          <EnhancedIconButton
-            icon={<SvgIcon name="icon.24.file.design.assets" size={16} title="素材库" />}
+          <TopToolButton
+            icon={<SvgIcon name="icon.24.file.design.assets" size={24} title="素材库" />}
             onClick={() => onOpenAssetLibrary ? onOpenAssetLibrary() : (onSwitchPanel && onSwitchPanel('assets'))}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
             tooltipContent="素材库"
             tooltipPlacement="bottom"
-            variant={activePanel === 'assets' ? 'primary' : 'ghost'}
             interactionVariant="tool"
             aria-label="素材库"
+            variant={activePanel === 'assets' ? 'primary' : 'ghost'}
           />
-          <EnhancedIconButton
-            icon={<SvgIcon name="icon.24.file.design.library" size={16} title="项目库" />}
+          <TopToolButton
+            icon={<SvgIcon name="icon.24.file.design.library" size={24} title="项目库" />}
             onClick={() => onOpenProjectLibrary && onOpenProjectLibrary()}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
@@ -377,6 +395,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
             tooltipPlacement="bottom"
             interactionVariant="tool"
             aria-label="项目库"
+            variant="ghost"
           />
         </TopToolsBar>
       )}
