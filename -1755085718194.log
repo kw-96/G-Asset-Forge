@@ -1,0 +1,21 @@
+react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtoolsYou might need to use a local HTTP server (instead of file://): https://reactjs.org/link/react-devtools-faq
+main.js:13431 Uncaught ReferenceError: require is not defined
+    at Object.buffer (main.js:13431:1)
+    at __webpack_require__ (main.js:13510:41)
+    at eval (sharp-integration.ts:5:40)
+    at ./src/renderer/engines/h5-editor/utils/sharp-integration.ts (main.js:13046:1)
+    at __webpack_require__ (main.js:13510:41)
+    at eval (ImageExportEngine.ts:6:82)
+    at ./src/renderer/engines/h5-editor/export/ImageExportEngine.ts (main.js:13024:1)
+    at __webpack_require__ (main.js:13510:41)
+    at eval (h5-editor-manager.ts:8:83)
+    at ./src/renderer/engines/h5-editor/core/h5-editor-manager.ts (main.js:13002:1)
+VM161 renderer_init:2 Electron Security Warning (Insecure Content-Security-Policy) This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+warnAboutInsecureCSP @ VM161 renderer_init:2
