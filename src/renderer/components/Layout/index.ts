@@ -1,7 +1,7 @@
 // 布局系统核心组件
 export { MainLayout } from './MainLayout';
 export { TopToolbar } from './TopToolbar';
-export { LeftToolPanel } from './LeftToolPanel';
+// export { LeftToolPanel } from './LeftToolPanel'; // 已合并到 FigmaLayersPanel 顶部工具条
 export { StatusBar } from './StatusBar';
 
 // Figma风格组件
