@@ -32,7 +32,7 @@ interface FigmaLayersPanelProps {
   onLayerToggleExpanded: (layerId: string) => void;
   // 可选：嵌入原 LeftToolPanel 的顶部工具区
   activePanel?: 'layers' | 'assets';
-  onSwitchPanel?: (panel: 'layers' | 'assets') => void;
+  onSwitchPanel?: (panel: 'layers' | 'assets') => void | undefined;
   // 新增：模式/库切换
   onSwitchMode?: (mode: 'design' | 'h5') => void;
   onOpenTemplateLibrary?: () => void;
