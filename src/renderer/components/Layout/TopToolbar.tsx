@@ -10,7 +10,7 @@ import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Dropdown, type DropdownItem as DropdownItemType } from '../../ui/components/Dropdown/Dropdown';
 // import { Badge } from '../../ui/components/Badge/Badge';
 import { SettingsModal } from '../Settings/SettingsModal';
-import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
+// import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
 import { WindowControls } from './WindowControls';
 import { useAppStore } from '../../stores/appStore';
 
@@ -55,11 +55,15 @@ const ToolbarContainer = styled.div`
   -webkit-app-region: drag;
 `;
 
-const ToolbarSection = styled.div`
+const ToolbarSection = styled.div<{ $leftDivider?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
   -webkit-app-region: no-drag;
+  ${({ $leftDivider, theme }) => $leftDivider ? `
+    border-left: 1px solid ${theme.colors.border.default};
+    padding-left: ${theme.spacing.sm};
+  ` : ''}
 `;
 
 // 保留分隔符定义以备将来使用（当前未使用）
@@ -97,17 +101,15 @@ const NoDrag = styled.div`
 
 // 统一菜单触发按钮（图标按钮），放在窗口控制组件左侧
 const MenuTriggerButton = styled.button`
-  width: 28px;
-  height: 28px;
+  
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   background: ${({ theme }) => theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.secondary};
-  border-radius: ${({ theme }) => theme.borderRadius.small};
   cursor: pointer;
-  padding: 0;
+  padding: 12px;
   -webkit-app-region: no-drag;
 
   &:hover {
@@ -182,9 +184,9 @@ const NewTabButton = styled.button`
 
 export const TopToolbar: React.FC<TopToolbarProps> = ({
   // onToggleLeftPanel,
-  onToggleRightPanel,
+  // onToggleRightPanel,
   // leftPanelCollapsed,
-  rightPanelCollapsed,
+  // rightPanelCollapsed,
 }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // 兼容旧 store：若不存在 setCurrentProject 则提供空函数
@@ -243,21 +245,21 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   // 统一下拉菜单条目（文件/编辑/设置/帮助关于）
   const unifiedMenuItems: DropdownItemType[] = [
     // 文件
-    { id: 'file__new', label: '新建项目', icon: <SvgIcon name="icon.24.file.design" size={16} title="新建项目" />, group: '文件', shortcut: 'Ctrl+N', onSelect: () => handleFileAction('new') },
-    { id: 'file__open', label: '打开项目', icon: <SvgIcon name="icon.24.open.session" size={16} title="打开项目" />, group: '文件', shortcut: 'Ctrl+O', onSelect: () => handleFileAction('open') },
-    { id: 'file__save', label: '保存项目', icon: <SvgIcon name="icon.24.save" size={16} title="保存项目" />, group: '文件', shortcut: 'Ctrl+S', onSelect: () => handleFileAction('save') },
-    { id: 'file__export', label: '导出图像', icon: <SvgIcon name="icon.24.export" size={16} title="导出图像" />, group: '文件', shortcut: 'Ctrl+E', onSelect: () => handleFileAction('export') },
+    { id: 'file__new', label: '新建项目', group: '文件', shortcut: 'Ctrl+N', onSelect: () => handleFileAction('new') },
+    { id: 'file__open', label: '打开项目', group: '文件', shortcut: 'Ctrl+O', onSelect: () => handleFileAction('open') },
+    { id: 'file__save', label: '保存项目', group: '文件', shortcut: 'Ctrl+S', onSelect: () => handleFileAction('save') },
+    { id: 'file__export', label: '导出图像', group: '文件', shortcut: 'Ctrl+E', onSelect: () => handleFileAction('export') },
 
     // 编辑
-    { id: 'edit__undo', label: '撤销', icon: <SvgIcon name="icon.24.return" size={16} title="撤销" />, group: '编辑', shortcut: 'Ctrl+Z', onSelect: () => handleEditAction('undo') },
-    { id: 'edit__redo', label: '重做', icon: <SvgIcon name="icon.24.forward" size={16} title="重做" />, group: '编辑', shortcut: 'Ctrl+Shift+Z', onSelect: () => handleEditAction('redo') },
-    { id: 'edit__copy', label: '复制', icon: <SvgIcon name="icon.24.copy" size={16} title="复制" />, group: '编辑', shortcut: 'Ctrl+C', onSelect: () => handleEditAction('copy') },
-    { id: 'edit__paste', label: '粘贴', icon: <SvgIcon name="icon.24.paste" size={16} title="粘贴" />, group: '编辑', shortcut: 'Ctrl+V', onSelect: () => handleEditAction('paste') },
+    { id: 'edit__undo', label: '撤销', group: '编辑', shortcut: 'Ctrl+Z', onSelect: () => handleEditAction('undo') },
+    { id: 'edit__redo', label: '重做', group: '编辑', shortcut: 'Ctrl+Shift+Z', onSelect: () => handleEditAction('redo') },
+    { id: 'edit__copy', label: '复制', group: '编辑', shortcut: 'Ctrl+C', onSelect: () => handleEditAction('copy') },
+    { id: 'edit__paste', label: '粘贴', group: '编辑', shortcut: 'Ctrl+V', onSelect: () => handleEditAction('paste') },
 
     // 系统
-    { id: 'settings__open', label: '设置', icon: <SvgIcon name="icon.24.settings" size={16} title="设置" />, group: '系统', shortcut: 'Ctrl+,', onSelect: () => handleSettingsClick() },
-    { id: 'help__docs', label: '帮助', icon: <SvgIcon name="icon.24.info" size={16} title="帮助" />, group: '系统', onSelect: () => console.log('open help') },
-    { id: 'about__app', label: '关于', icon: <SvgIcon name="icon.24.info" size={16} title="关于" />, group: '系统', onSelect: () => console.log('open about') },
+    { id: 'settings__open', label: '设置', group: '系统', shortcut: 'Ctrl+,', onSelect: () => handleSettingsClick() },
+    { id: 'help__docs', label: '帮助', group: '系统', onSelect: () => console.log('open help') },
+    { id: 'about__app', label: '关于', group: '系统', onSelect: () => console.log('open about') },
   ];
 
   return (
@@ -273,6 +275,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             onClick={() => console.log('open home')}
             aria-label="主页"
             title="主页"
+            style={{ padding: '12px' }}
           />
         </NoDrag>
       </ToolbarSection>
@@ -294,7 +297,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
       </CenterSection>
 
       {/* 右侧：视图控制和面板切换 */}
-      <ToolbarSection>
+      <ToolbarSection $leftDivider>
 
         {/* 统一下拉菜单按钮（窗口控制左侧） */}
         <NoDrag>
@@ -302,23 +305,11 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             mode="enhanced"
             trigger={
               <MenuTriggerButton aria-label="应用菜单" title="应用菜单">
-                <SvgIcon name="icon.24.more" size={16} title="菜单" />
+                <SvgIcon name="icon.24.more" size={20} title="菜单" />
               </MenuTriggerButton>
             }
             items={unifiedMenuItems}
             placement="bottom-end"
-          />
-        </NoDrag>
-
-        <NoDrag>
-          <EnhancedIconButton
-            icon={rightPanelCollapsed ? '◀' : '▶'}
-            onClick={() => onToggleRightPanel?.()}
-            enableTooltip={true}
-            tooltipContent={rightPanelCollapsed ? '显示右侧面板' : '隐藏右侧面板'}
-            enableKeyboardShortcut={true}
-            keyboardShortcut="Ctrl+2"
-            aria-label="切换右侧面板"
           />
         </NoDrag>
 
