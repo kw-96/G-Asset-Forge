@@ -124,7 +124,7 @@ const TabsContainer = styled.div`
   display: flex;
   align-items: center;
   min-width: 0;
-  -webkit-app-region: no-drag;
+  -webkit-app-region: drag;
 `;
 
 const TabsScroll = styled.div`
@@ -135,6 +135,7 @@ const TabsScroll = styled.div`
   -ms-overflow-style: none;
   min-width: 0;
   &::-webkit-scrollbar { display: none; }
+  -webkit-app-region: drag;
 `;
 
 const TabItem = styled.button<{ $active: boolean }>`
