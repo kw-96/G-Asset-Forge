@@ -44,25 +44,25 @@ interface TopToolbarProps {
 }
 
 const ToolbarContainer = styled.div`
-  height: 48px;
+  height: 100%;
   background: ${({ theme }) => theme.colors.surface};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
   display: flex;
   align-items: center;
-  padding: 0 ${({ theme }) => theme.spacing.md};
-  backdrop-filter: blur(12px);
   box-shadow: ${({ theme }) => theme.shadows.sm};
   -webkit-app-region: drag;
 `;
 
-const ToolbarSection = styled.div<{ $leftDivider?: boolean }>`
+const ToolbarSection = styled.div<{ $leftDivider?: boolean; $rightDivider?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
   -webkit-app-region: no-drag;
   ${({ $leftDivider, theme }) => $leftDivider ? `
     border-left: 1px solid ${theme.colors.border.default};
-    padding-left: ${theme.spacing.sm};
+  ` : ''}
+  ${({ $rightDivider, theme }) => $rightDivider ? `
+    border-right: 1px solid ${theme.colors.border.default};
   ` : ''}
 `;
 
@@ -266,7 +266,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     <>
     <ToolbarContainer>
       {/* 左侧：主页按钮 */}
-      <ToolbarSection>
+      <ToolbarSection $rightDivider>
         <NoDrag>
           <IconButton
             icon={<SvgIcon name="icon.24.home" size={20} title="主页" />}
