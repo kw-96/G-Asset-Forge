@@ -152,7 +152,6 @@ const FigmaCenterSection = styled.div<{ $padding: number }>`
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  padding: ${({ $padding }) => $padding}px;
   background: ${({ theme }) => theme.colors.canvas?.background || theme.colors.background};
 `;
 
@@ -290,7 +289,8 @@ const useWindowSize = () => {
 };
 
 // 自定义Hook：面板调整大小
-const usePanelResize = (initialWidth: number, minWidth: number, maxWidth: number) => {
+// directionFactor: 1 表示拖拽向右增宽；-1 表示拖拽向右减宽（适用于右侧面板左边缘拖拽）
+const usePanelResize = (initialWidth: number, minWidth: number, maxWidth: number, directionFactor: 1 | -1 = 1) => {
   const [width, setWidth] = useState(initialWidth);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -301,7 +301,8 @@ const usePanelResize = (initialWidth: number, minWidth: number, maxWidth: number
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX;
-      const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + deltaX));
+      const adjustedDelta = directionFactor * deltaX;
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + adjustedDelta));
       setWidth(newWidth);
     };
 
@@ -313,7 +314,7 @@ const usePanelResize = (initialWidth: number, minWidth: number, maxWidth: number
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [width, minWidth, maxWidth]);
+  }, [width, minWidth, maxWidth, directionFactor]);
 
   return { width, isResizing, startResize, setWidth };
 };
@@ -410,13 +411,15 @@ export const MainLayout: React.FC = () => {
   const leftPanel = usePanelResize(
     layoutConfig.leftPanelWidth || 280,
     200,
-    400
+    400,
+    1
   );
   
   const rightPanel = usePanelResize(
     layoutConfig.rightPanelWidth || 320,
     250,
-    500
+    500,
+    -1
   );
 
   // 响应式布局计算
