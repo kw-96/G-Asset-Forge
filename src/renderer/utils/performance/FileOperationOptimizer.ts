@@ -376,7 +376,7 @@ export class FileOperationOptimizer {
 
         // 确保目录存在
         const fs = await import('fs-extra');
-        await fs.ensureDir(require('path').dirname(filePath));
+       await fs.ensureDir((await import('path-browserify')).default.dirname(filePath));
 
         // 执行文件写入
         if (typeof data === 'string') {

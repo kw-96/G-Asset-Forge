@@ -1,5 +1,5 @@
 import { fileOperationOptimizer } from './FileOperationOptimizer';
-import path from 'path';
+import path from 'path-browserify';
 
 export interface PerformanceTestResult {
   testName: string;

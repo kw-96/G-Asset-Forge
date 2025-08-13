@@ -1,6 +1,6 @@
 // 备份管理器
 import { EventEmitter } from '../../engines/h5-editor/utils/event-emitter';
-import path from 'path';
+import path from 'path-browserify';
 import fs from 'fs-extra';
 import crypto from 'crypto';
 

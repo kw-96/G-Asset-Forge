@@ -29,6 +29,11 @@ module.exports = (env, argv) => {
       publicPath: isDevelopment ? 'http://localhost:3000/' : './',
       clean: true
     },
+    resolve: {
+      fallback: {
+        path: require.resolve('path-browserify')
+      }
+    },
     plugins: [
       new HtmlWebpackPlugin({
         template: './src/renderer/index.html',

@@ -1,7 +1,7 @@
 // 项目管理器
 import { EventEmitter } from '../../engines/h5-editor/utils/event-emitter';
 import { fileOperationOptimizer } from '../../utils/performance/FileOperationOptimizer';
-import path from 'path';
+import path from 'path-browserify';
 import fs from 'fs-extra';
 
 export interface IProjectMetadata {
