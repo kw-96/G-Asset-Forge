@@ -520,7 +520,15 @@ const NotificationRenderer: React.FC = () => {
               <FigmaNotification
                 key={notification.id}
                 {...notification}
-                onRemove={() => hide(notification.id)}
+                onRemove={() => {
+                  // 避免在子组件渲染阶段直接触发父级状态更新
+                  // 使用微任务/帧调度延后执行
+                  if (typeof requestAnimationFrame !== 'undefined') {
+                    requestAnimationFrame(() => hide(notification.id));
+                  } else {
+                    setTimeout(() => hide(notification.id), 0);
+                  }
+                }}
               />
             ))}
           </AnimatePresence>
