@@ -291,7 +291,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         const newActive = next[newIndex]?.id || next[0]?.id || 'tab-1';
         setActiveTabId(newActive);
       }
-      return next.length > 0 ? next : [{ id: 'tab-1', title: '无标题' }];
+      if (next.length > 0) return next;
+      const fallback = createEmptyProject('无标题') as unknown as IProjectData;
+      try { setCurrentProject(fallback); } catch {}
+      return [{ id: 'tab-1', title: fallback.metadata.name, project: fallback }];
     });
   }, [activeTabId]);
 
