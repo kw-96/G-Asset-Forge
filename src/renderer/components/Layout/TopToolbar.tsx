@@ -187,7 +187,11 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   rightPanelCollapsed,
 }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const setCurrentProject = useAppStore(s => s.setCurrentPage) ? useAppStore(s => s.setCurrentProject) : (() => {} as any);
+  // 兼容旧 store：若不存在 setCurrentProject 则提供空函数
+  const store = useAppStore as any;
+  const setCurrentProject = (store && store.getState && store.getState().setCurrentProject)
+    ? (store.getState().setCurrentProject as (p: any) => void)
+    : ((_: any) => {});
   const [tabs, setTabs] = useState<Array<{ id: string; title: string; icon?: string; project?: any }>>([
     { id: 'tab-1', title: '无标题', project: createEmptyProject('无标题') },
   ]);
@@ -210,8 +214,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     const project = createEmptyProject('无标题');
     setTabs(prev => [...prev, { id, title: project.metadata.name, project }]);
     setActiveTabId(id);
-    try { (setCurrentProject as any)(project); } catch {}
-  }, []);
+    try { setCurrentProject(project); } catch {}
+  }, [setCurrentProject]);
 
   const handleCloseTab = useCallback((id: string) => {
     setTabs(prev => {
@@ -232,7 +236,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   React.useEffect(() => {
     const active = tabs.find(t => t.id === activeTabId);
     if (active?.project) {
-      try { (setCurrentProject as any)(active.project); } catch {}
+      try { setCurrentProject(active.project); } catch {}
     }
   }, [activeTabId, tabs, setCurrentProject]);
 
