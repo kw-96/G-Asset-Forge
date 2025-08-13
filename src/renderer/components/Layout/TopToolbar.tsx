@@ -62,6 +62,7 @@ const ToolbarSection = styled.div<{ $leftDivider?: boolean; $rightDivider?: bool
   ` : ''}
   ${({ $rightDivider, theme }) => $rightDivider ? `
     border-right: 1px solid ${theme.colors.border.default};
+    padding: 0 12px;
   ` : ''}
 `;
 
@@ -78,7 +79,7 @@ const CenterSection = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
-  -webkit-app-region: no-drag;
+  -webkit-app-region: drag;
 `;
 
 // const ProjectInfo = styled.div`
@@ -123,12 +124,12 @@ const TabsContainer = styled.div`
   display: flex;
   align-items: center;
   min-width: 0;
+  -webkit-app-region: no-drag;
 `;
 
 const TabsScroll = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -141,7 +142,8 @@ const TabItem = styled.button<{ $active: boolean }>`
   align-items: center;
   gap: 8px;
   max-width: 220px;
-  padding: 6px 10px;
+  height: 100%;
+  padding: 12px;
   border-radius: 8px;
   border: 1px solid ${({ theme, $active }) => $active ? theme.colors.border.default : theme.colors.border.subtle};
   background: ${({ theme, $active }) => $active ? theme.colors.surface : theme.colors.background.secondary};
@@ -270,11 +272,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           <IconButton
             icon={<SvgIcon name="icon.24.home" size={20} title="主页" />}
             variant="ghost"
-            size="sm"
             onClick={() => console.log('open home')}
             aria-label="主页"
             title="主页"
-            style={{ padding: '12px', height: '100%' }}
+            style={{ height: '100%', width: '100%' }}
           />
         </NoDrag>
       </ToolbarSection>
