@@ -220,7 +220,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
   onLayerToggleLock,
   onLayerRename,
   onLayerToggleExpanded,
-  activePanel,
+  // activePanel,
   onSwitchPanel,
   onSwitchMode,
   onOpenTemplateLibrary,
