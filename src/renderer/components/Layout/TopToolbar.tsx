@@ -49,14 +49,13 @@ const ToolbarContainer = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
   display: flex;
   align-items: center;
-  box-shadow: ${({ theme }) => theme.shadows.sm};
   -webkit-app-region: drag;
 `;
 
-const ToolbarSection = styled.div<{ $leftDivider?: boolean; $rightDivider?: boolean }>`
+const ToolbarSection = styled.div<{ $leftDivider?: boolean; $rightDivider?: boolean; $noGap?: boolean }>`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: ${({ $noGap, theme }) => ($noGap ? '0' : theme.spacing.sm)};
   -webkit-app-region: no-drag;
   ${({ $leftDivider, theme }) => $leftDivider ? `
     border-left: 1px solid ${theme.colors.border.default};
@@ -275,7 +274,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             onClick={() => console.log('open home')}
             aria-label="主页"
             title="主页"
-            style={{ padding: '12px' }}
+            style={{ padding: '12px', height: '100%' }}
           />
         </NoDrag>
       </ToolbarSection>
@@ -296,8 +295,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         </TabsContainer>
       </CenterSection>
 
-      {/* 右侧：视图控制和面板切换 */}
-      <ToolbarSection $leftDivider>
+      {/* 右侧：菜单与窗口控制（无间隔） */}
+      <ToolbarSection $leftDivider $noGap>
 
         {/* 统一下拉菜单按钮（窗口控制左侧） */}
         <NoDrag>
