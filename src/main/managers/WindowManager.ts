@@ -6,8 +6,7 @@ export class WindowManager {
   private windows: Map<string, BrowserWindow> = new Map();
 
   createMainWindow(): BrowserWindow {
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    
+    // 欢迎模式尺寸：加载阶段与欢迎页保持一致
     const mainWindow = new BrowserWindow({
       width: 480,
       height: 320,
