@@ -672,7 +672,7 @@ export const MainLayout: React.FC = () => {
           </FloatingToolbar>
           
           {editorMode === 'h5' ? (
-            <H5EditorCanvas />
+            <H5EditorCanvas width={375} height={667} />
           ) : (
             <CanvasWorkspace />
           )}
