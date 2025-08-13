@@ -3,7 +3,7 @@
  * 包含文件操作、编辑操作、视图控制等功能
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { IconButton } from '../../ui/components/IconButton/IconButton';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
@@ -13,6 +13,10 @@ import { SettingsModal } from '../Settings/SettingsModal';
 // import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
 import { WindowControls } from './WindowControls';
 import { useAppStore } from '../../stores/appStore';
+import { 
+  ProjectManager as ProjectManagerClass,
+  type IProjectData
+} from '../../managers/project/ProjectManager';
 
 // 简单创建空项目的辅助方法（与 ProjectManager 对齐的最小结构）
 const createEmptyProject = (name: string) => ({
@@ -46,7 +50,6 @@ interface TopToolbarProps {
 const ToolbarContainer = styled.div`
   height: 100%;
   background: ${({ theme }) => theme.colors.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
   display: flex;
   align-items: center;
   -webkit-app-region: drag;
@@ -134,6 +137,7 @@ const TabsScroll = styled.div`
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  height: 100%;
   min-width: 0;
   &::-webkit-scrollbar { display: none; }
   -webkit-app-region: drag;
@@ -145,7 +149,7 @@ const TabItem = styled.button<{ $active: boolean }>`
   gap: 8px;
   max-width: 220px;
   height: 100%;
-  padding: 12px;
+  padding: 0 12px;
   background: ${({ theme, $active }) => $active ? theme.colors.surface : theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.primary};
   cursor: pointer;
@@ -163,21 +167,24 @@ const TabTitle = styled.span`
 `;
 
 const TabClose = styled.span`
-  margin-left: 4px;
-  opacity: 0.7;
-  &:hover { opacity: 1; }
-`;
-
-const NewTabButton = styled.button`
-  width: 28px;
-  height: 28px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  border: 1px dashed ${({ theme }) => theme.colors.border.subtle};
-  background: transparent;
   color: ${({ theme }) => theme.colors.text.secondary};
+  padding: 15px 0;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+`;
+
+const NewTabButton = styled.button`
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.colors.background.secondary};
+  color: ${({ theme }) => theme.colors.text.secondary};
+  padding: 12px 0;
   cursor: pointer;
   -webkit-app-region: no-drag;
   &:hover { background: ${({ theme }) => theme.colors.interaction?.hover || 'rgba(0,0,0,0.04)'}; }
@@ -195,10 +202,24 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   const setCurrentProject = (store && store.getState && store.getState().setCurrentProject)
     ? (store.getState().setCurrentProject as (p: any) => void)
     : ((_: any) => {});
+  // 项目管理器实例（与 ProjectManager 组件一致）
+  const projectManagerRef = useRef<ProjectManagerClass | null>(null);
   const [tabs, setTabs] = useState<Array<{ id: string; title: string; icon?: string; project?: any }>>([
     { id: 'tab-1', title: '无标题', project: createEmptyProject('无标题') },
   ]);
   const [activeTabId, setActiveTabId] = useState<string>('tab-1');
+
+  // 初始化 ProjectManager，与独立 ProjectManager 组件保持一致
+  useEffect(() => {
+    try {
+      const userDataPath = process.env['NODE_ENV'] === 'development'
+        ? './dev-user-data'
+        : (require('electron').remote?.app.getPath('userData') || './user-data');
+      projectManagerRef.current = new ProjectManagerClass(userDataPath);
+    } catch (e) {
+      console.warn('初始化 ProjectManager 失败（可能在非 Electron 环境）:', e);
+    }
+  }, []);
 
   const handleFileAction = (action: string) => {
     console.log('File action:', action);
@@ -212,12 +233,53 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     setIsSettingsOpen(true);
   };
 
-  const handleNewTab = useCallback(() => {
-    const id = `tab-${Date.now()}`;
-    const project = createEmptyProject('无标题');
-    setTabs(prev => [...prev, { id, title: project.metadata.name, project }]);
-    setActiveTabId(id);
-    try { setCurrentProject(project); } catch {}
+  /**
+   * 新建项目并作为新标签打开
+   */
+  const handleNewTab = useCallback(async () => {
+    try {
+      let project: IProjectData | null = null;
+      if (projectManagerRef.current) {
+        project = await projectManagerRef.current.createProject({ name: '无标题' });
+      } else {
+        project = createEmptyProject('无标题') as unknown as IProjectData;
+      }
+      const id = `tab-${Date.now()}`;
+      setTabs(prev => [...prev, { id, title: project.metadata.name, project }]);
+      setActiveTabId(id);
+      setCurrentProject(project);
+    } catch (e) {
+      console.error('新建项目失败:', e);
+    }
+  }, [setCurrentProject]);
+
+  /**
+   * 打开已有项目到新标签
+   */
+  const handleOpenProjectToTab = useCallback(async () => {
+    try {
+      if (!projectManagerRef.current) {
+        console.warn('ProjectManager 尚未初始化');
+        return;
+      }
+      const { dialog } = require('electron').remote;
+      const result = await dialog.showOpenDialog({
+        title: '打开项目',
+        filters: [
+          { name: 'G-Asset Forge 项目', extensions: ['gaf'] },
+          { name: '所有文件', extensions: ['*'] }
+        ],
+        properties: ['openFile']
+      });
+      if (result.canceled || result.filePaths.length === 0) return;
+      const loaded = await projectManagerRef.current.loadProject(result.filePaths[0]);
+      const id = `tab-${Date.now()}`;
+      setTabs(prev => [...prev, { id, title: loaded.metadata.name, project: loaded }]);
+      setActiveTabId(id);
+      setCurrentProject(loaded);
+    } catch (e) {
+      console.error('打开项目失败:', e);
+    }
   }, [setCurrentProject]);
 
   const handleCloseTab = useCallback((id: string) => {
@@ -246,8 +308,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   // 统一下拉菜单条目（文件/编辑/设置/帮助关于）
   const unifiedMenuItems: DropdownItemType[] = [
     // 文件
-    { id: 'file__new', label: '新建项目', group: '文件', shortcut: 'Ctrl+N', onSelect: () => handleFileAction('new') },
-    { id: 'file__open', label: '打开项目', group: '文件', shortcut: 'Ctrl+O', onSelect: () => handleFileAction('open') },
+    { id: 'file__new', label: '新建项目', group: '文件', shortcut: 'Ctrl+N', onSelect: () => { void handleNewTab(); } },
+    { id: 'file__open', label: '打开项目', group: '文件', shortcut: 'Ctrl+O', onSelect: () => { void handleOpenProjectToTab(); } },
     { id: 'file__save', label: '保存项目', group: '文件', shortcut: 'Ctrl+S', onSelect: () => handleFileAction('save') },
     { id: 'file__export', label: '导出图像', group: '文件', shortcut: 'Ctrl+E', onSelect: () => handleFileAction('export') },
 
@@ -288,11 +350,13 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               <TabItem key={tab.id} $active={tab.id === activeTabId} onClick={() => handleActivateTab(tab.id)} title={tab.title}>
                 {tab.icon && <SvgIcon name={tab.icon} size={14} title="文件" />}
                 <TabTitle>{tab.title}</TabTitle>
-                <TabClose onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }} title="关闭">×</TabClose>
+                <TabClose onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }} title="关闭项目">
+                  <SvgIcon name="icon.24.close" size={16} title="关闭" />
+                </TabClose>
               </TabItem>
             ))}
-            <NewTabButton onClick={handleNewTab} aria-label="新建标签" title="新建标签">
-              <SvgIcon name="icon.24.plus.small" size={16} title="新建" />
+            <NewTabButton onClick={handleNewTab} aria-label="新建标签">
+              <SvgIcon name="icon.24.plus.small" size={20} title="新建" />
             </NewTabButton>
           </TabsScroll>
         </TabsContainer>
