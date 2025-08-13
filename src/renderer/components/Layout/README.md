@@ -5,11 +5,9 @@
 ## 📁 目录结构
 
 Layout/
-├── __tests__/                    # 测试文件
-│   └── LayoutConfigManager.test.tsx
 ├── MainLayout.tsx                # 主布局容器
 ├── TopToolbar.tsx               # 顶部工具栏
-├── LeftToolPanel.tsx            # 左侧工具面板
+<!-- LeftToolPanel.tsx 已合并到 FigmaLayersPanel 顶部工具条，文件已移除 -->
 ├── LayersPanel.tsx              # 图层面板
 ├── RightPropertiesPanel.tsx     # 右侧属性面板
 ├── StatusBar.tsx                # 状态栏
@@ -25,7 +23,7 @@ Layout/
 
 - __MainLayout__: 应用的主要布局容器，管理整体布局结构
 - __TopToolbar__: 顶部工具栏，包含主要操作按钮和菜单
-- __LeftToolPanel__: 左侧工具面板，包含绘图工具和素材库
+<!-- LeftToolPanel：功能已合并到 FigmaLayersPanel 顶部工具条 -->
 - __RightPropertiesPanel__: 右侧属性面板，显示选中对象的属性
 - __LayersPanel__: 图层管理面板
 - __StatusBar__: 底部状态栏，显示应用状态信息
@@ -90,13 +88,13 @@ interface ExtendedLayoutConfig extends LayoutConfig {
 ### 基本布局使用
 
 ```typescript
-import { MainLayout, TopToolbar, LeftToolPanel } from '@/components/Layout';
+import { MainLayout, TopToolbar } from '@/components/Layout';
 
 function App() {
   return (
     <MainLayout>
       <TopToolbar />
-      <LeftToolPanel />
+      {/* LeftToolPanel 已合并至 FigmaLayersPanel 顶部工具条 */}
       {/* 其他组件 */}
     </MainLayout>
   );
