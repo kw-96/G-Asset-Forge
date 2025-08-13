@@ -644,6 +644,7 @@ export const MainLayout: React.FC = () => {
                   onLayerToggleLock={handleLayerToggleLock}
                   onLayerRename={handleLayerRename}
                   onLayerToggleExpanded={handleLayerToggleExpanded}
+                  onSwitchPanel={() => {}} // 提供空函数以显示按钮
                   onSwitchMode={(m) => {
                     setEditorMode(m);
                   }}
