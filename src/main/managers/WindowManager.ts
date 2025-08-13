@@ -9,8 +9,8 @@ export class WindowManager {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
     
     const mainWindow = new BrowserWindow({
-      width: Math.min(1400, width * 0.9),
-      height: Math.min(900, height * 0.9),
+      width: 480,
+      height: 320,
       minWidth: 480,
       minHeight: 320,
       webPreferences: {
@@ -40,7 +40,7 @@ export class WindowManager {
       maximizable: true, // 允许最大化
       minimizable: true, // 允许最小化
       movable: true, // 允许移动
-      resizable: true, // 允许调整大小
+      resizable: false, // 初始为欢迎模式尺寸，加载/欢迎阶段不可调整大小
       skipTaskbar: false, // 显示在任务栏
       useContentSize: false, // 使用窗口边界计算大小
       // webSecurity 选项应该在 webPreferences 中设置，这里移除重复设置
