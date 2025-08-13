@@ -8,6 +8,7 @@ import styled from 'styled-components';
 import { IconButton } from '../../ui/components/IconButton/IconButton';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Dropdown, type DropdownItem as DropdownItemType } from '../../ui/components/Dropdown/Dropdown';
+import { canvasEvents } from '../../utils/events/canvasEvents';
 // import { Badge } from '../../ui/components/Badge/Badge';
 import { SettingsModal } from '../Settings/SettingsModal';
 // import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
@@ -361,6 +362,14 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     { id: 'edit__redo', label: '重做', group: '编辑', shortcut: 'Ctrl+Shift+Z', onSelect: () => handleEditAction('redo') },
     { id: 'edit__copy', label: '复制', group: '编辑', shortcut: 'Ctrl+C', onSelect: () => handleEditAction('copy') },
     { id: 'edit__paste', label: '粘贴', group: '编辑', shortcut: 'Ctrl+V', onSelect: () => handleEditAction('paste') },
+
+    // 画布
+    { id: 'canvas__fit', label: '适应内容', group: '画布', shortcut: 'Ctrl+1', onSelect: () => canvasEvents.emit('fitToContent') },
+    { id: 'canvas__reset', label: '重置视图', group: '画布', shortcut: 'Ctrl+0', onSelect: () => canvasEvents.emit('resetView') },
+    { id: 'canvas__zoom_in', label: '放大', group: '画布', shortcut: 'Ctrl++', onSelect: () => canvasEvents.emit('zoomIn') },
+    { id: 'canvas__zoom_out', label: '缩小', group: '画布', shortcut: 'Ctrl+-', onSelect: () => canvasEvents.emit('zoomOut') },
+    { id: 'canvas__toggle_grid', label: '显示/隐藏网格', group: '画布', shortcut: 'G', onSelect: () => canvasEvents.emit('toggleGrid') },
+    { id: 'canvas__toggle_guides', label: '显示/隐藏参考线', group: '画布', shortcut: 'R', onSelect: () => canvasEvents.emit('toggleGuides') },
 
     // 系统
     { id: 'settings__open', label: '设置', group: '系统', shortcut: 'Ctrl+,', onSelect: () => handleSettingsClick() },

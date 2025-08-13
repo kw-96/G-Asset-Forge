@@ -4,3 +4,4 @@
 
 export * from '../EventEmitter';
 export * from '../TypedEventEmitter';
+export * from './canvasEvents';

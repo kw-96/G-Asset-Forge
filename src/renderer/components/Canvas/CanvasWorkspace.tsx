@@ -9,6 +9,7 @@ import { IconButton } from '../../ui/components/IconButton/IconButton';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Button } from '../../ui/components/Button/Button';
 import { Badge } from '../../ui/components/Badge/Badge';
+import { canvasEvents } from '../../utils/events/canvasEvents';
 
 const WorkspaceContainer = styled.div`
   flex: 1;
@@ -19,22 +20,22 @@ const WorkspaceContainer = styled.div`
   overflow: hidden;
 `;
 
-const CanvasToolbar = styled.div`
-  height: 40px;
-  background: ${({ theme }) => theme.colors.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 ${({ theme }) => theme.spacing.md};
-  backdrop-filter: blur(8px);
-`;
+// const CanvasToolbar = styled.div`
+//   height: 40px;
+//   background: ${({ theme }) => theme.colors.surface};
+//   border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+//   padding: 0 ${({ theme }) => theme.spacing.md};
+//   backdrop-filter: blur(8px);
+// `;
 
-const ToolbarSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
+// const ToolbarSection = styled.div`
+//   display: flex;
+//   align-items: center;
+//   gap: ${({ theme }) => theme.spacing.sm};
+// `;
 
 const InfiniteCanvasArea = styled.div<{ $showGrid: boolean; $gridSize: number; $panX: number; $panY: number; $zoom: number }>`
   flex: 1;
@@ -188,14 +189,14 @@ interface ViewportInfo {
 }
 
 // 模板接口
-interface CanvasTemplate {
-  id: string;
-  name: string;
-  width: number;
-  height: number;
-  category: 'mobile' | 'desktop' | 'game' | 'social';
-  emoji: string;
-}
+// interface CanvasTemplate {
+//   id: string;
+//   name: string;
+//   width: number;
+//   height: number;
+//   category: 'mobile' | 'desktop' | 'game' | 'social';
+//   emoji: string;
+// }
 
 export const CanvasWorkspace: React.FC = () => {
   // 无限画布状态
@@ -205,7 +206,7 @@ export const CanvasWorkspace: React.FC = () => {
   const [showGrid, setShowGrid] = useState(true);
   // const [gridSize, setGridSize] = useState(20);
   const [gridSize] = useState(20);
-  const [snapToGrid, setSnapToGrid] = useState(false);
+  // const [snapToGrid, setSnapToGrid] = useState(false);
   const [showGuides, setShowGuides] = useState(true);
   // const [guides, setGuides] = useState<Array<{
   const [guides] = useState<Array<{
@@ -371,58 +372,58 @@ export const CanvasWorkspace: React.FC = () => {
           let newWorldY = obj.worldY + worldDeltaY;
           
           // 如果启用了对齐功能，应用对齐逻辑
-          if (snapToGrid || showGuides) {
-            // 转换为屏幕坐标进行对齐计算
-            const screenX = (newWorldX + obj.width / 2) * viewport.zoom + viewport.x;
-            const screenY = (newWorldY + obj.height / 2) * viewport.zoom + viewport.y;
+          // if (snapToGrid || showGuides) {
+          //   // 转换为屏幕坐标进行对齐计算
+          //   const screenX = (newWorldX + obj.width / 2) * viewport.zoom + viewport.x;
+          //   const screenY = (newWorldY + obj.height / 2) * viewport.zoom + viewport.y;
             
-            let alignedScreenPos = { x: screenX, y: screenY };
+          //   let alignedScreenPos = { x: screenX, y: screenY };
             
-            // 应用参考线对齐
-            if (showGuides && guides.length > 0) {
-              const threshold = 5;
-              guides.forEach(guide => {
-                const guideScreenPos = guide.position * viewport.zoom + 
-                  (guide.type === 'vertical' ? viewport.x : viewport.y);
+          //   // 应用参考线对齐
+          //   if (showGuides && guides.length > 0) {
+          //     const threshold = 5;
+          //     guides.forEach(guide => {
+          //       const guideScreenPos = guide.position * viewport.zoom + 
+          //         (guide.type === 'vertical' ? viewport.x : viewport.y);
                 
-                const distance = Math.abs(
-                  (guide.type === 'vertical' ? alignedScreenPos.x : alignedScreenPos.y) - guideScreenPos
-                );
+          //       const distance = Math.abs(
+          //         (guide.type === 'vertical' ? alignedScreenPos.x : alignedScreenPos.y) - guideScreenPos
+          //       );
                 
-                if (distance < threshold) {
-                  if (guide.type === 'vertical') {
-                    alignedScreenPos.x = guideScreenPos;
-                  } else {
-                    alignedScreenPos.y = guideScreenPos;
-                  }
-                }
-              });
-            }
+          //       if (distance < threshold) {
+          //         if (guide.type === 'vertical') {
+          //           alignedScreenPos.x = guideScreenPos;
+          //         } else {
+          //           alignedScreenPos.y = guideScreenPos;
+          //         }
+          //       }
+          //     });
+          //   }
             
-            // 应用网格对齐
-            if (snapToGrid) {
-              const safeZoom = Math.max(viewport.zoom, 0.01);
-              const worldPoint = {
-                x: (alignedScreenPos.x - viewport.x) / safeZoom,
-                y: (alignedScreenPos.y - viewport.y) / safeZoom
-              };
+          //   // 应用网格对齐
+          //   if (snapToGrid) {
+          //     const safeZoom = Math.max(viewport.zoom, 0.01);
+          //     const worldPoint = {
+          //       x: (alignedScreenPos.x - viewport.x) / safeZoom,
+          //       y: (alignedScreenPos.y - viewport.y) / safeZoom
+          //     };
               
-              const snappedWorld = {
-                x: Math.round(worldPoint.x / gridSize) * gridSize,
-                y: Math.round(worldPoint.y / gridSize) * gridSize
-              };
+          //     const snappedWorld = {
+          //       x: Math.round(worldPoint.x / gridSize) * gridSize,
+          //       y: Math.round(worldPoint.y / gridSize) * gridSize
+          //     };
               
-              alignedScreenPos = {
-                x: snappedWorld.x * safeZoom + viewport.x,
-                y: snappedWorld.y * safeZoom + viewport.y
-              };
-            }
+          //     alignedScreenPos = {
+          //       x: snappedWorld.x * safeZoom + viewport.x,
+          //       y: snappedWorld.y * safeZoom + viewport.y
+          //     };
+          //   }
             
-            // 转换回世界坐标
-            const safeZoomForConversion = Math.max(viewport.zoom, 0.01);
-            newWorldX = (alignedScreenPos.x - viewport.x) / safeZoomForConversion - obj.width / 2;
-            newWorldY = (alignedScreenPos.y - viewport.y) / safeZoomForConversion - obj.height / 2;
-          }
+          //   // 转换回世界坐标
+          //   const safeZoomForConversion = Math.max(viewport.zoom, 0.01);
+          //   newWorldX = (alignedScreenPos.x - viewport.x) / safeZoomForConversion - obj.width / 2;
+          //   newWorldY = (alignedScreenPos.y - viewport.y) / safeZoomForConversion - obj.height / 2;
+          // }
           
           return {
             ...obj,
@@ -451,7 +452,7 @@ export const CanvasWorkspace: React.FC = () => {
     } catch (error) {
       console.error('Error in handleMouseMove:', error);
     }
-  }, [isDragging, isDraggingObject, dragStart, lastPan, draggedObjectId, draggedObjectStart, viewport, snapToGrid, showGuides, guides, gridSize]);
+  }, [isDragging, isDraggingObject, dragStart, lastPan, draggedObjectId, draggedObjectStart, viewport, showGuides, guides, gridSize]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -627,12 +628,30 @@ export const CanvasWorkspace: React.FC = () => {
       return [];
     }
   }, [objects, viewport, containerSize]);
+  // 订阅顶部菜单发出的画布事件
+  useEffect(() => {
+    const offFit = canvasEvents.on('fitToContent', () => handleFitToContent());
+    const offToggleGrid = canvasEvents.on('toggleGrid', () => setShowGrid(prev => !prev));
+    const offToggleGuides = canvasEvents.on('toggleGuides', () => setShowGuides(prev => !prev));
+    const offReset = canvasEvents.on('resetView', () => setViewport({ x: 0, y: 0, zoom: 1 }));
+    const offZoomIn = canvasEvents.on('zoomIn', () => handleZoomChange(1));
+    const offZoomOut = canvasEvents.on('zoomOut', () => handleZoomChange(-1));
+    return () => {
+      canvasEvents.off('fitToContent', offFit as any);
+      canvasEvents.off('toggleGrid', offToggleGrid as any);
+      canvasEvents.off('toggleGuides', offToggleGuides as any);
+      canvasEvents.off('resetView', offReset as any);
+      canvasEvents.off('zoomIn', offZoomIn as any);
+      canvasEvents.off('zoomOut', offZoomOut as any);
+    };
+  }, [handleFitToContent, handleZoomChange]);
 
 
 
-  const handleExport = () => {
-    console.log('Export infinite canvas');
-  };
+
+  // const handleExport = () => {
+  //   console.log('Export infinite canvas');
+  // };
 
   // 键盘快捷键支持
   useEffect(() => {
@@ -722,7 +741,7 @@ export const CanvasWorkspace: React.FC = () => {
   return (
     <WorkspaceContainer>
       {/* 无限画布工具栏 */}
-      <CanvasToolbar>
+      {/* <CanvasToolbar>
         <ToolbarSection>
           <Button variant="ghost" size="sm" onClick={handleFitToContent}>
             <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
@@ -773,7 +792,7 @@ export const CanvasWorkspace: React.FC = () => {
             </span>
           </Button>
         </ToolbarSection>
-      </CanvasToolbar>
+      </CanvasToolbar> */}
 
       {/* 无限画布区域 */}
       <InfiniteCanvasArea
@@ -805,7 +824,7 @@ export const CanvasWorkspace: React.FC = () => {
               $width={obj.width}
               $height={obj.height}
               $selected={obj.id === selectedObjectId}
-              onClick={(e) => handleObjectClick(obj.id, e)}
+              // onClick={(e) => handleObjectClick(obj.id, e)}
               onMouseDown={(e) => handleObjectMouseDown(obj.id, e)}
             >
               {obj.type === 'template' && (
