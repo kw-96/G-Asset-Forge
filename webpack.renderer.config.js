@@ -8,7 +8,7 @@ module.exports = (env, argv) => {
   
   const rendererConfig = {
     mode: isDevelopment ? 'development' : 'production',
-    target: 'electron-renderer',
+    target: 'web',
     node: {
       __dirname: false,
       __filename: false
@@ -31,7 +31,8 @@ module.exports = (env, argv) => {
     },
     resolve: {
       fallback: {
-        path: require.resolve('path-browserify')
+        path: require.resolve('path-browserify'),
+        buffer: require.resolve('buffer/')
       }
     },
     plugins: [
