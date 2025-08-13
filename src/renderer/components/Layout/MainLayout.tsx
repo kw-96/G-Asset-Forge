@@ -10,7 +10,7 @@ import { TopToolbar } from './TopToolbar';
 // import { LeftToolPanel } from './LeftToolPanel';
 import { FigmaToolbar } from './FigmaToolbar';
 import { FigmaLayersPanel } from './FigmaLayersPanel';
-// import { H5EditorCanvas } from '../../engines/h5-editor/adapter/react-adapter';
+import { H5EditorCanvas } from '../../engines/h5-editor/adapter/react-adapter';
 import { FigmaPropertiesPanel } from '../Properties/FigmaPropertiesPanel';
 import { CanvasWorkspace } from '../Canvas/CanvasWorkspace';
 import { StatusBar } from './StatusBar';
@@ -673,16 +673,7 @@ export const MainLayout: React.FC = () => {
           </FloatingToolbar>
           
           {editorMode === 'h5' ? (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              height: '100%',
-              fontSize: '16px',
-              color: '#666'
-            }}>
-              H5编辑器暂时不可用，正在修复中...
-            </div>
+            <H5EditorCanvas width={375} height={667} />
           ) : (
             <CanvasWorkspace />
           )}

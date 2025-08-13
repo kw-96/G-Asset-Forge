@@ -19,7 +19,7 @@ export interface ISharpProcessingOptions {
 
 export interface ISharpProcessingResult {
   success: boolean;
-  buffer?: Buffer;
+  buffer?: ArrayBuffer;
   info?: any; // 替代sharp.OutputInfo
   size: number;
   format: string;
@@ -68,7 +68,7 @@ export class SharpImageProcessor {
    * 处理Buffer数据
    */
   static async processBuffer(
-    _inputBuffer: Buffer,
+    _inputBuffer: ArrayBuffer,
     _width: number,
     _height: number,
     options: ISharpProcessingOptions
@@ -102,11 +102,11 @@ export class SharpImageProcessor {
   /**
    * 将ImageData转换为Buffer
    */
-  private static async imageDataToBuffer(imageData: ImageData): Promise<Buffer> {
+  private static async imageDataToBuffer(imageData: ImageData): Promise<ArrayBuffer> {
     const { data } = imageData;
     
-    // 创建RGBA Buffer
-    const buffer = Buffer.from(data.buffer);
+    // 创建RGBA ArrayBuffer（兼容浏览器环境）
+    const buffer = data.buffer.slice(0);
     
     return buffer;
   }
@@ -147,7 +147,7 @@ export class SharpImageProcessor {
   /**
    * 获取图片信息
    */
-  static async getImageInfo(_buffer: Buffer): Promise<any | null> {
+  static async getImageInfo(_buffer: ArrayBuffer): Promise<any | null> {
     try {
       // 暂时禁用Sharp功能，直到IPC集成完成
       // 在渲染进程中，通过IPC调用主进程的Sharp功能
@@ -165,10 +165,10 @@ export class SharpImageProcessor {
    * 优化现有图片
    */
   static async optimizeImage(
-    _inputBuffer: Buffer,
+    _inputBuffer: ArrayBuffer,
     _format: 'png' | 'jpg' | 'webp',
     _quality: number = 90
-  ): Promise<Buffer | null> {
+  ): Promise<ArrayBuffer | null> {
     try {
       // 暂时禁用Sharp功能，直到IPC集成完成
       // 在渲染进程中，通过IPC调用主进程的Sharp功能
@@ -186,11 +186,11 @@ export class SharpImageProcessor {
    * 创建缩略图
    */
   static async createThumbnail(
-    _inputBuffer: Buffer,
+    _inputBuffer: ArrayBuffer,
     _width: number,
     _height: number,
     _format: 'png' | 'jpg' | 'webp' = 'jpg'
-  ): Promise<Buffer | null> {
+  ): Promise<ArrayBuffer | null> {
     try {
       // 暂时禁用Sharp功能，直到IPC集成完成
       // 在渲染进程中，通过IPC调用主进程的Sharp功能

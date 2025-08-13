@@ -240,12 +240,12 @@ export class ImageExportEngine {
         
         // 创建Blob和DataURL
         const buffer = sharpResult.buffer!;
-        const blob = new Blob([new Uint8Array(buffer)], { type: `image/${formatConfig.format}` });
-        const arrayBuffer = buffer.buffer.slice(
-          buffer.byteOffset,
-          buffer.byteOffset + buffer.byteLength
-        ) as ArrayBuffer;
-        const dataUrl = `data:image/${formatConfig.format};base64,${buffer.toString('base64')}`;
+        const uint8Array = new Uint8Array(buffer);
+        const blob = new Blob([uint8Array], { type: `image/${formatConfig.format}` });
+        const arrayBuffer = buffer.slice(0) as ArrayBuffer;
+        // 将ArrayBuffer转换为base64
+        const base64 = btoa(String.fromCharCode(...uint8Array));
+        const dataUrl = `data:image/${formatConfig.format};base64,${base64}`;
         
         return {
           success: true,
@@ -640,14 +640,13 @@ export class ImageExportEngine {
     
     // 创建Blob和DataURL
     const buffer = sharpResult.buffer!;
-    const blob = new Blob([new Uint8Array(buffer)], { type: `image/${options.format}` });
-    const arrayBuffer = buffer.buffer.slice(
-      buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength
-    ) as ArrayBuffer;
+    const uint8Array = new Uint8Array(buffer);
+    const blob = new Blob([uint8Array], { type: `image/${options.format}` });
+    const arrayBuffer = buffer.slice(0) as ArrayBuffer;
     
     // 创建DataURL用于预览
-    const dataUrl = `data:image/${options.format};base64,${buffer.toString('base64')}`;
+    const base64 = btoa(String.fromCharCode(...uint8Array));
+    const dataUrl = `data:image/${options.format};base64,${base64}`;
     
     const result: IImageExportResult = {
       success: true,
