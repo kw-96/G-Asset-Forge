@@ -10,6 +10,7 @@ import { TopToolbar } from './TopToolbar';
 // import { LeftToolPanel } from './LeftToolPanel';
 import { FigmaToolbar } from './FigmaToolbar';
 import { FigmaLayersPanel } from './FigmaLayersPanel';
+import { H5EditorCanvas } from '../../engines/h5-editor/adapter/react-adapter';
 import { FigmaPropertiesPanel } from '../Properties/FigmaPropertiesPanel';
 import { CanvasWorkspace } from '../Canvas/CanvasWorkspace';
 import { StatusBar } from './StatusBar';
@@ -372,6 +373,7 @@ export const MainLayout: React.FC = () => {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   // const [activeLeftPanel, setActiveLeftPanel] = useState<'layers' | 'assets'>('layers');
+  const [editorMode, setEditorMode] = useState<'design' | 'h5'>('design');
   
   // Figma风格组件状态
   const [activeTool, setActiveTool] = useState('select');
@@ -642,13 +644,8 @@ export const MainLayout: React.FC = () => {
                   onLayerToggleLock={handleLayerToggleLock}
                   onLayerRename={handleLayerRename}
                   onLayerToggleExpanded={handleLayerToggleExpanded}
-                  onSwitchPanel={undefined}
                   onSwitchMode={(m) => {
-                    // 触发中心画布切换到 H5 编辑器模式
-                    if (m === 'h5') {
-                      // 这里可扩展为设置全局状态或路由到 H5 编辑器视图
-                      // 当前实现：通过 CanvasWorkspace 的 onModeChange 实现联动（已保留接口）
-                    }
+                    setEditorMode(m);
                   }}
                 />
               </FigmaSidePanel>
@@ -674,7 +671,11 @@ export const MainLayout: React.FC = () => {
             />
           </FloatingToolbar>
           
-          <CanvasWorkspace />
+          {editorMode === 'h5' ? (
+            <H5EditorCanvas />
+          ) : (
+            <CanvasWorkspace />
+          )}
         </FigmaCenterSection>
 
         {/* 右侧面板区域 */}
