@@ -221,10 +221,6 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     }
   }, []);
 
-  const handleFileAction = (action: string) => {
-    console.log('File action:', action);
-  };
-
   const handleEditAction = (action: string) => {
     console.log('Edit action:', action);
   };
