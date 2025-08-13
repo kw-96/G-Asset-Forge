@@ -7,6 +7,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Input } from '../../ui/components/Input/Input';
+import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
+import { useUIIntegration, UIFeature } from '../UIIntegration/UIIntegrationProvider';
 
 interface LayerItem {
   id: string;
@@ -26,6 +28,11 @@ interface FigmaLayersPanelProps {
   onLayerToggleLock: (layerId: string) => void;
   onLayerRename: (layerId: string, newName: string) => void;
   onLayerToggleExpanded: (layerId: string) => void;
+  // 可选：嵌入原 LeftToolPanel 的顶部工具区
+  activePanel?: 'layers' | 'assets';
+  onSwitchPanel?: (panel: 'layers' | 'assets') => void;
+  onTogglePanel?: () => void;
+  panelCollapsed?: boolean;
 }
 
 const PanelContainer = styled.div`
@@ -35,6 +42,15 @@ const PanelContainer = styled.div`
   border-right: 1px solid ${({ theme }) => theme.colors.interface.divider.light};
   display: flex;
   flex-direction: column;
+`;
+
+const TopToolsBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.interface.divider.light};
+  background: ${({ theme }) => theme.colors.surface};
 `;
 
 const PanelHeader = styled.div`
@@ -188,9 +204,14 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
   onLayerToggleLock,
   onLayerRename,
   onLayerToggleExpanded,
+  activePanel,
+  onSwitchPanel,
+  onTogglePanel,
+  panelCollapsed,
 }) => {
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const { isFeatureEnabled } = useUIIntegration();
 
   const handleLayerDoubleClick = (layer: LayerItem) => {
     setEditingLayerId(layer.id);
@@ -299,6 +320,42 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
 
   return (
     <PanelContainer>
+      {onSwitchPanel && (
+        <TopToolsBar>
+          <EnhancedIconButton
+            icon={<SvgIcon name={panelCollapsed ? 'icon.16.chevron.right' : 'icon.16.chevron.right'} size={16} title={panelCollapsed ? '展开' : '折叠'} />}
+            onClick={onTogglePanel}
+            enableFigmaInteractions={true}
+            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            tooltipContent={panelCollapsed ? '展开面板' : '折叠面板'}
+            tooltipPlacement="bottom"
+            interactionVariant="tool"
+            aria-label={panelCollapsed ? '展开面板' : '折叠面板'}
+          />
+          <EnhancedIconButton
+            icon={<SvgIcon name="icon.16.frame" size={16} title="图层" />}
+            onClick={() => onSwitchPanel('layers')}
+            enableFigmaInteractions={true}
+            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            tooltipContent="图层面板"
+            tooltipPlacement="bottom"
+            variant={activePanel === 'layers' ? 'primary' : 'ghost'}
+            interactionVariant="tool"
+            aria-label="图层面板"
+          />
+          <EnhancedIconButton
+            icon={<SvgIcon name="icon.16.library" size={16} title="素材库" />}
+            onClick={() => onSwitchPanel('assets')}
+            enableFigmaInteractions={true}
+            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            tooltipContent="素材库"
+            tooltipPlacement="bottom"
+            variant={activePanel === 'assets' ? 'primary' : 'ghost'}
+            interactionVariant="tool"
+            aria-label="素材库"
+          />
+        </TopToolsBar>
+      )}
       <PanelHeader>
         <PanelTitle>图层</PanelTitle>
         <ControlButton title="添加图层">

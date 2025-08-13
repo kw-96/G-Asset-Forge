@@ -625,14 +625,7 @@ export const MainLayout: React.FC = () => {
               exit={reducedMotion ? { x: 0 } : { x: -leftPanel.width }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
-              <FigmaToolPanel $actualMode={actualMode}>
-        <LeftToolPanel
-          activePanel={activeLeftPanel}
-          onSwitchPanel={setActiveLeftPanel}
-          onTogglePanel={handleToggleLeftPanel}
-          panelCollapsed={leftPanelCollapsed}
-        />
-              </FigmaToolPanel>
+              {/* 左侧独立工具面板已合并至图层面板顶部，此处移除 */}
               
               <FigmaSidePanel 
                 $collapsed={leftPanelCollapsed}
@@ -641,17 +634,20 @@ export const MainLayout: React.FC = () => {
                 animate={reducedMotion ? false : { opacity: leftPanelCollapsed ? 0 : 1 }}
                 transition={{ duration: 0.2 }}
               >
-                {activeLeftPanel === 'layers' ? (
-                  <FigmaLayersPanel
-                    layers={layers}
-                    selectedLayerId={selectedObject?.id}
-                    onLayerSelect={handleLayerSelect}
-                    onLayerToggleVisibility={handleLayerToggleVisibility}
-                    onLayerToggleLock={handleLayerToggleLock}
-                    onLayerRename={handleLayerRename}
-                    onLayerToggleExpanded={handleLayerToggleExpanded}
-                  />
-                ) : (
+                <FigmaLayersPanel
+                  layers={layers}
+                  selectedLayerId={selectedObject?.id}
+                  onLayerSelect={handleLayerSelect}
+                  onLayerToggleVisibility={handleLayerToggleVisibility}
+                  onLayerToggleLock={handleLayerToggleLock}
+                  onLayerRename={handleLayerRename}
+                  onLayerToggleExpanded={handleLayerToggleExpanded}
+                  activePanel={activeLeftPanel}
+                  onSwitchPanel={setActiveLeftPanel}
+                  onTogglePanel={handleToggleLeftPanel}
+                  panelCollapsed={leftPanelCollapsed}
+                />
+                {activeLeftPanel !== 'layers' && (
                   <AssetsPanel />
                 )}
               </FigmaSidePanel>
