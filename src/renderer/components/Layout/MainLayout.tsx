@@ -451,11 +451,11 @@ export const MainLayout: React.FC = () => {
   }, [shouldAutoCollapseRight]);
 
   // 面板控制函数（带性能监控）
-  const handleToggleLeftPanel = useCallback(() => {
-    measureLayout(() => {
-      setLeftPanelCollapsed(!leftPanelCollapsed);
-    });
-  }, [leftPanelCollapsed, measureLayout]);
+  // const handleToggleLeftPanel = useCallback(() => {
+  //   measureLayout(() => {
+  //     setLeftPanelCollapsed(!leftPanelCollapsed);
+  //   });
+  // }, [leftPanelCollapsed, measureLayout]);
 
   const toggleLeftPanel = useCallback(() => {
     measureLayout(() => {

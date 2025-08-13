@@ -66,15 +66,15 @@ export const WindowControls: React.FC = () => {
   return (
     <Container>
       <CtrlBtn aria-label="最小化" title="最小化" onClick={handleMinimize}>
-        <SvgIcon name="icon.24.collapse" size={16} title="最小化" />
+        <SvgIcon name="icon.24.stroke-solid" size={20} title="最小化" />
       </CtrlBtn>
       <CtrlBtn aria-label={isMaximized ? '还原' : '最大化'} title={isMaximized ? '还原' : '最大化'} onClick={handleMaxToggle}>
         {isMaximized
-          ? <SvgIcon name="icon.24.frame" size={16} title="还原" />
-          : <SvgIcon name="icon.24.expand" size={16} title="最大化" />}
+          ? <SvgIcon name="icon.24.collapse" size={20} title="还原" />
+          : <SvgIcon name="icon.24.expand" size={20} title="最大化" />}
       </CtrlBtn>
       <CtrlBtn aria-label="关闭" title="关闭" onClick={handleClose} $danger>
-        <SvgIcon name="icon.24.close" size={16} title="关闭" />
+        <SvgIcon name="icon.24.close" size={20} title="关闭" />
       </CtrlBtn>
     </Container>
   );
