@@ -1,7 +1,25 @@
 // 备份管理器
 import { EventEmitter } from '../../engines/h5-editor/utils/event-emitter';
 import path from 'path-browserify';
-import fs from 'fs-extra';
+// 渲染进程通过 preload 提供的 fs 桥接
+const fsBridge = {
+  pathExists: async (p: string) => window.electronAPI.fs.exists(p),
+  ensureDir: async (p: string) => window.electronAPI.fs.createDirectory(p),
+  readFile: async (p: string) => {
+    const res = await window.electronAPI.fs.readFile(p);
+    if (!res.success) throw new Error(res.error || 'readFile failed');
+    return res.data as any;
+  },
+  writeJson: async (p: string, data: any) => window.electronAPI.fs.writeJson(p, data, 2),
+  readJson: async (p: string) => {
+    const res = await window.electronAPI.fs.readJson(p);
+    if (!res.success) throw new Error(res.error || 'readJson failed');
+    return res.data;
+  },
+  copy: async (src: string, dest: string) => window.electronAPI.fs.copy(src, dest),
+  remove: async (p: string) => window.electronAPI.fs.remove(p),
+  stat: async (p: string) => window.electronAPI.fs.stat(p),
+};
 import crypto from 'crypto';
 
 export interface IBackupConfig {
@@ -97,9 +115,9 @@ export class BackupManager {
    */
   private async initializeBackupDirectory(): Promise<void> {
     try {
-      await fs.ensureDir(this.config.backupPath);
-      await fs.ensureDir(path.join(this.config.backupPath, 'metadata'));
-      await fs.ensureDir(path.join(this.config.backupPath, 'files'));
+      await fsBridge.ensureDir(this.config.backupPath);
+      await fsBridge.ensureDir(path.join(this.config.backupPath, 'metadata'));
+      await fsBridge.ensureDir(path.join(this.config.backupPath, 'files'));
     } catch (error) {
       console.error('初始化备份目录失败:', error);
     }
@@ -110,7 +128,7 @@ export class BackupManager {
    */
   private async calculateChecksum(filePath: string): Promise<string> {
     try {
-      const fileBuffer = await fs.readFile(filePath);
+      const fileBuffer = await fsBridge.readFile(filePath);
       return crypto.createHash('md5').update(fileBuffer).digest('hex');
     } catch (error) {
       console.error('计算文件校验和失败:', error);
@@ -139,11 +157,12 @@ export class BackupManager {
 
     try {
       // 检查文件是否存在
-      if (!await fs.pathExists(filePath)) {
+      if (!await fsBridge.pathExists(filePath)) {
         throw new Error('源文件不存在');
       }
 
-      const stats = await fs.stat(filePath);
+      const statsRes = await fsBridge.stat(filePath);
+      const stats = { size: (statsRes.data as any).size, mtime: new Date((statsRes.data as any).mtime) } as any;
       const checksum = await this.calculateChecksum(filePath);
       const backupId = this.generateBackupId();
       
@@ -153,7 +172,7 @@ export class BackupManager {
       const backupFilePath = path.join(this.config.backupPath, 'files', backupFileName);
 
       // 复制文件到备份目录
-      await fs.copy(filePath, backupFilePath);
+      await fsBridge.copy(filePath, backupFilePath);
 
       // 获取版本号
       const existingBackups = Array.from(this.backups.values())
@@ -206,20 +225,20 @@ export class BackupManager {
       const restorePath = targetPath || backup.originalPath;
       
       // 检查备份文件是否存在
-      if (!await fs.pathExists(backup.backupPath)) {
+      if (!await fsBridge.pathExists(backup.backupPath)) {
         throw new Error('备份文件不存在');
       }
 
       // 如果目标文件存在，先创建一个临时备份
       let tempBackupPath: string | null = null;
-      if (await fs.pathExists(restorePath)) {
+      if (await fsBridge.pathExists(restorePath)) {
         tempBackupPath = `${restorePath}.restore_backup_${Date.now()}`;
-        await fs.copy(restorePath, tempBackupPath);
+        await fsBridge.copy(restorePath, tempBackupPath);
       }
 
       try {
         // 恢复文件
-        await fs.copy(backup.backupPath, restorePath, { overwrite: true });
+        await fsBridge.copy(backup.backupPath, restorePath);
         
         // 验证恢复的文件
         const restoredChecksum = await this.calculateChecksum(restorePath);
@@ -229,16 +248,16 @@ export class BackupManager {
 
         // 删除临时备份
         if (tempBackupPath) {
-          await fs.remove(tempBackupPath);
+          await fsBridge.remove(tempBackupPath);
         }
 
         this.emitter.emit('backupRestored', backup);
 
       } catch (error) {
         // 恢复失败，回滚临时备份
-        if (tempBackupPath && await fs.pathExists(tempBackupPath)) {
-          await fs.copy(tempBackupPath, restorePath, { overwrite: true });
-          await fs.remove(tempBackupPath);
+        if (tempBackupPath && await fsBridge.pathExists(tempBackupPath)) {
+          await fsBridge.copy(tempBackupPath, restorePath);
+          await fsBridge.remove(tempBackupPath);
         }
         throw error;
       }
@@ -262,8 +281,8 @@ export class BackupManager {
 
     try {
       // 删除备份文件
-      if (await fs.pathExists(backup.backupPath)) {
-        await fs.remove(backup.backupPath);
+      if (await fsBridge.pathExists(backup.backupPath)) {
+        await fsBridge.remove(backup.backupPath);
       }
 
       // 删除元数据
@@ -324,11 +343,12 @@ export class BackupManager {
 
     try {
       // 检查本地文件
-      if (!await fs.pathExists(filePath)) {
+      if (!await fsBridge.pathExists(filePath)) {
         return conflicts;
       }
 
-      const localStats = await fs.stat(filePath);
+      const localStatsRes = await fsBridge.stat(filePath);
+      const localStats = { mtime: new Date((localStatsRes.data as any).mtime) } as any;
       const localChecksum = await this.calculateChecksum(filePath);
 
       // 检查是否有监控的版本

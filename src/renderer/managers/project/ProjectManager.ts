@@ -2,7 +2,25 @@
 import { EventEmitter } from '../../engines/h5-editor/utils/event-emitter';
 import { fileOperationOptimizer } from '../../utils/performance/FileOperationOptimizer';
 import path from 'path-browserify';
-import fs from 'fs-extra';
+// 渲染进程不直接使用 fs-extra，统一通过 preload 暴露的安全 API
+const fsBridge = {
+  ensureDir: async (dir: string) => {
+    const res = await window.electronAPI.fs.createDirectory(dir);
+    if (!res.success) throw new Error(res.error || 'ensureDir failed');
+  },
+  pathExists: async (p: string) => {
+    return await window.electronAPI.fs.exists(p);
+  },
+  readFile: async (p: string) => {
+    const res = await window.electronAPI.fs.readFile(p);
+    if (!res.success) throw new Error(res.error || 'readFile failed');
+    return String(res.data ?? '');
+  },
+  writeFile: async (p: string, data: string) => {
+    const res = await window.electronAPI.fs.writeFile(p, data);
+    if (!res.success) throw new Error(res.error || 'writeFile failed');
+  }
+};
 
 export interface IProjectMetadata {
   id: string;
@@ -127,8 +145,8 @@ export class ProjectManager {
    */
   private async initializeDirectories(): Promise<void> {
     try {
-      await fs.ensureDir(this.projectsDirectory);
-      await fs.ensureDir(this.templatesDirectory);
+      await fsBridge.ensureDir(this.projectsDirectory);
+      await fsBridge.ensureDir(this.templatesDirectory);
     } catch (error) {
       console.error('初始化项目目录失败:', error);
     }
@@ -329,7 +347,7 @@ export class ProjectManager {
   async loadProject(filePath: string): Promise<IProjectData> {
     try {
       // 检查文件是否存在
-      if (!await fs.pathExists(filePath)) {
+      if (!await fsBridge.pathExists(filePath)) {
         throw new Error('项目文件不存在');
       }
 
@@ -588,7 +606,7 @@ export class ProjectManager {
   private async saveTemplates(): Promise<void> {
     try {
       const templatesPath = path.join(this.templatesDirectory, 'templates.json');
-      await fs.writeFile(templatesPath, JSON.stringify(this.templates, null, 2), 'utf8');
+      await fsBridge.writeFile(templatesPath, JSON.stringify(this.templates, null, 2));
     } catch (error) {
       console.error('保存模板列表失败:', error);
     }
@@ -601,8 +619,8 @@ export class ProjectManager {
     try {
       const templatesPath = path.join(this.templatesDirectory, 'templates.json');
       
-      if (await fs.pathExists(templatesPath)) {
-        const content = await fs.readFile(templatesPath, 'utf8');
+      if (await fsBridge.pathExists(templatesPath)) {
+        const content = await fsBridge.readFile(templatesPath);
         this.templates = JSON.parse(content);
       } else {
         // 创建默认模板
