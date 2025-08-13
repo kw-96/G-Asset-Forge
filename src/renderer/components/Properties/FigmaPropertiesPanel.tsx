@@ -19,7 +19,7 @@ interface FigmaPropertiesPanelProps {
 }
 
 const PanelContainer = styled.div`
-  width: 280px;
+  width: 100%;
   height: 100%;
   background: ${({ theme }) => theme.colors.interface.panel.light};
   border-left: 1px solid ${({ theme }) => theme.colors.interface.divider.light};

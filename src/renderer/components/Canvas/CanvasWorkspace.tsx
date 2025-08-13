@@ -3,12 +3,12 @@
  * 支持无限制的平移、缩放和对象放置
  */
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { IconButton } from '../../ui/components/IconButton/IconButton';
-import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
+// import { IconButton } from '../../ui/components/IconButton/IconButton';
+// import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Button } from '../../ui/components/Button/Button';
-import { Badge } from '../../ui/components/Badge/Badge';
+// import { Badge } from '../../ui/components/Badge/Badge';
 import { canvasEvents } from '../../utils/events/canvasEvents';
 
 const WorkspaceContainer = styled.div`
@@ -110,65 +110,6 @@ const ViewportIndicator = styled.div<{ $x: number; $y: number; $width: number; $
   cursor: move;
 `;
 
-const FloatingControls = styled.div`
-  position: absolute;
-  bottom: ${({ theme }) => theme.spacing.lg};
-  right: ${({ theme }) => theme.spacing.lg};
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.sm};
-  z-index: ${({ theme }) => theme.zIndex.overlay};
-`;
-
-const ZoomControls = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  padding: ${({ theme }) => theme.spacing.xs};
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.xs};
-  backdrop-filter: blur(12px);
-  box-shadow: ${({ theme }) => theme.shadows.md};
-`;
-
-const ZoomDisplay = styled.div`
-  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
-  font-size: ${({ theme }) => theme.typography.fontSize.xs};
-  color: ${({ theme }) => theme.colors.text.primary};
-  text-align: center;
-  min-width: 50px;
-`;
-
-const ModeSelector = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  padding: ${({ theme }) => theme.spacing.xs};
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.xs};
-  backdrop-filter: blur(12px);
-  box-shadow: ${({ theme }) => theme.shadows.md};
-`;
-
-const ModeButton = styled(Button) <{ $active?: boolean }>`
-  background: ${({ theme, $active }) =>
-    $active ? theme.colors.primary : 'transparent'};
-  color: ${({ theme, $active }) =>
-    $active ? 'white' : theme.colors.text.primary};
-  border: 1px solid ${({ theme, $active }) =>
-    $active ? theme.colors.primary : 'transparent'};
-`;
-
-const CanvasInfo = styled.div`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing.lg};
-  left: ${({ theme }) => theme.spacing.lg};
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.sm};
-  z-index: ${({ theme }) => theme.zIndex.overlay};
-`;
-
 // 无限画布对象接口
 interface CanvasObject {
   id: string;
@@ -203,7 +144,7 @@ interface CanvasWorkspaceProps {
   onModeChange?: (mode: 'design' | 'h5') => void;
 }
 
-export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controlledMode, onModeChange }) => {
+export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controlledMode }) => {
   // 无限画布状态
   const [viewport, setViewport] = useState<ViewportInfo>({ x: 0, y: 0, zoom: 1 });
   const [hasError, setHasError] = useState(false);
@@ -229,7 +170,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   const [objects, setObjects] = useState<CanvasObject[]>([]);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [showOverview, setShowOverview] = useState(false);
-  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   // 拖拽状态
   const [isDragging, setIsDragging] = useState(false);
@@ -585,60 +526,41 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
     setShowOverview(viewport.zoom < 0.3);
   }, [viewport.zoom]);
 
-  // 监听容器尺寸变化
+  // 监听容器尺寸变化（面板宽度联动）
   useEffect(() => {
-    const updateContainerSize = () => {
-      if (canvasRef.current) {
-        const rect = canvasRef.current.getBoundingClientRect();
-        setContainerSize({ width: rect.width, height: rect.height });
+    if (!canvasRef.current) return;
+
+    const el = canvasRef.current;
+
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      setContainerSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+    };
+
+    // 初始更新
+    update();
+
+    // 使用 ResizeObserver 精准感知尺寸变化（安全检测 + 回退）
+    let ro: ResizeObserver | null = null;
+    const RO: any = (window as any).ResizeObserver;
+    if (typeof RO === 'function') {
+      const observer: ResizeObserver = new RO(() => update());
+      observer.observe(el);
+      ro = observer;
+    } else {
+      // 退化方案
+      window.addEventListener('resize', update);
+    }
+
+    return () => {
+      if (ro) {
+        ro.disconnect();
+      } else {
+        window.removeEventListener('resize', update);
       }
     };
-
-    // 初始化尺寸
-    updateContainerSize();
-
-    // 监听窗口大小变化
-    const handleResize = () => {
-      updateContainerSize();
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 内容定位功能 - 检测可见对象
-  const visibleObjects = useMemo(() => {
-    try {
-      return objects.filter(obj => {
-        // 检查对象属性是否有效
-        if (!obj || typeof obj.worldX !== 'number' || typeof obj.worldY !== 'number' || 
-            typeof obj.width !== 'number' || typeof obj.height !== 'number') {
-          return false;
-        }
-
-        // 检查对象是否在当前视口内可见
-        const safeZoom = Math.max(viewport.zoom, 0.01);
-        const screenLeft = obj.worldX * safeZoom + viewport.x;
-        const screenTop = obj.worldY * safeZoom + viewport.y;
-        const screenRight = screenLeft + obj.width * safeZoom;
-        const screenBottom = screenTop + obj.height * safeZoom;
-
-        // 检查计算结果是否有效
-        if (!isFinite(screenLeft) || !isFinite(screenTop) || 
-            !isFinite(screenRight) || !isFinite(screenBottom)) {
-          return false;
-        }
-
-        return !(screenRight < 0 || 
-                 screenLeft > containerSize.width ||
-                 screenBottom < 0 || 
-                 screenTop > containerSize.height);
-      });
-    } catch (error) {
-      console.error('Error calculating visible objects:', error);
-      return [];
-    }
-  }, [objects, viewport, containerSize]);
   // 订阅顶部菜单发出的画布事件
   useEffect(() => {
     const offFit = canvasEvents.on('fitToContent', () => handleFitToContent());
@@ -807,6 +729,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
 
       {/* 无限画布区域 */}
       <InfiniteCanvasArea
+        key={`${containerSize.width}x${containerSize.height}`}
         ref={canvasRef}
         $showGrid={showGrid}
         $gridSize={gridSize}
@@ -904,72 +827,6 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
           </div>
         </OverviewNavigator>
 
-        {/* 画布信息 - 包含性能监控 */}
-        <CanvasInfo>
-          <Badge variant="secondary" size="sm">
-            缩放: {Math.round(viewport.zoom * 100)}%
-          </Badge>
-          <Badge variant="info" size="sm">
-            {mode === 'design' ? '设计模式' : 'H5模式'}
-          </Badge>
-          <Badge variant="secondary" size="sm">
-            对象: {objects.length} / 可见: {visibleObjects.length}
-          </Badge>
-          <Badge variant="secondary" size="sm">
-            位置: ({Math.round(-viewport.x / Math.max(viewport.zoom, 0.01))}, {Math.round(-viewport.y / Math.max(viewport.zoom, 0.01))})
-          </Badge>
-          {process.env['NODE_ENV'] === 'development' && (
-            <Badge variant="warning" size="sm">
-              性能: 60fps
-            </Badge>
-          )}
-        </CanvasInfo>
-
-        {/* 浮动控制器 */}
-        <FloatingControls>
-          {/* 模式切换 */}
-          <ModeSelector>
-            <ModeButton
-              $active={mode === 'design'}
-              variant="ghost"
-              size="sm"
-              onClick={() => (onModeChange ? onModeChange('design') : setMode('design'))}
-            >
-              <SvgIcon name="icon.16.design" size={12} title="设计" />
-            </ModeButton>
-            <ModeButton
-              $active={mode === 'h5'}
-              variant="ghost"
-              size="sm"
-              onClick={() => (onModeChange ? onModeChange('h5') : setMode('h5'))}
-            >
-              <SvgIcon name="icon.16.mobile" size={12} title="H5" />
-            </ModeButton>
-          </ModeSelector>
-
-          {/* 缩放控制 */}
-          <ZoomControls>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              icon={<SvgIcon name="icon.16.plus" size={12} title="放大" />}
-              onClick={() => handleZoomChange(1)}
-            />
-            <ZoomDisplay>{Math.round(viewport.zoom * 100)}%</ZoomDisplay>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              icon={<SvgIcon name="icon.16.minus" size={12} title="缩小" />}
-              onClick={() => handleZoomChange(-1)}
-            />
-            <IconButton
-              variant="ghost"
-              size="sm"
-              icon={<SvgIcon name="icon.16.aspect-ratio" size={12} title="适应" />}
-              onClick={handleFitToContent}
-            />
-          </ZoomControls>
-        </FloatingControls>
       </InfiniteCanvasArea>
     </WorkspaceContainer>
   );
