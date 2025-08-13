@@ -506,6 +506,8 @@ export const AppContainer: React.FC = () => {
         );
 
       case 'loading':
+        // 确保加载时窗口固定为 480x320
+        setWelcomeMode();
         return (
           <LoadingScreen>
             正在初始化应用...
@@ -513,6 +515,8 @@ export const AppContainer: React.FC = () => {
         );
 
       case 'welcome':
+        // 欢迎页固定为 480x320
+        setWelcomeMode();
         return <WelcomeScreen onComplete={handleWelcomeComplete} />;
 
       case 'main':

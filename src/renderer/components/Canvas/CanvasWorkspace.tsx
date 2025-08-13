@@ -142,15 +142,16 @@ const RulerCanvasVertical = styled.canvas<{ $visible: boolean; $rulerSize: numbe
   z-index: ${({ theme }) => theme.zIndex.banner};
 `;
 
-const GuideLine = styled.div<{ $orientation: 'vertical' | 'horizontal'; $positionPx: number }>`
+const GuideLine = styled.div<{ $orientation: 'vertical' | 'horizontal'; $positionPx: number; $active?: boolean }>`
   position: absolute;
   ${({ $orientation, $positionPx }) =>
     $orientation === 'vertical'
       ? `left: ${$positionPx}px; top: 0; bottom: 0; width: 1px;`
       : `top: ${$positionPx}px; left: 0; right: 0; height: 1px;`}
-  background: #4f46e5;
-  opacity: 0.6;
-  pointer-events: none;
+  background: ${({ $active }) => ($active ? '#ef4444' : '#4f46e5')};
+  opacity: 0.7;
+  cursor: ${({ $orientation }) => ($orientation === 'vertical' ? 'col-resize' : 'row-resize')};
+  pointer-events: auto;
   z-index: ${({ theme }) => theme.zIndex.overlay};
 `;
 
@@ -199,9 +200,9 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
       setMode(controlledMode);
     }
   }, [controlledMode]);
-  const [showGrid, setShowGrid] = useState(true);
-  // const [gridSize, setGridSize] = useState(20);
-  const [gridSize] = useState(20);
+  // 网格与标尺改为使用全局store
+  const showGrid = useCanvasStore(s => s.showGrid);
+  const gridSize = useCanvasStore(s => s.gridSize);
   // const [snapToGrid, setSnapToGrid] = useState(false);
   const [showGuides, setShowGuides] = useState(true);
   const [guides, setGuides] = useState<Array<{
@@ -229,8 +230,14 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   const rulerHRef = useRef<HTMLCanvasElement>(null);
   const rulerVRef = useRef<HTMLCanvasElement>(null);
   const RULER_SIZE = 20;
-  // 从全局画布Store读取标尺可见性
+  // 从全局画布Store读取标尺可见性并同步缩放（百分比）
   const showRuler = useCanvasStore(s => s.showRuler);
+  const storeZoomPct = useCanvasStore(s => s.zoom);
+
+  useEffect(() => {
+    const z = Math.max(0.1, (storeZoomPct || 100) / 100);
+    setViewport(prev => (prev.zoom === z ? prev : { ...prev, zoom: z }));
+  }, [storeZoomPct]);
 
 
   // 常用模板
@@ -770,7 +777,10 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   // 订阅顶部菜单发出的画布事件
   useEffect(() => {
     const offFit = canvasEvents.on('fitToContent', () => handleFitToContent());
-    const offToggleGrid = canvasEvents.on('toggleGrid', () => setShowGrid(prev => !prev));
+    const offToggleGrid = canvasEvents.on('toggleGrid', () => {
+      const st = useCanvasStore.getState();
+      st.setShowGrid(!st.showGrid);
+    });
     const offToggleGuides = canvasEvents.on('toggleGuides', () => setShowGuides(prev => !prev));
     const offReset = canvasEvents.on('resetView', () => setViewport({ x: 0, y: 0, zoom: 1 }));
     const offZoomIn = canvasEvents.on('zoomIn', () => handleZoomChange(1));
@@ -828,7 +838,10 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
         switch (e.key) {
           case 'g':
             e.preventDefault();
-            setShowGrid(prev => !prev);
+            {
+              const st = useCanvasStore.getState();
+              st.setShowGrid(!st.showGrid);
+            }
             break;
           case 'r':
             e.preventDefault();
@@ -1008,6 +1021,26 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
                 ? Math.round(g.position * viewport.zoom + viewport.x)
                 : Math.round(g.position * viewport.zoom + viewport.y)
             }
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const startMouse = { x: e.clientX, y: e.clientY };
+              const startPos = g.position;
+              const move = (ev: MouseEvent) => {
+                const dx = (ev.clientX - startMouse.x) / Math.max(viewport.zoom, 0.01);
+                const dy = (ev.clientY - startMouse.y) / Math.max(viewport.zoom, 0.01);
+                setGuides(prev => prev.map(it => it.id === g.id ? {
+                  ...it,
+                  position: it.type === 'vertical' ? startPos + dx : startPos + dy
+                } : it));
+              };
+              const up = () => {
+                window.removeEventListener('mousemove', move);
+                window.removeEventListener('mouseup', up);
+              };
+              window.addEventListener('mousemove', move);
+              window.addEventListener('mouseup', up);
+            }}
           />
         ))}
 
