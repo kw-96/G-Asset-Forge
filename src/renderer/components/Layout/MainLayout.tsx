@@ -371,7 +371,7 @@ export const MainLayout: React.FC = () => {
   // 面板状态
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
-  const [activeLeftPanel, setActiveLeftPanel] = useState<'layers' | 'assets'>('layers');
+  // const [activeLeftPanel, setActiveLeftPanel] = useState<'layers' | 'assets'>('layers');
   
   // Figma风格组件状态
   const [activeTool, setActiveTool] = useState('select');
@@ -642,7 +642,7 @@ export const MainLayout: React.FC = () => {
                   onLayerToggleLock={handleLayerToggleLock}
                   onLayerRename={handleLayerRename}
                   onLayerToggleExpanded={handleLayerToggleExpanded}
-                  onSwitchPanel={setActiveLeftPanel}
+                  onSwitchPanel={undefined}
                   onSwitchMode={(m) => {
                     // 触发中心画布切换到 H5 编辑器模式
                     if (m === 'h5') {
@@ -674,12 +674,7 @@ export const MainLayout: React.FC = () => {
             />
           </FloatingToolbar>
           
-          <CanvasWorkspace
-            mode={actualMode === 'dark' ? undefined : undefined}
-            onModeChange={(m) => {
-              // 将 H5 切换统一由顶部左侧图标按钮控制
-            }}
-          />
+          <CanvasWorkspace />
         </FigmaCenterSection>
 
         {/* 右侧面板区域 */}
