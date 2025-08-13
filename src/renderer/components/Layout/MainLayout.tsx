@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TopToolbar } from './TopToolbar';
-import { LeftToolPanel } from './LeftToolPanel';
+// import { LeftToolPanel } from './LeftToolPanel';
 import { FigmaToolbar } from './FigmaToolbar';
 import { FigmaLayersPanel } from './FigmaLayersPanel';
 import { FigmaPropertiesPanel } from '../Properties/FigmaPropertiesPanel';
@@ -114,22 +114,22 @@ const FigmaLeftSection = styled(motion.div)<{
   `}
 `;
 
-// 工具面板
-const FigmaToolPanel = styled.div<{ $actualMode: 'light' | 'dark' }>`
-  width: 60px;
-  background: ${({ theme }) => theme.colors.interface?.toolbar?.light || theme.colors.surface};
-  border-right: 1px solid ${({ theme }) => theme.colors.interface?.divider?.light || theme.colors.border.default};
-  flex-shrink: 0;
-  
-  ${({ theme, $actualMode }) => theme.colors.interface && `
-    background: ${$actualMode === 'dark' 
-      ? theme.colors.interface.toolbar.dark 
-      : theme.colors.interface.toolbar.light};
-    border-right-color: ${$actualMode === 'dark' 
-      ? theme.colors.interface.divider.dark 
-      : theme.colors.interface.divider.light};
-  `}
-`;
+// 工具面板已废弃（内容合并到图层面板顶部）
+// const FigmaToolPanel = styled.div<{ $actualMode: 'light' | 'dark' }>`
+//   width: 60px;
+//   background: ${({ theme }) => theme.colors.interface?.toolbar?.light || theme.colors.surface};
+//   border-right: 1px solid ${({ theme }) => theme.colors.interface?.divider?.light || theme.colors.border.default};
+//   flex-shrink: 0;
+//   
+//   ${({ theme, $actualMode }) => theme.colors.interface && `
+//     background: ${$actualMode === 'dark' 
+//       ? theme.colors.interface.toolbar.dark 
+//       : theme.colors.interface.toolbar.light};
+//     border-right-color: ${$actualMode === 'dark' 
+//       ? theme.colors.interface.divider.dark 
+//       : theme.colors.interface.divider.light};
+//   `}
+// `;
 
 // 侧边面板
 const FigmaSidePanel = styled(motion.div)<{ $collapsed: boolean; $actualMode: 'light' | 'dark' }>`

@@ -324,7 +324,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
         <TopToolsBar>
           <EnhancedIconButton
             icon={<SvgIcon name={panelCollapsed ? 'icon.16.chevron.right' : 'icon.16.chevron.right'} size={16} title={panelCollapsed ? '展开' : '折叠'} />}
-            onClick={onTogglePanel}
+            onClick={() => onTogglePanel && onTogglePanel()}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
             tooltipContent={panelCollapsed ? '展开面板' : '折叠面板'}
@@ -334,7 +334,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
           />
           <EnhancedIconButton
             icon={<SvgIcon name="icon.16.frame" size={16} title="图层" />}
-            onClick={() => onSwitchPanel('layers')}
+            onClick={() => onSwitchPanel && onSwitchPanel('layers')}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
             tooltipContent="图层面板"
@@ -345,7 +345,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
           />
           <EnhancedIconButton
             icon={<SvgIcon name="icon.16.library" size={16} title="素材库" />}
-            onClick={() => onSwitchPanel('assets')}
+            onClick={() => onSwitchPanel && onSwitchPanel('assets')}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
             tooltipContent="素材库"
