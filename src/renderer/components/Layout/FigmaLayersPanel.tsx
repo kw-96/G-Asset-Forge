@@ -31,6 +31,11 @@ interface FigmaLayersPanelProps {
   // 可选：嵌入原 LeftToolPanel 的顶部工具区
   activePanel?: 'layers' | 'assets';
   onSwitchPanel?: (panel: 'layers' | 'assets') => void;
+  // 新增：模式/库切换
+  onSwitchMode?: (mode: 'design' | 'h5') => void;
+  onOpenTemplateLibrary?: () => void;
+  onOpenAssetLibrary?: () => void;
+  onOpenProjectLibrary?: () => void;
 }
 
 const PanelContainer = styled.div`
@@ -204,6 +209,10 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
   onLayerToggleExpanded,
   activePanel,
   onSwitchPanel,
+  onSwitchMode,
+  onOpenTemplateLibrary,
+  onOpenAssetLibrary,
+  onOpenProjectLibrary,
 }) => {
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -319,19 +328,38 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
       {onSwitchPanel && (
         <TopToolsBar>
           <EnhancedIconButton
-            icon={<SvgIcon name="icon.16.frame" size={16} title="图层" />}
-            onClick={() => onSwitchPanel && onSwitchPanel('layers')}
+            icon={<SvgIcon name="icon.24.file.design" size={16} title="设计模式" />}
+            onClick={() => onSwitchMode && onSwitchMode('design')}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
-            tooltipContent="图层面板"
+            tooltipContent="设计模式"
             tooltipPlacement="bottom"
-            variant={activePanel === 'layers' ? 'primary' : 'ghost'}
             interactionVariant="tool"
-            aria-label="图层面板"
+            aria-label="设计模式"
           />
           <EnhancedIconButton
-            icon={<SvgIcon name="icon.16.library" size={16} title="素材库" />}
-            onClick={() => onSwitchPanel && onSwitchPanel('assets')}
+            icon={<SvgIcon name="icon.24.file.H5" size={16} title="H5模式" />}
+            onClick={() => onSwitchMode && onSwitchMode('h5')}
+            enableFigmaInteractions={true}
+            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            tooltipContent="H5模式"
+            tooltipPlacement="bottom"
+            interactionVariant="tool"
+            aria-label="H5模式"
+          />
+          <EnhancedIconButton
+            icon={<SvgIcon name="icon.24.file.design.mods" size={16} title="模板库" />}
+            onClick={() => onOpenTemplateLibrary && onOpenTemplateLibrary()}
+            enableFigmaInteractions={true}
+            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            tooltipContent="模板库"
+            tooltipPlacement="bottom"
+            interactionVariant="tool"
+            aria-label="模板库"
+          />
+          <EnhancedIconButton
+            icon={<SvgIcon name="icon.24.file.design.assets" size={16} title="素材库" />}
+            onClick={() => onOpenAssetLibrary ? onOpenAssetLibrary() : (onSwitchPanel && onSwitchPanel('assets'))}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
             tooltipContent="素材库"
@@ -339,6 +367,16 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
             variant={activePanel === 'assets' ? 'primary' : 'ghost'}
             interactionVariant="tool"
             aria-label="素材库"
+          />
+          <EnhancedIconButton
+            icon={<SvgIcon name="icon.24.file.design.library" size={16} title="项目库" />}
+            onClick={() => onOpenProjectLibrary && onOpenProjectLibrary()}
+            enableFigmaInteractions={true}
+            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            tooltipContent="项目库"
+            tooltipPlacement="bottom"
+            interactionVariant="tool"
+            aria-label="项目库"
           />
         </TopToolsBar>
       )}
