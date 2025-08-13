@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow } from 'electron';
 import * as path from 'path';
 import { SecurityConfig } from '../config/security';
 
