@@ -340,6 +340,11 @@ export const AppContainer: React.FC = () => {
         { isFirstTime },
         'AppContainer'
       );
+      // 确保显示欢迎页或主界面
+      const isDevelopment = process.env['NODE_ENV'] === 'development';
+      if (isFirstTime || isDevelopment) {
+        setShowWelcome(true);
+      }
     }, [isFirstTime]),
     onError: useCallback((error: Error) => {
       console.error(
