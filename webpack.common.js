@@ -29,7 +29,12 @@ const getCommonConfig = (isDevelopment = false) => ({
           loader: 'ts-loader',
           options: {
             transpileOnly: isDevelopment, // 开发模式下快速编译
-            configFile: path.resolve(__dirname, 'tsconfig.json')
+            configFile: path.resolve(__dirname, 'tsconfig.json'),
+            compilerOptions: {
+              declaration: false,
+              declarationMap: false,
+              emitDeclarationOnly: false
+            }
           }
         },
         exclude: /node_modules/
