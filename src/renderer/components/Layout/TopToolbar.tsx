@@ -258,8 +258,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         console.warn('ProjectManager 尚未初始化');
         return;
       }
-      const { dialog } = require('electron').remote;
-      const result = await dialog.showOpenDialog({
+      const res = await window.electronAPI.dialog.showOpenDialog({
         title: '打开项目',
         filters: [
           { name: 'G-Asset Forge 项目', extensions: ['gaf'] },
@@ -267,8 +266,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         ],
         properties: ['openFile']
       });
-      if (result.canceled || result.filePaths.length === 0) return;
-      const loaded = await projectManagerRef.current.loadProject(result.filePaths[0]);
+      if (!res.success || !res.data || res.data.canceled || res.data.filePaths.length === 0) return;
+      const loaded = await projectManagerRef.current.loadProject(res.data!.filePaths[0]!);
       const id = `tab-${Date.now()}`;
       setTabs(prev => [...prev, { id, title: loaded.metadata.name, project: loaded }]);
       setActiveTabId(id);
@@ -311,14 +310,13 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
       const project = getActiveProject();
       if (!project || !projectManagerRef.current) return;
       (projectManagerRef.current as any).currentProject = project;
-      const { dialog } = require('electron').remote;
-      const result = await dialog.showSaveDialog({
+      const res = await window.electronAPI.dialog.showSaveDialog({
         title: '另存为项目',
         defaultPath: `${project.metadata?.name || '未命名'}.gaf`,
         filters: [ { name: 'G-Asset Forge 项目', extensions: ['gaf'] } ]
       });
-      if (result.canceled || !result.filePath) return;
-      await projectManagerRef.current.saveProjectAs(result.filePath);
+      if (!res.success || !res.data || res.data.canceled || !res.data.filePath) return;
+      await projectManagerRef.current.saveProjectAs(res.data!.filePath!);
     } catch (e) {
       console.error('另存为失败:', e);
     }

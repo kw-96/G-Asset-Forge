@@ -1,4 +1,4 @@
-import { ipcMain, app, BrowserWindow } from 'electron';
+import { ipcMain, app, BrowserWindow, dialog } from 'electron';
 import { FileSystemManager } from '../managers/FileSystemManager';
 
 interface IpcResponse<T = any> {
@@ -164,6 +164,19 @@ export class IpcHandlers {
         } catch (error) {
           throw new Error(`Invalid path name: ${name}`);
         }
+      });
+
+      // Dialogs
+      this.registerHandler('dialog:showOpenDialog', async (_event, options: Electron.OpenDialogOptions) => {
+        const win = this.mainWindow ?? BrowserWindow.getFocusedWindow() ?? undefined;
+        const result = await dialog.showOpenDialog(win!, options);
+        return result;
+      });
+
+      this.registerHandler('dialog:showSaveDialog', async (_event, options: Electron.SaveDialogOptions) => {
+        const win = this.mainWindow ?? BrowserWindow.getFocusedWindow() ?? undefined;
+        const result = await dialog.showSaveDialog(win!, options);
+        return result;
       });
 
       // Health check - 用于测试IPC通信是否正常

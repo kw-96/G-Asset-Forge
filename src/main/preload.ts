@@ -139,6 +139,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onFitToScreen: (callback: () => void) => safeOn('menu:fit-to-screen', callback)
   },
 
+  // Dialogs
+  dialog: {
+    showOpenDialog: (options: Electron.OpenDialogOptions) => safeInvoke('dialog:showOpenDialog', options),
+    showSaveDialog: (options: Electron.SaveDialogOptions) => safeInvoke('dialog:showSaveDialog', options),
+  },
+
   // Utility functions
   removeAllListeners: (channel: string) => {
     try {
@@ -208,6 +214,10 @@ export interface ElectronAPI {
     onZoomIn: (callback: () => void) => void;
     onZoomOut: (callback: () => void) => void;
     onFitToScreen: (callback: () => void) => void;
+  };
+  dialog: {
+    showOpenDialog: (options: Electron.OpenDialogOptions) => Promise<{ success: boolean; data?: Electron.OpenDialogReturnValue; error?: string }>;
+    showSaveDialog: (options: Electron.SaveDialogOptions) => Promise<{ success: boolean; data?: Electron.SaveDialogReturnValue; error?: string }>;
   };
   removeAllListeners: (channel: string) => void;
   healthCheck: () => Promise<{ success: boolean; timestamp?: number; message?: string }>;
