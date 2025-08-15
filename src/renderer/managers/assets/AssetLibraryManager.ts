@@ -754,12 +754,131 @@ export class AssetLibraryManager {
   }
 
   /**
+   * 初始化示例数据
+   */
+  private initializeDemoAssets(): void {
+    const demoAssets: Omit<IAssetMetadata, 'id' | 'createdAt' | 'updatedAt'>[] = [
+      {
+        name: '科幻城市背景',
+        description: '未来感十足的科幻城市背景，适合科幻主题游戏',
+        category: 'background',
+        subcategory: 'sci-fi',
+        tags: ['科幻', '城市', '背景', '未来'],
+        fileType: 'image/png',
+        fileSize: 2048000,
+        dimensions: { width: 1920, height: 1080 },
+        originalUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiBmaWxsPSJ1cmwoI2dyYWRpZW50KSIvPgo8ZGVmcz4KPHN2ZxradGllbnQgaWQ9ImdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwNTFhNSIvPgo8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDNkN2EiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K',
+        license: 'free',
+        author: 'G-Asset Forge',
+        downloadCount: 156,
+        rating: 4.8,
+        isFavorite: true,
+        isCustom: false
+      },
+      {
+        name: '战士角色',
+        description: '勇敢的战士角色，适合RPG和动作游戏',
+        category: 'character',
+        subcategory: 'hero',
+        tags: ['角色', '战士', '英雄', 'RPG'],
+        fileType: 'image/png',
+        fileSize: 512000,
+        dimensions: { width: 256, height: 256 },
+        originalUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiBmaWxsPSIjZjNmNGY2Ii8+CjxyZWN0IHg9IjY0IiB5PSI2NCIgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiM2MzY2ZjEiLz4KPHRleHQgeD0iMTI4IiB5PSIxNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiPuaImOWjqzwvdGV4dD4KPC9zdmc+',
+        license: 'free',
+        author: 'G-Asset Forge',
+        downloadCount: 89,
+        rating: 4.5,
+        isFavorite: false,
+        isCustom: false
+      },
+      {
+        name: '游戏按钮',
+        description: '通用游戏UI按钮，支持多种状态',
+        category: 'ui',
+        subcategory: 'button',
+        tags: ['UI', '按钮', '界面', '交互'],
+        fileType: 'image/png',
+        fileSize: 32000,
+        dimensions: { width: 200, height: 60 },
+        originalUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjAwIDYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjYwIiByeD0iMTAiIGZpbGw9IiMzZjgxZjQiLz4KPHR0ZXh0IHg9IjEwMCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiPkNsaWNrIE1lPC90ZXh0Pgo8L3N2Zz4K',
+        license: 'free',
+        author: 'UI Designer',
+        downloadCount: 234,
+        rating: 4.2,
+        isFavorite: true,
+        isCustom: false
+      },
+      {
+        name: '设置图标',
+        description: '齿轮样式的设置图标，适用于各类设置界面',
+        category: 'icon',
+        subcategory: 'system',
+        tags: ['图标', '设置', '齿轮', '系统'],
+        fileType: 'image/svg+xml',
+        fileSize: 4096,
+        dimensions: { width: 64, height: 64 },
+        originalUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjQiIGZpbGw9IiM2YzY1N2QiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMTAiIGZpbGw9IndoaXRlIi8+Cjx0ZXh0IHg9IjMyIiB5PSIzNyIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNmM3NTdkIj7orr7nva48L3RleHQ+Cjwvc3ZnPg==',
+        license: 'free',
+        author: 'Icon Pack',
+        downloadCount: 178,
+        rating: 4.6,
+        isFavorite: false,
+        isCustom: false
+      },
+      {
+        name: '爆炸特效',
+        description: '动态爆炸特效动画，适合战斗和破坏场景',
+        category: 'effect',
+        subcategory: 'explosion',
+        tags: ['特效', '爆炸', '动画', '战斗'],
+        fileType: 'image/gif',
+        fileSize: 1024000,
+        dimensions: { width: 128, height: 128 },
+        originalUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjY0IiBjeT0iNjQiIHI9IjQ4IiBmaWxsPSJ1cmwoI2V4cGxvc2lvbikiLz4KPGR0ZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9ImV4cGxvc2lvbiI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmZmI4MDAiLz4KPHN0b3Agb2Zmc2V0PSI1MCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmOTI2MDAiLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojN2Y4MzAwIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPHR0ZXh0IHg9IjY0IiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSI+SUtBTTwvdGV4dD4KPC9zdmc+',
+        license: 'premium',
+        author: 'VFX Studio',
+        downloadCount: 67,
+        rating: 4.9,
+        isFavorite: false,
+        isCustom: false
+      },
+      {
+        name: '魔法森林',
+        description: '神秘的魔法森林背景，充满奇幻色彩',
+        category: 'background',
+        subcategory: 'fantasy',
+        tags: ['魔幻', '森林', '自然', '神秘'],
+        fileType: 'image/png',
+        fileSize: 3072000,
+        dimensions: { width: 1920, height: 1080 },
+        originalUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiBmaWxsPSJ1cmwoI2ZvcmVzdCkiLz4KPGR0ZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImZvcmVzdCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM5MWQ1ZmYiLz4KPHN0b3Agb2Zmc2V0PSI1MCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YWY0NTkiLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDM3MzE5Ii8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPHR0ZXh0IHg9Ijk2MCIgeT0iNTQwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iNDgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIj7prpTms5XmoK7mnpE8L3RleHQ+Cjwvc3ZnPg==',
+        license: 'free',
+        author: 'Fantasy Arts',
+        downloadCount: 203,
+        rating: 4.7,
+        isFavorite: true,
+        isCustom: false
+      }
+    ];
+
+    // 添加示例数据
+    demoAssets.forEach(demoAsset => {
+      this.addAsset(demoAsset);
+    });
+
+    console.log('已初始化', demoAssets.length, '个示例素材');
+  }
+
+  /**
    * 从本地存储加载
    */
   private loadFromStorage(): void {
     try {
       const dataStr = localStorage.getItem(this.storageKey);
       if (!dataStr) {
+        // 首次使用，添加示例数据
+        this.initializeDemoAssets();
         return;
       }
 

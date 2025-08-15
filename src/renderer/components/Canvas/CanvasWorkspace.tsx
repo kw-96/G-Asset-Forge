@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useZoomPan } from '../common/ZoomPanContext';
 import styled from 'styled-components';
 // import { IconButton } from '../../ui/components/IconButton/IconButton';
 // import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
@@ -38,14 +39,14 @@ const WorkspaceContainer = styled.div`
 //   gap: ${({ theme }) => theme.spacing.sm};
 // `;
 
-const CanvasAreaWrapper = styled.div<{ $showRuler: boolean; $rulerSize: number }>`
+const CanvasAreaWrapper = styled.div`
   position: relative;
   flex: 1;
-  padding-top: ${({ $showRuler, $rulerSize }) => ($showRuler ? `${$rulerSize}px` : '0')};
-  padding-left: ${({ $showRuler, $rulerSize }) => ($showRuler ? `${$rulerSize}px` : '0')};
+  width: 100%;
+  height: 100%;
 `;
 
-const InfiniteCanvasArea = styled.div<{ $showGrid: boolean; $gridSize: number; $panX: number; $panY: number; $zoom: number }>`
+const InfiniteCanvasArea = styled.div<{ $showGrid: boolean; $gridSize: number; $isControlledExternally: boolean }>`
   flex: 1;
   position: relative;
   overflow: hidden;
@@ -56,23 +57,32 @@ const InfiniteCanvasArea = styled.div<{ $showGrid: boolean; $gridSize: number; $
     cursor: grabbing;
   }
   
-  /* 动态网格背景 - 跟随视口移动 */
-  ${({ $showGrid, theme, $gridSize, $panX, $panY, $zoom }) => $showGrid ? `
-    background-image: 
-      linear-gradient(${theme.colors.canvas.grid} 1px, transparent 1px),
-      linear-gradient(90deg, ${theme.colors.canvas.grid} 1px, transparent 1px);
-    background-size: ${$gridSize * $zoom}px ${$gridSize * $zoom}px;
-    background-position: ${$panX}px ${$panY}px;
-  ` : ''}
+  /* 简化的网格背景 - 只在非外部控制模式下显示 */
+  ${({ $showGrid, theme, $gridSize, $isControlledExternally }) => {
+    if (!$showGrid || $isControlledExternally) return '';
+
+    const gridColor = theme.colors.canvas.grid;
+    const baseGrid = Math.max(10, $gridSize || 20);
+
+    return `
+      background-image:
+        linear-gradient(to right, ${gridColor} 1px, transparent 1px),
+        linear-gradient(to bottom, ${gridColor} 1px, transparent 1px);
+      background-size: ${baseGrid}px ${baseGrid}px;
+      background-position: 0px 0px;
+      background-repeat: repeat;
+    `;
+  }}
 `;
 
-const InfiniteCanvas = styled.div<{ $panX: number; $panY: number; $zoom: number }>`
+const InfiniteCanvas = styled.div<{ $isControlledExternally: boolean }>`
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  transform: translate(${({ $panX }) => $panX}px, ${({ $panY }) => $panY}px) scale(${({ $zoom }) => $zoom});
+  /* 外部控制时不应用transform，由ZoomPanContainer处理 */
+  transform: ${({ $isControlledExternally }) => $isControlledExternally ? 'none' : 'translate(0px, 0px) scale(1)'};
   transform-origin: 0 0;
   pointer-events: none;
 `;
@@ -118,29 +128,7 @@ const ViewportIndicator = styled.div<{ $x: number; $y: number; $width: number; $
   cursor: move;
 `;
 
-const RulerCanvasHorizontal = styled.canvas<{ $visible: boolean; $rulerSize: number }>`
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: ${({ $rulerSize }) => $rulerSize}px;
-  right: 0;
-  display: ${({ $visible }) => ($visible ? 'block' : 'none')};
-  background: ${({ theme }) => theme.colors.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
-  z-index: ${({ theme }) => theme.zIndex.banner};
-`;
-
-const RulerCanvasVertical = styled.canvas<{ $visible: boolean; $rulerSize: number }>`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: ${({ $rulerSize }) => $rulerSize}px;
-  bottom: 0;
-  display: ${({ $visible }) => ($visible ? 'block' : 'none')};
-  background: ${({ theme }) => theme.colors.surface};
-  border-right: 1px solid ${({ theme }) => theme.colors.border.default};
-  z-index: ${({ theme }) => theme.zIndex.banner};
-`;
+// 移除内置标尺，统一使用RulerGuides组件
 
 const GuideLine = styled.div<{ $orientation: 'vertical' | 'horizontal'; $positionPx: number; $active?: boolean }>`
   position: absolute;
@@ -187,9 +175,14 @@ interface ViewportInfo {
 interface CanvasWorkspaceProps {
   mode?: 'design' | 'h5';
   onModeChange?: (mode: 'design' | 'h5') => void;
+  // 外部传入的对象数据
+  externalObjects?: CanvasObject[];
 }
 
-export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controlledMode }) => {
+export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({
+  mode: controlledMode,
+  externalObjects
+}) => {
   // 无限画布状态
   const [viewport, setViewport] = useState<ViewportInfo>({ x: 0, y: 0, zoom: 1 });
   const [hasError, setHasError] = useState(false);
@@ -203,41 +196,46 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   // 网格与标尺改为使用全局store
   const showGrid = useCanvasStore(s => s.showGrid);
   const gridSize = useCanvasStore(s => s.gridSize);
-  // const [snapToGrid, setSnapToGrid] = useState(false);
-  const [showGuides, setShowGuides] = useState(true);
+
+  // 获取外部缩放/平移状态（来自ZoomPanContainer）
+  const zoomPanContext = useZoomPan();
+
+  const [objects, setObjects] = useState<CanvasObject[]>(externalObjects || []);
+  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
+  const [showOverview, setShowOverview] = useState(false);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  // 参考线状态（本地管理，因为RulerGuides组件管理全局参考线）
   const [guides, setGuides] = useState<Array<{
     id: string;
     type: 'horizontal' | 'vertical';
     position: number;
     color: string;
   }>>([]);
-  const [objects, setObjects] = useState<CanvasObject[]>([]);
-  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
-  const [showOverview, setShowOverview] = useState(false);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  // const [showGuides, setShowGuides] = useState(true);
+  // const [snapToGrid, setSnapToGrid] = useState(false);
 
   // 拖拽状态
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPan, setLastPan] = useState({ x: 0, y: 0 });
-  
+
   // 对象拖拽状态
   const [isDraggingObject, setIsDraggingObject] = useState(false);
   const [draggedObjectId, setDraggedObjectId] = useState<string | null>(null);
   const [draggedObjectStart, setDraggedObjectStart] = useState({ x: 0, y: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
-  const rulerHRef = useRef<HTMLCanvasElement>(null);
-  const rulerVRef = useRef<HTMLCanvasElement>(null);
-  const RULER_SIZE = 20;
-  // 从全局画布Store读取标尺可见性并同步缩放（百分比）
-  const showRuler = useCanvasStore(s => s.showRuler);
-  const storeZoomPct = useCanvasStore(s => s.zoom);
 
+  // 判断是否被外部容器控制（如ZoomPanContainer）
+  const isControlledExternally = !!zoomPanContext && (zoomPanContext.zoom !== 1 || zoomPanContext.pan.x !== 0 || zoomPanContext.pan.y !== 0);
+
+  // 同步外部objects数据
   useEffect(() => {
-    const z = Math.max(0.1, (storeZoomPct || 100) / 100);
-    setViewport(prev => (prev.zoom === z ? prev : { ...prev, zoom: z }));
-  }, [storeZoomPct]);
+    if (externalObjects) {
+      setObjects(externalObjects);
+    }
+  }, [externalObjects]);
 
 
   // 常用模板
@@ -254,7 +252,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   const handleZoomChange = useCallback((delta: number, centerPoint?: { x: number; y: number }) => {
     setViewport(prev => {
       const newZoom = Math.max(0.1, Math.min(5.0, prev.zoom + delta * 0.1));
-      
+
       if (centerPoint) {
         // 以指定点为中心进行缩放，防止除零错误
         const safePrevZoom = Math.max(prev.zoom, 0.01);
@@ -266,7 +264,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
           zoom: newZoom
         };
       }
-      
+
       return { ...prev, zoom: newZoom };
     });
   }, []);
@@ -313,14 +311,14 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
     setViewport({ x: newX, y: newY, zoom: newZoom });
   }, [objects]);
 
-  // 鼠标事件处理
+  // 鼠标事件处理 - 只在非外部控制模式下处理平移
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return; // 只处理左键
+    if (e.button !== 0 || isControlledExternally) return; // 只处理左键，外部控制时不处理
 
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
     setLastPan({ x: viewport.x, y: viewport.y });
-  }, [viewport.x, viewport.y]);
+  }, [viewport.x, viewport.y, isControlledExternally]);
 
 
 
@@ -329,17 +327,17 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   // 对象拖拽开始
   const handleObjectMouseDown = useCallback((objectId: string, e: React.MouseEvent) => {
     if (e.button !== 0) return; // 只处理左键
-    
+
     e.stopPropagation();
     e.preventDefault();
-    
+
     setSelectedObjectId(objectId);
     setIsDraggingObject(true);
     setDraggedObjectId(objectId);
-    
+
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     setDraggedObjectStart({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
@@ -360,88 +358,150 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
       if (isDraggingObject && draggedObjectId) {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
-      
-      const currentX = e.clientX - rect.left;
-      const currentY = e.clientY - rect.top;
-      
-      // 计算移动距离
-      const deltaX = currentX - draggedObjectStart.x;
-      const deltaY = currentY - draggedObjectStart.y;
-      
-      // 转换为世界坐标的移动距离，防止除零错误
-      const safeZoom = Math.max(viewport.zoom, 0.01); // 最小缩放值
-      const worldDeltaX = deltaX / safeZoom;
-      const worldDeltaY = deltaY / safeZoom;
-      
-      setObjects(prev => prev.map(obj => {
-        if (obj.id === draggedObjectId) {
-          // 计算新的世界坐标位置
-          let newWorldX = obj.worldX + worldDeltaX;
-          let newWorldY = obj.worldY + worldDeltaY;
-          
-          // 如果启用了对齐功能，应用对齐逻辑
-          // if (snapToGrid || showGuides) {
-          //   // 转换为屏幕坐标进行对齐计算
-          //   const screenX = (newWorldX + obj.width / 2) * viewport.zoom + viewport.x;
-          //   const screenY = (newWorldY + obj.height / 2) * viewport.zoom + viewport.y;
-            
-          //   let alignedScreenPos = { x: screenX, y: screenY };
-            
-          //   // 应用参考线对齐
-          //   if (showGuides && guides.length > 0) {
-          //     const threshold = 5;
-          //     guides.forEach(guide => {
-          //       const guideScreenPos = guide.position * viewport.zoom + 
-          //         (guide.type === 'vertical' ? viewport.x : viewport.y);
-                
-          //       const distance = Math.abs(
-          //         (guide.type === 'vertical' ? alignedScreenPos.x : alignedScreenPos.y) - guideScreenPos
-          //       );
-                
-          //       if (distance < threshold) {
-          //         if (guide.type === 'vertical') {
-          //           alignedScreenPos.x = guideScreenPos;
-          //         } else {
-          //           alignedScreenPos.y = guideScreenPos;
-          //         }
-          //       }
-          //     });
-          //   }
-            
-          //   // 应用网格对齐
-          //   if (snapToGrid) {
-          //     const safeZoom = Math.max(viewport.zoom, 0.01);
-          //     const worldPoint = {
-          //       x: (alignedScreenPos.x - viewport.x) / safeZoom,
-          //       y: (alignedScreenPos.y - viewport.y) / safeZoom
-          //     };
-              
-          //     const snappedWorld = {
-          //       x: Math.round(worldPoint.x / gridSize) * gridSize,
-          //       y: Math.round(worldPoint.y / gridSize) * gridSize
-          //     };
-              
-          //     alignedScreenPos = {
-          //       x: snappedWorld.x * safeZoom + viewport.x,
-          //       y: snappedWorld.y * safeZoom + viewport.y
-          //     };
-          //   }
-            
-          //   // 转换回世界坐标
-          //   const safeZoomForConversion = Math.max(viewport.zoom, 0.01);
-          //   newWorldX = (alignedScreenPos.x - viewport.x) / safeZoomForConversion - obj.width / 2;
-          //   newWorldY = (alignedScreenPos.y - viewport.y) / safeZoomForConversion - obj.height / 2;
-          // }
-          
-          return {
-            ...obj,
-            worldX: newWorldX,
-            worldY: newWorldY
-          };
-        }
-        return obj;
-      }));
-      
+
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        // 计算移动距离
+        const deltaX = currentX - draggedObjectStart.x;
+        const deltaY = currentY - draggedObjectStart.y;
+
+        // 转换为世界坐标的移动距离，防止除零错误
+        // 如果被外部控制，使用外部的缩放值
+        const effectiveZoom = isControlledExternally ? zoomPanContext.zoom : viewport.zoom;
+        const safeZoom = Math.max(effectiveZoom, 0.01); // 最小缩放值
+        const worldDeltaX = deltaX / safeZoom;
+        const worldDeltaY = deltaY / safeZoom;
+
+        setObjects(prev => prev.map(obj => {
+          if (obj.id === draggedObjectId) {
+            // 计算新的世界坐标位置
+            let newWorldX = obj.worldX + worldDeltaX;
+            let newWorldY = obj.worldY + worldDeltaY;
+
+            // 基于对象边缘进行辅助线吸附（屏幕像素计算）
+            const guidesX = (window as any).__guidesX as number[] | undefined;
+            const guidesY = (window as any).__guidesY as number[] | undefined;
+            const threshold = 5; // 像素阈值
+            const safeZoomForSnap = Math.max(safeZoom, 0.01);
+
+            // 当被外部控制时，使用外部的平移值
+            const panOffsetX = isControlledExternally ? zoomPanContext.pan.x : viewport.x;
+            const panOffsetY = isControlledExternally ? zoomPanContext.pan.y : viewport.y;
+
+            // 对象在新位置的边缘屏幕坐标
+            const edgeScreenX = {
+              left: newWorldX * safeZoomForSnap + panOffsetX,
+              center: (newWorldX + obj.width / 2) * safeZoomForSnap + panOffsetX,
+              right: (newWorldX + obj.width) * safeZoomForSnap + panOffsetX,
+            } as const;
+            const edgeScreenY = {
+              top: newWorldY * safeZoomForSnap + panOffsetY,
+              middle: (newWorldY + obj.height / 2) * safeZoomForSnap + panOffsetY,
+              bottom: (newWorldY + obj.height) * safeZoomForSnap + panOffsetY,
+            } as const;
+
+            // X 方向吸附
+            if (guidesX && guidesX.length) {
+              let bestDx = threshold + 1;
+              let bestGuideX: number | null = null;
+              let bestEdgeX: keyof typeof edgeScreenX | null = null;
+              for (const g of guidesX) {
+                for (const k of Object.keys(edgeScreenX) as (keyof typeof edgeScreenX)[]) {
+                  const d = Math.abs(edgeScreenX[k] - g);
+                  if (d < bestDx) { bestDx = d; bestGuideX = g; bestEdgeX = k; }
+                }
+              }
+              if (bestGuideX !== null && bestEdgeX && bestDx <= threshold) {
+                const guideWorldX = (bestGuideX - panOffsetX) / safeZoomForSnap;
+                if (bestEdgeX === 'left') newWorldX = guideWorldX;
+                if (bestEdgeX === 'center') newWorldX = guideWorldX - obj.width / 2;
+                if (bestEdgeX === 'right') newWorldX = guideWorldX - obj.width;
+              }
+            }
+
+            // Y 方向吸附
+            if (guidesY && guidesY.length) {
+              let bestDy = threshold + 1;
+              let bestGuideY: number | null = null;
+              let bestEdgeY: keyof typeof edgeScreenY | null = null;
+              for (const g of guidesY) {
+                for (const k of Object.keys(edgeScreenY) as (keyof typeof edgeScreenY)[]) {
+                  const d = Math.abs(edgeScreenY[k] - g);
+                  if (d < bestDy) { bestDy = d; bestGuideY = g; bestEdgeY = k; }
+                }
+              }
+              if (bestGuideY !== null && bestEdgeY && bestDy <= threshold) {
+                const guideWorldY = (bestGuideY - panOffsetY) / safeZoomForSnap;
+                if (bestEdgeY === 'top') newWorldY = guideWorldY;
+                if (bestEdgeY === 'middle') newWorldY = guideWorldY - obj.height / 2;
+                if (bestEdgeY === 'bottom') newWorldY = guideWorldY - obj.height;
+              }
+            }
+
+            // 如果启用了对齐功能，应用对齐逻辑
+            // if (snapToGrid || showGuides) {
+            //   // 转换为屏幕坐标进行对齐计算
+            //   const screenX = (newWorldX + obj.width / 2) * viewport.zoom + viewport.x;
+            //   const screenY = (newWorldY + obj.height / 2) * viewport.zoom + viewport.y;
+
+            //   let alignedScreenPos = { x: screenX, y: screenY };
+
+            //   // 应用参考线对齐
+            //   if (showGuides && guides.length > 0) {
+            //     const threshold = 5;
+            //     guides.forEach(guide => {
+            //       const guideScreenPos = guide.position * viewport.zoom + 
+            //         (guide.type === 'vertical' ? viewport.x : viewport.y);
+
+            //       const distance = Math.abs(
+            //         (guide.type === 'vertical' ? alignedScreenPos.x : alignedScreenPos.y) - guideScreenPos
+            //       );
+
+            //       if (distance < threshold) {
+            //         if (guide.type === 'vertical') {
+            //           alignedScreenPos.x = guideScreenPos;
+            //         } else {
+            //           alignedScreenPos.y = guideScreenPos;
+            //         }
+            //       }
+            //     });
+            //   }
+
+            //   // 应用网格对齐
+            //   if (snapToGrid) {
+            //     const safeZoom = Math.max(viewport.zoom, 0.01);
+            //     const worldPoint = {
+            //       x: (alignedScreenPos.x - viewport.x) / safeZoom,
+            //       y: (alignedScreenPos.y - viewport.y) / safeZoom
+            //     };
+
+            //     const snappedWorld = {
+            //       x: Math.round(worldPoint.x / gridSize) * gridSize,
+            //       y: Math.round(worldPoint.y / gridSize) * gridSize
+            //     };
+
+            //     alignedScreenPos = {
+            //       x: snappedWorld.x * safeZoom + viewport.x,
+            //       y: snappedWorld.y * safeZoom + viewport.y
+            //     };
+            //   }
+
+            //   // 转换回世界坐标
+            //   const safeZoomForConversion = Math.max(viewport.zoom, 0.01);
+            //   newWorldX = (alignedScreenPos.x - viewport.x) / safeZoomForConversion - obj.width / 2;
+            //   newWorldY = (alignedScreenPos.y - viewport.y) / safeZoomForConversion - obj.height / 2;
+            // }
+
+            return {
+              ...obj,
+              worldX: newWorldX,
+              worldY: newWorldY
+            };
+          }
+          return obj;
+        }));
+
         // 更新拖拽起始点
         setDraggedObjectStart({ x: currentX, y: currentY });
         return;
@@ -460,15 +520,20 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
     } catch (error) {
       console.error('Error in handleMouseMove:', error);
     }
-  }, [isDragging, isDraggingObject, dragStart, lastPan, draggedObjectId, draggedObjectStart, viewport, showGuides, guides, gridSize]);
+  }, [isDragging, isDraggingObject, dragStart, lastPan, draggedObjectId, draggedObjectStart, viewport, gridSize]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     handleObjectMouseUp();
   }, [handleObjectMouseUp]);
 
-  // 滚轮缩放 - 支持10%-500%缩放范围和60fps性能优化
+  // 滚轮缩放 - 只在非外部控制模式下处理
   const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (isControlledExternally) {
+      // 外部控制模式下，让ZoomPanContainer处理滚轮事件
+      return;
+    }
+
     e.preventDefault();
 
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
@@ -480,169 +545,18 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
 
     // 使用性能优化的缩放处理
     handleZoomChange(delta, { x: mouseX, y: mouseY });
-  }, [handleZoomChange]);
+  }, [handleZoomChange, isControlledExternally]);
 
   // 双击适应内容
   const handleDoubleClick = useCallback(() => {
     handleFitToContent();
   }, [handleFitToContent]);
 
-  // 计算合适刻度步长（世界坐标单位），保证屏幕像素间距在 50-100 像素
-  const computeStep = useCallback((zoom: number) => {
-    const minPx = 50;
-    const maxPx = 100;
-    const targetWorld = minPx / Math.max(zoom, 0.01);
-    const pow = Math.pow(10, Math.floor(Math.log10(targetWorld)));
-    const candidates = [1, 2, 5, 10].map(m => m * pow);
-    const base = (candidates[0] ?? pow);
-    let best: number = base;
-    let bestPx: number = best * zoom;
-    for (const c of candidates) {
-      const px = c * zoom;
-      if (px >= minPx && px <= maxPx) return c;
-      if (Math.abs(px - (minPx + maxPx) / 2) < Math.abs(bestPx - (minPx + maxPx) / 2)) {
-        best = c; bestPx = px;
-      }
-    }
-    return best || pow; // 类型保护，确保有返回值
-  }, []);
+  // 移除不再使用的computeStep函数
 
-  // 绘制水平/垂直标尺
-  useEffect(() => {
-    if (!showRuler) return;
-    const devicePixelRatio = window.devicePixelRatio || 1;
+  // 移除标尺绘制代码，统一使用RulerGuides组件
 
-    const drawHorizontal = () => {
-      const canvas = rulerHRef.current;
-      const host = canvas?.parentElement as HTMLElement | null;
-      if (!canvas || !host) return;
-      const width = host.clientWidth;
-      const height = RULER_SIZE;
-      canvas.width = Math.max(1, Math.floor(width * devicePixelRatio));
-      canvas.height = Math.max(1, Math.floor(height * devicePixelRatio));
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.scale(devicePixelRatio, devicePixelRatio);
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(0, 0, width, height);
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.fillStyle = '#475569';
-      ctx.font = '10px sans-serif';
-
-      const stepWorld = computeStep(viewport.zoom);
-      const startWorld = Math.floor((-viewport.x) / stepWorld) * stepWorld;
-      for (let world = startWorld; ; world += stepWorld) {
-        const x = Math.round(world * viewport.zoom + viewport.x);
-        if (x > width) break;
-        if (x >= 0) {
-          const isMajor = Math.abs((world / (stepWorld * 5)) - Math.round(world / (stepWorld * 5))) < 1e-6;
-          const tick = isMajor ? height : Math.floor(height * 0.6);
-          ctx.beginPath();
-          ctx.moveTo(x + 0.5, height);
-          ctx.lineTo(x + 0.5, height - tick + 2);
-          ctx.stroke();
-          if (isMajor) {
-            const label = Math.round(world).toString();
-            ctx.fillText(label, x + 2, 10);
-          }
-        }
-        if (world > (width - viewport.x) / viewport.zoom) break;
-      }
-    };
-
-    const drawVertical = () => {
-      const canvas = rulerVRef.current;
-      const host = canvas?.parentElement as HTMLElement | null;
-      if (!canvas || !host) return;
-      const height = host.clientHeight;
-      const width = RULER_SIZE;
-      canvas.width = Math.max(1, Math.floor(width * devicePixelRatio));
-      canvas.height = Math.max(1, Math.floor(height * devicePixelRatio));
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.scale(devicePixelRatio, devicePixelRatio);
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(0, 0, width, height);
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.fillStyle = '#475569';
-      ctx.font = '10px sans-serif';
-
-      const stepWorld = computeStep(viewport.zoom);
-      const startWorld = Math.floor((-viewport.y) / stepWorld) * stepWorld;
-      for (let world = startWorld; ; world += stepWorld) {
-        const y = Math.round(world * viewport.zoom + viewport.y);
-        if (y > height) break;
-        if (y >= 0) {
-          const isMajor = Math.abs((world / (stepWorld * 5)) - Math.round(world / (stepWorld * 5))) < 1e-6;
-          const tick = isMajor ? width : Math.floor(width * 0.6);
-          ctx.beginPath();
-          ctx.moveTo(width, y + 0.5);
-          ctx.lineTo(width - tick + 2, y + 0.5);
-          ctx.stroke();
-          if (isMajor) {
-            const label = Math.round(world).toString();
-            ctx.save();
-            ctx.translate(0, y + 2);
-            ctx.rotate(-Math.PI / 2);
-            ctx.fillText(label, 2, 10);
-            ctx.restore();
-          }
-        }
-        if (world > (height - viewport.y) / viewport.zoom) break;
-      }
-    };
-
-    drawHorizontal();
-    drawVertical();
-  }, [viewport.x, viewport.y, viewport.zoom, showRuler, computeStep]);
-
-  // 从标尺拖拽创建参考线（简单实现）
-  useEffect(() => {
-    if (!showRuler) return;
-    const wrapper = canvasRef.current?.parentElement as HTMLElement | null;
-    if (!wrapper) return;
-
-    let dragging: null | { type: 'vertical' | 'horizontal' } = null;
-
-    const onMouseDown = (e: MouseEvent) => {
-      const rect = wrapper.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      if (x >= 0 && x <= RULER_SIZE) {
-        dragging = { type: 'vertical' };
-      } else if (y >= 0 && y <= RULER_SIZE) {
-        dragging = { type: 'horizontal' };
-      }
-    };
-    const onMouseUp = (e: MouseEvent) => {
-      if (!dragging) return;
-      const rect = wrapper.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      if (dragging.type === 'vertical') {
-        const world = (x - viewport.x - (showRuler ? RULER_SIZE : 0)) / Math.max(viewport.zoom, 0.01);
-        setGuides(prev => [...prev, { id: `gv-${Date.now()}`, type: 'vertical', position: world, color: '#4f46e5' }]);
-      } else {
-        const world = (y - viewport.y - (showRuler ? RULER_SIZE : 0)) / Math.max(viewport.zoom, 0.01);
-        setGuides(prev => [...prev, { id: `gh-${Date.now()}`, type: 'horizontal', position: world, color: '#4f46e5' }]);
-      }
-      dragging = null;
-    };
-    wrapper.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
-    return () => {
-      wrapper.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [showRuler, viewport.x, viewport.y, viewport.zoom]);
+  // 移除从标尺拖拽创建参考线的代码，统一使用RulerGuides组件
 
   // 创建模板对象（预留实现）
   // const handleCreateTemplate = useCallback((template: CanvasTemplate) => {
@@ -650,31 +564,31 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   //     // 计算初始位置（屏幕中心转换为世界坐标）
   //     const canvasRect = canvasRef.current?.getBoundingClientRect();
   //     if (!canvasRect) return;
-    
+
   //   const centerX = canvasRect.width / 2;
   //   const centerY = canvasRect.height / 2;
-    
+
   //   // 转换为世界坐标，防止除零错误
   //   const safeZoom = Math.max(viewport.zoom, 0.01);
   //   const worldPosition = {
   //     x: (centerX - viewport.x) / safeZoom - template.width / 2,
   //     y: (centerY - viewport.y) / safeZoom - template.height / 2
   //   };
-    
+
   //   // 首先应用参考线对齐，然后应用网格对齐
   //   let screenPosition = { x: centerX, y: centerY };
-    
+
   //   // 应用参考线对齐
   //   if (showGuides && guides.length > 0) {
   //     const threshold = 5;
   //     guides.forEach(guide => {
   //       const guideScreenPos = guide.position * viewport.zoom + 
   //         (guide.type === 'vertical' ? viewport.x : viewport.y);
-        
+
   //       const distance = Math.abs(
   //         (guide.type === 'vertical' ? screenPosition.x : screenPosition.y) - guideScreenPos
   //       );
-        
+
   //       if (distance < threshold) {
   //         if (guide.type === 'vertical') {
   //           screenPosition.x = guideScreenPos;
@@ -684,7 +598,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   //       }
   //     });
   //   }
-    
+
   //   // 应用网格对齐
   //   if (snapToGrid) {
   //     const safeZoomForGrid = Math.max(viewport.zoom, 0.01);
@@ -692,18 +606,18 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   //       x: (screenPosition.x - viewport.x) / safeZoomForGrid,
   //       y: (screenPosition.y - viewport.y) / safeZoomForGrid
   //     };
-      
+
   //     const snappedWorld = {
   //       x: Math.round(worldPoint.x / gridSize) * gridSize,
   //       y: Math.round(worldPoint.y / gridSize) * gridSize
   //     };
-      
+
   //     screenPosition = {
   //       x: snappedWorld.x * safeZoomForGrid + viewport.x,
   //       y: snappedWorld.y * safeZoomForGrid + viewport.y
   //     };
   //   }
-    
+
   //   const alignedWorldPosition = {
   //     x: (screenPosition.x - viewport.x) / safeZoom - template.width / 2,
   //     y: (screenPosition.y - viewport.y) / safeZoom - template.height / 2
@@ -736,8 +650,9 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
 
   // 显示概览导航器（当缩放很小时）- 视口边界检测
   useEffect(() => {
-    setShowOverview(viewport.zoom < 0.3);
-  }, [viewport.zoom]);
+    const effectiveZoom = isControlledExternally ? zoomPanContext.zoom : viewport.zoom;
+    setShowOverview(effectiveZoom < 0.3);
+  }, [viewport.zoom, zoomPanContext.zoom, isControlledExternally]);
 
   // 监听容器尺寸变化（面板宽度联动）
   useEffect(() => {
@@ -781,14 +696,19 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
       const st = useCanvasStore.getState();
       st.setShowGrid(!st.showGrid);
     });
-    const offToggleGuides = canvasEvents.on('toggleGuides', () => setShowGuides(prev => !prev));
+    // toggleGuides 事件由 RulerGuides 组件处理，这里不重复监听
+    const offToggleRuler = canvasEvents.on('toggleRuler', () => {
+      const st = useCanvasStore.getState();
+      st.setShowRuler(!st.showRuler);
+    });
     const offReset = canvasEvents.on('resetView', () => setViewport({ x: 0, y: 0, zoom: 1 }));
     const offZoomIn = canvasEvents.on('zoomIn', () => handleZoomChange(1));
     const offZoomOut = canvasEvents.on('zoomOut', () => handleZoomChange(-1));
     return () => {
       canvasEvents.off('fitToContent', offFit as any);
       canvasEvents.off('toggleGrid', offToggleGrid as any);
-      canvasEvents.off('toggleGuides', offToggleGuides as any);
+      // toggleGuides 事件由 RulerGuides 组件处理
+      canvasEvents.off('toggleRuler', offToggleRuler as any);
       canvasEvents.off('resetView', offReset as any);
       canvasEvents.off('zoomIn', offZoomIn as any);
       canvasEvents.off('zoomOut', offZoomOut as any);
@@ -836,26 +756,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
         }
       } else {
         switch (e.key) {
-          case 'g':
-            e.preventDefault();
-            {
-              const st = useCanvasStore.getState();
-              st.setShowGrid(!st.showGrid);
-            }
-            break;
-          case 'R':
-            if (e.shiftKey) {
-              e.preventDefault();
-              {
-                const st = useCanvasStore.getState();
-                st.setShowRuler(!st.showRuler);
-              }
-            }
-            break;
-          case 'r':
-            e.preventDefault();
-            setShowGuides(prev => !prev);
-            break;
+          // 网格、标尺、参考线的快捷键由 TopToolbar 统一处理，这里不重复定义
           case 'h':
             e.preventDefault();
             setViewport({ x: 0, y: 0, zoom: 1 });
@@ -882,10 +783,10 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
   if (hasError) {
     return (
       <WorkspaceContainer>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           height: '100%',
           flexDirection: 'column',
           gap: '16px'
@@ -955,103 +856,103 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ mode: controll
         </ToolbarSection>
       </CanvasToolbar> */}
 
-      {/* 标尺 + 画布区域 */}
-      <CanvasAreaWrapper $showRuler={showRuler} $rulerSize={RULER_SIZE}>
-        <RulerCanvasHorizontal ref={rulerHRef} $visible={showRuler} $rulerSize={RULER_SIZE} />
-        <RulerCanvasVertical ref={rulerVRef} $visible={showRuler} $rulerSize={RULER_SIZE} />
+      {/* 画布区域 */}
+      <CanvasAreaWrapper>
 
         <InfiniteCanvasArea
           key={`${containerSize.width}x${containerSize.height}`}
           ref={canvasRef}
           $showGrid={showGrid}
           $gridSize={gridSize}
-          $panX={viewport.x}
-          $panY={viewport.y}
-          $zoom={viewport.zoom}
+          $isControlledExternally={isControlledExternally}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onWheel={handleWheel}
-          onDoubleClick={handleDoubleClick}
+          onWheel={isControlledExternally ? undefined : handleWheel}
+          onDoubleClick={isControlledExternally ? undefined : handleDoubleClick}
         >
-        {/* 无限画布内容 */}
-        <InfiniteCanvas
-          $panX={viewport.x}
-          $panY={viewport.y}
-          $zoom={viewport.zoom}
-        >
-          {/* 渲染画布对象 */}
-          {objects.map((obj) => (
-            <CanvasObject
-              key={obj.id}
-              $x={obj.worldX}
-              $y={obj.worldY}
-              $width={obj.width}
-              $height={obj.height}
-              $selected={obj.id === selectedObjectId}
-              // onClick={(e) => handleObjectClick(obj.id, e)}
-              onMouseDown={(e) => handleObjectMouseDown(obj.id, e)}
-            >
-              {obj.type === 'template' && (
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  background: 'white',
-                  border: '2px dashed #ccc',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  color: '#666',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}>
-                  <div style={{ fontSize: '24px' }}>📄</div>
-                  <div>{obj.content}</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7 }}>
-                    {obj.width} × {obj.height}
+          {/* 无限画布内容 */}
+          <InfiniteCanvas
+            $isControlledExternally={isControlledExternally}
+          >
+            {/* 渲染画布对象 */}
+            {objects.map((obj) => (
+              <CanvasObject
+                key={obj.id}
+                $x={obj.worldX}
+                $y={obj.worldY}
+                $width={obj.width}
+                $height={obj.height}
+                $selected={obj.id === selectedObjectId}
+                // onClick={(e) => handleObjectClick(obj.id, e)}
+                onMouseDown={(e) => handleObjectMouseDown(obj.id, e)}
+              >
+                {obj.type === 'template' && (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    background: 'white',
+                    border: '2px dashed #ccc',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    color: '#666',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <div style={{ fontSize: '24px' }}>📄</div>
+                    <div>{obj.content}</div>
+                    <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                      {obj.width} × {obj.height}
+                    </div>
                   </div>
-                </div>
-              )}
-            </CanvasObject>
-          ))}
+                )}
+              </CanvasObject>
+            ))}
           </InfiniteCanvas>
         </InfiniteCanvasArea>
 
-        {/* 参考线渲染（世界->屏幕转换） */}
-        {guides.map(g => (
-          <GuideLine
-            key={g.id}
-            $orientation={g.type}
-            $positionPx={
-              g.type === 'vertical'
-                ? Math.round(g.position * viewport.zoom + viewport.x)
-                : Math.round(g.position * viewport.zoom + viewport.y)
-            }
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              const startMouse = { x: e.clientX, y: e.clientY };
-              const startPos = g.position;
-              const move = (ev: MouseEvent) => {
-                const dx = (ev.clientX - startMouse.x) / Math.max(viewport.zoom, 0.01);
-                const dy = (ev.clientY - startMouse.y) / Math.max(viewport.zoom, 0.01);
-                setGuides(prev => prev.map(it => it.id === g.id ? {
-                  ...it,
-                  position: it.type === 'vertical' ? startPos + dx : startPos + dy
-                } : it));
-              };
-              const up = () => {
-                window.removeEventListener('mousemove', move);
-                window.removeEventListener('mouseup', up);
-              };
-              window.addEventListener('mousemove', move);
-              window.addEventListener('mouseup', up);
-            }}
-          />
-        ))}
+        {/* 参考线渲染（世界->屏幕转换） - 在外部控制模式下由RulerGuides组件处理 */}
+        {!isControlledExternally && guides.map(g => {
+          const effectiveZoom = viewport.zoom;
+          const effectivePanX = viewport.x;
+          const effectivePanY = viewport.y;
+
+          return (
+            <GuideLine
+              key={g.id}
+              $orientation={g.type}
+              $positionPx={
+                g.type === 'vertical'
+                  ? Math.round(g.position * effectiveZoom + effectivePanX)
+                  : Math.round(g.position * effectiveZoom + effectivePanY)
+              }
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const startMouse = { x: e.clientX, y: e.clientY };
+                const startPos = g.position;
+                const move = (ev: MouseEvent) => {
+                  const dx = (ev.clientX - startMouse.x) / Math.max(effectiveZoom, 0.01);
+                  const dy = (ev.clientY - startMouse.y) / Math.max(effectiveZoom, 0.01);
+                  setGuides(prev => prev.map(it => it.id === g.id ? {
+                    ...it,
+                    position: it.type === 'vertical' ? startPos + dx : startPos + dy
+                  } : it));
+                };
+                const up = () => {
+                  window.removeEventListener('mousemove', move);
+                  window.removeEventListener('mouseup', up);
+                };
+                window.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', up);
+              }}
+            />
+          );
+        })}
 
         {/* 概览导航器 */}
         <OverviewNavigator $visible={showOverview}>

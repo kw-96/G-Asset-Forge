@@ -8,13 +8,14 @@ import styled from 'styled-components';
 import { ThemeProvider } from '../../ui/theme/ThemeProvider';
 import { GlobalStyles } from '../../ui/styles/GlobalStyles';
 import { MainLayout } from '../Layout';
+import { canvasEvents } from '../../utils/events/canvasEvents';
 import { WelcomeScreen } from '../Welcome/WelcomeScreen';
 import { useAppStore } from '../../stores/appStore';
 import { useAppInitialization } from '../../hooks/useAppInitialization';
 import { useRenderCounter } from '../../hooks/useRenderCounter';
 // 已移除ReactLoopFix依赖
-import { 
-  UIIntegrationProvider, 
+import {
+  UIIntegrationProvider,
   UIEnhancementErrorBoundary,
   // UIIntegrationTest,
   UIFeature,
@@ -46,12 +47,12 @@ const useWindowControl = () => {
 
       // 先移除最小尺寸限制，以便能够缩小到欢迎模式尺寸
       await window.electronAPI.window.removeMinimumSize();
-      
+
       // 设置欢迎页面的固定大小 (480x320)
       await window.electronAPI.window.setSize(480, 320, true);
       await window.electronAPI.window.setResizable(false);
       await window.electronAPI.window.center();
-      
+
       console.info(
         '[window-control] 窗口已设置为欢迎模式: 480x320, 固定大小',
         { width: 480, height: 320 },
@@ -76,15 +77,15 @@ const useWindowControl = () => {
 
       // 恢复窗口可调整大小
       await window.electronAPI.window.setResizable(true);
-      
+
       // 设置正常模式的大小为 1200x800
       await window.electronAPI.window.setSize(1200, 800, true);
-      
+
       // 重新设置最小尺寸限制（确保窗口不会太小）
-      await window.electronAPI.window.setMinimumSize(800, 600);
-      
+      await window.electronAPI.window.setMinimumSize(480, 320);
+
       await window.electronAPI.window.center();
-      
+
       console.info(
         '[window-control] 窗口已恢复正常模式',
         { width: 1200, height: 800 },
@@ -104,8 +105,8 @@ const useWindowControl = () => {
 
 
 const AppWrapper = styled.div`
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background: ${({ theme }) => theme.colors.background};
 `;
@@ -176,7 +177,7 @@ const RetryButton = styled.button`
 //       <DebugToggle onClick={() => setIsExpanded(!isExpanded)}>
 //         🔧 UI增强 ({state.enabledFeatures.size} 功能启用)
 //       </DebugToggle>
-      
+
 //       {isExpanded && (
 //         <DebugContent>
 //           <DebugSection>
@@ -187,7 +188,7 @@ const RetryButton = styled.button`
 //               ))}
 //             </DebugList>
 //           </DebugSection>
-          
+
 //           <DebugSection>
 //             <DebugTitle>性能指标</DebugTitle>
 //             <DebugMetrics>
@@ -197,7 +198,7 @@ const RetryButton = styled.button`
 //               <DebugMetric>交互: {state.performanceMetrics.interactionDelay.toFixed(2)}ms</DebugMetric>
 //             </DebugMetrics>
 //           </DebugSection>
-          
+
 //           {state.lastError && (
 //             <DebugSection>
 //               <DebugTitle>最近错误</DebugTitle>
@@ -233,7 +234,7 @@ const RetryButton = styled.button`
 //   text-align: left;
 //   font-family: inherit;
 //   font-size: inherit;
-  
+
 //   &:hover {
 //     background: rgba(255, 255, 255, 0.1);
 //   }
@@ -246,7 +247,7 @@ const RetryButton = styled.button`
 
 // const DebugSection = styled.div`
 //   margin-bottom: 12px;
-  
+
 //   &:last-child {
 //     margin-bottom: 0;
 //   }
@@ -296,12 +297,12 @@ const RetryButton = styled.button`
 export const AppContainer: React.FC = () => {
   // 从store获取状态，但不直接使用initializeApp
   const { isFirstTime } = useAppStore();
-  
+
   // 本地状态管理
   const [showWelcome, setShowWelcome] = useState(true);
   const [hasSetWelcomeMode, setHasSetWelcomeMode] = useState(false);
   const [showPerformancePanel, setShowPerformancePanel] = useState(false);
-  
+
   // UI增强功能配置
   const uiIntegrationConfig = useMemo<UIIntegrationConfig>(() => ({
     enablePerformanceMonitoring: true,
@@ -321,10 +322,10 @@ export const AppContainer: React.FC = () => {
 
   // UI增强功能状态
   // const [uiIntegrationState, setUIIntegrationState] = useState<UIIntegrationState | null>(null);
-  
+
   // 窗口控制
   const { setWelcomeMode, restoreNormalMode } = useWindowControl();
-  
+
   // 使用优化的初始化Hook
   const {
     isInitialized,
@@ -388,7 +389,7 @@ export const AppContainer: React.FC = () => {
   // // UI增强功能状态变化处理
   // const handleUIIntegrationStateChange = useCallback((state: UIIntegrationState) => {
   //   setUIIntegrationState(state);
-    
+
   //   console.debug(
   //     '[app-container] UI增强功能状态变化',
   //     {
@@ -437,7 +438,7 @@ export const AppContainer: React.FC = () => {
   // 分离的窗口模式设置逻辑 - 首次使用或开发模式时显示欢迎界面
   useEffect(() => {
     const isDevelopment = process.env['NODE_ENV'] === 'development';
-    
+
     if (isInitialized && (isFirstTime || isDevelopment) && !hasSetWelcomeMode) {
       console.debug(
         '[app-container] 设置欢迎模式',
@@ -462,7 +463,7 @@ export const AppContainer: React.FC = () => {
   // 计算渲染状态 - 使用useMemo优化
   const renderState = useMemo(() => {
     const isDevelopment = process.env['NODE_ENV'] === 'development';
-    
+
     if (hasError) {
       return 'error';
     }
@@ -531,6 +532,20 @@ export const AppContainer: React.FC = () => {
     }
   };
 
+  // 订阅主菜单的标尺/辅助线显隐事件并转发到画布
+  useEffect(() => {
+    const offToggleRuler = (window as any).electronAPI?.menu?.onToggleRuler?.(() => {
+      canvasEvents.emit('toggleRuler');
+    });
+    const offToggleGuides = (window as any).electronAPI?.menu?.onToggleGuides?.(() => {
+      canvasEvents.emit('toggleGuides');
+    });
+    return () => {
+      if (typeof offToggleRuler === 'function') offToggleRuler();
+      if (typeof offToggleGuides === 'function') offToggleGuides();
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <GlobalStyles />
@@ -549,7 +564,7 @@ export const AppContainer: React.FC = () => {
             <LayoutProvider>
               <AppWrapper data-testid="app-container">
                 {renderContent()}
-                
+
                 {/* 性能监控面板 - 仅在主界面显示 */}
                 {renderState === 'main' && (
                   <PerformancePanel
@@ -557,8 +572,8 @@ export const AppContainer: React.FC = () => {
                     onToggle={() => setShowPerformancePanel(!showPerformancePanel)}
                   />
                 )}
-              
-              {/* 隐藏右上角UI增强调试信息 */}
+
+                {/* 隐藏右上角UI增强调试信息 */}
               </AppWrapper>
             </LayoutProvider>
           </UIIntegrationProvider>

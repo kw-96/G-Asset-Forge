@@ -7,7 +7,9 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
 import { Input } from '../../ui/components/Input/Input';
-import { AssetsPanel } from '../Assets/AssetsPanel';
+import { AssetLibraryPanel } from '../AssetLibrary/AssetLibraryPanel';
+import { TemplateLibraryPanel } from '../TemplateLibrary/TemplateLibraryPanel';
+import { ProjectLibraryPanel } from '../ProjectLibrary/ProjectLibraryPanel';
 import { Modal } from '../../ui/components/Modal/Modal';
 import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
 import { useUIIntegration, UIFeature } from '../UIIntegration/UIIntegrationProvider';
@@ -34,6 +36,7 @@ interface FigmaLayersPanelProps {
   activePanel?: 'layers' | 'assets';
   onSwitchPanel?: (panel: 'layers' | 'assets') => void | undefined;
   // 新增：模式/库切换
+  currentMode?: 'design' | 'h5';
   onSwitchMode?: (mode: 'design' | 'h5') => void;
   onOpenTemplateLibrary?: () => void;
   onOpenAssetLibrary?: () => void;
@@ -92,8 +95,8 @@ const LayersList = styled.div`
   padding: 8px 0;
 `;
 
-const LayerItem = styled.div<{ 
-  $selected: boolean; 
+const LayerItem = styled.div<{
+  $selected: boolean;
   $depth: number;
   $isDragging?: boolean;
 }>`
@@ -101,15 +104,15 @@ const LayerItem = styled.div<{
   align-items: center;
   padding: 4px 8px 4px ${({ $depth }) => 8 + $depth * 16}px;
   cursor: pointer;
-  background: ${({ $selected, theme }) => 
+  background: ${({ $selected, theme }) =>
     $selected ? theme.colors.primary[50] : 'transparent'};
-  border-left: ${({ $selected, theme }) => 
+  border-left: ${({ $selected, theme }) =>
     $selected ? `2px solid ${theme.colors.primary[500]}` : '2px solid transparent'};
   opacity: ${({ $isDragging }) => $isDragging ? 0.5 : 1};
   
   &:hover {
-    background: ${({ $selected, theme }) => 
-      $selected ? theme.colors.primary[50] : '#f9fafb'};
+    background: ${({ $selected, theme }) =>
+    $selected ? theme.colors.primary[50] : '#f9fafb'};
   }
   
   &:hover .layer-controls {
@@ -222,6 +225,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
   onLayerToggleExpanded,
   // activePanel,
   onSwitchPanel,
+  currentMode = 'design',
   onSwitchMode,
   onOpenTemplateLibrary,
   onOpenAssetLibrary,
@@ -231,6 +235,8 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
   const [editingName, setEditingName] = useState('');
   const { isFeatureEnabled } = useUIIntegration();
   const [isAssetsOpen, setIsAssetsOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isProjectsOpen, setIsProjectsOpen] = useState(false);
 
   const handleLayerDoubleClick = (layer: LayerItem) => {
     setEditingLayerId(layer.id);
@@ -278,13 +284,13 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
               <SvgIcon name="icon.16.chevron.right" size={12} title="展开/折叠" />
             </ExpandButton>
           )}
-          
+
           {!hasChildren && <div style={{ width: '16px', marginRight: '4px' }} />}
-          
+
           <LayerIcon>
             <SvgIcon name={getLayerIcon(layer.type)} size={12} title={layer.type} />
           </LayerIcon>
-          
+
           {isEditing ? (
             <LayerNameInput
               value={editingName}
@@ -296,7 +302,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
           ) : (
             <LayerName>{layer.name}</LayerName>
           )}
-          
+
           <LayerControls className="layer-controls">
             <ControlButton
               $active={layer.visible}
@@ -306,13 +312,13 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
               }}
               title={layer.visible ? '隐藏图层' : '显示图层'}
             >
-              <SvgIcon 
-                name={layer.visible ? 'icon.16.visible' : 'icon.16.hidden'} 
-                size={12} 
-                title={layer.visible ? '可见' : '隐藏'} 
+              <SvgIcon
+                name={layer.visible ? 'icon.16.visible' : 'icon.16.hidden'}
+                size={12}
+                title={layer.visible ? '可见' : '隐藏'}
               />
             </ControlButton>
-            
+
             <ControlButton
               $active={layer.locked}
               onClick={(e) => {
@@ -321,16 +327,16 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
               }}
               title={layer.locked ? '解锁图层' : '锁定图层'}
             >
-              <SvgIcon 
-                name={layer.locked ? 'icon.16.lock.locked' : 'icon.16.lock.unlocked'} 
-                size={12} 
-                title={layer.locked ? '已锁定' : '未锁定'} 
+              <SvgIcon
+                name={layer.locked ? 'icon.16.lock.locked' : 'icon.16.lock.unlocked'}
+                size={12}
+                title={layer.locked ? '已锁定' : '未锁定'}
               />
             </ControlButton>
           </LayerControls>
         </LayerItem>
-        
-        {hasChildren && layer.expanded && 
+
+        {hasChildren && layer.expanded &&
           layer.children!.map(child => renderLayer(child, depth + 1))
         }
       </React.Fragment>
@@ -350,7 +356,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
             tooltipPlacement="bottom"
             interactionVariant="tool"
             aria-label="设计模式"
-            variant="ghost"
+            variant={currentMode === 'design' ? 'primary' : 'ghost'}
           />
           <TopToolButton
             icon={<SvgIcon name="icon.24.file.H5" size={24} title="H5模式" />}
@@ -361,11 +367,11 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
             tooltipPlacement="bottom"
             interactionVariant="tool"
             aria-label="H5模式"
-            variant="ghost"
+            variant={currentMode === 'h5' ? 'primary' : 'ghost'}
           />
           <TopToolButton
             icon={<SvgIcon name="icon.24.file.design.mods" size={24} title="模板库" />}
-            onClick={() => onOpenTemplateLibrary && onOpenTemplateLibrary()}
+            onClick={() => onOpenTemplateLibrary ? onOpenTemplateLibrary() : setIsTemplatesOpen(true)}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
             tooltipContent="模板库"
@@ -387,7 +393,7 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
           />
           <TopToolButton
             icon={<SvgIcon name="icon.24.file.design.library" size={24} title="项目库" />}
-            onClick={() => onOpenProjectLibrary && onOpenProjectLibrary()}
+            onClick={() => onOpenProjectLibrary ? onOpenProjectLibrary() : setIsProjectsOpen(true)}
             enableFigmaInteractions={true}
             enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
             tooltipContent="项目库"
@@ -404,12 +410,12 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
           <SvgIcon name="icon.16.plus" size={12} title="添加图层" />
         </ControlButton>
       </PanelHeader>
-      
+
       <LayersList>
         {layers.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            color: '#9ca3af', 
+          <div style={{
+            textAlign: 'center',
+            color: '#9ca3af',
             padding: '40px 20px',
             fontSize: '12px'
           }}>
@@ -420,8 +426,109 @@ export const FigmaLayersPanel: React.FC<FigmaLayersPanelProps> = ({
         )}
       </LayersList>
 
-      <Modal isOpen={isAssetsOpen} onClose={() => setIsAssetsOpen(false)} title="素材库" size="xl">
-        <AssetsPanel />
+      <Modal
+        isOpen={isAssetsOpen}
+        onClose={() => setIsAssetsOpen(false)}
+        title="🎨 素材库"
+        size="adaptive"
+        className="asset-library-modal"
+        zIndexLevel="topmost"
+      >
+        <div style={{
+          height: 'calc(85vh - 120px)',
+          margin: '-24px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <AssetLibraryPanel
+            onAssetSelect={(asset) => {
+              console.log('素材库选择素材:', asset);
+              // TODO: 将素材添加到画布
+            }}
+            onAssetDoubleClick={(asset) => {
+              console.log('素材库双击素材:', asset);
+              // TODO: 快速添加素材到画布
+              setIsAssetsOpen(false); // 双击后关闭弹窗
+            }}
+            style={{
+              height: '100%',
+              border: 'none',
+              borderRadius: 0,
+              backgroundColor: 'transparent'
+            }}
+          />
+        </div>
+      </Modal>
+
+      {/* 模板库弹窗 */}
+      <Modal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        title="📚 模板库"
+        size="adaptive"
+        className="template-library-modal"
+        zIndexLevel="topmost"
+      >
+        <div style={{
+          height: 'calc(85vh - 120px)',
+          margin: '-24px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <TemplateLibraryPanel
+            onUseTemplate={(tpl) => {
+              console.log('使用模板:', tpl);
+              setIsTemplatesOpen(false);
+            }}
+            onPreviewTemplate={(tpl) => {
+              console.log('预览模板:', tpl);
+            }}
+            style={{
+              height: '100%',
+              border: 'none',
+              borderRadius: 0,
+              backgroundColor: 'transparent'
+            }}
+          />
+        </div>
+      </Modal>
+
+      {/* 项目库弹窗 */}
+      <Modal
+        isOpen={isProjectsOpen}
+        onClose={() => setIsProjectsOpen(false)}
+        title="📁 项目库"
+        size="adaptive"
+        className="project-library-modal"
+        zIndexLevel="topmost"
+      >
+        <div style={{
+          height: 'calc(85vh - 120px)',
+          margin: '-24px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <ProjectLibraryPanel
+            onOpenProject={(p) => {
+              console.log('打开项目:', p);
+              setIsProjectsOpen(false);
+            }}
+            onCreateProject={() => {
+              console.log('新建项目');
+              setIsProjectsOpen(false);
+            }}
+            onImportProject={() => {
+              console.log('导入项目');
+              setIsProjectsOpen(false);
+            }}
+            style={{
+              height: '100%',
+              border: 'none',
+              borderRadius: 0,
+              backgroundColor: 'transparent'
+            }}
+          />
+        </div>
       </Modal>
     </PanelContainer>
   );

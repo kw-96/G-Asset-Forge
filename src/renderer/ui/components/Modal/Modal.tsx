@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { SvgIcon } from '../Icon/SvgIcon';
 import { Button } from '../Button/Button';
@@ -13,13 +14,22 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  /**
+   * 尺寸预设
+   * 增加 adaptive 模式：基于视口宽高自适应，宽度 92vw 且不超过 1200px，高度不超过 85vh
+   */
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'adaptive';
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  /**
+   * z-index 层级控制
+   * 默认为 'modal'，当需要覆盖所有浮层时可设置为 'topmost'
+   */
+  zIndexLevel?: 'modal' | 'topmost';
 }
 
 const fadeIn = keyframes`
@@ -42,12 +52,12 @@ const slideIn = keyframes`
   }
 `;
 
-const ModalOverlay = styled.div<{ $isOpen: boolean }>`
+const ModalOverlay = styled.div<{ $isOpen: boolean; $zIndexLevel: 'modal' | 'topmost' }>`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
-  z-index: ${({ theme }) => theme.zIndex.modal};
+  z-index: ${({ theme, $zIndexLevel }) => theme.zIndex[$zIndexLevel]};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -99,6 +109,12 @@ const ModalContainer = styled.div<{ $size: string }>`
           height: 95vh;
           max-width: none;
           max-height: none;
+        `;
+      case 'adaptive':
+        return `
+          width: 92vw;
+          max-width: 1200px;
+          max-height: 85vh;
         `;
       default:
         return `
@@ -182,6 +198,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   className,
+  zIndexLevel = 'modal',
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -276,8 +293,9 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <ModalOverlay $isOpen={isOpen} onClick={handleOverlayClick}>
+  // 使用Portal将Modal渲染到body，确保z-index生效
+  return ReactDOM.createPortal(
+    <ModalOverlay $isOpen={isOpen} onClick={handleOverlayClick} $zIndexLevel={zIndexLevel}>
       <ModalContainer
         ref={modalRef}
         $size={size}
@@ -314,7 +332,8 @@ export const Modal: React.FC<ModalProps> = ({
           </ModalFooter>
         )}
       </ModalContainer>
-    </ModalOverlay>
+    </ModalOverlay>,
+    document.body
   );
 };
 

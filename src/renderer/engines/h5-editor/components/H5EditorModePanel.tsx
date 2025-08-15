@@ -1,5 +1,7 @@
 // H5编辑器模式面板组件 - 展示H5编辑器的完整功能
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { RulerGuides } from '../../../components/common/RulerGuides';
+import { ZoomPanContainer } from '../../../components/common/ZoomPanContainer';
 import { H5EditorCanvas, type IH5EditorCanvasRef } from '../adapter/react-adapter';
 import { type IH5Page, type IH5Project } from '../types';
 
@@ -464,7 +466,7 @@ export const H5EditorModePanel: React.FC<IH5EditorModePanelProps> = ({
       </div>
 
       {/* H5编辑器画布 */}
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+      <ZoomPanContainer className="h5-mode-zoom" enableShortcuts>
         <H5EditorCanvas
           ref={editorRef}
           width={canvasSize.width}
@@ -482,12 +484,10 @@ export const H5EditorModePanel: React.FC<IH5EditorModePanelProps> = ({
           onPageChange={handlePageChange}
           onPreviewUpdate={handlePreviewUpdate}
           onError={(error) => console.error('H5编辑器错误:', error)}
-          style={{
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            borderRadius: '8px'
-          }}
+          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '8px' }}
         />
-      </div>
+        <RulerGuides />
+      </ZoomPanContainer>
 
       {/* 状态信息 */}
       <div style={{ 

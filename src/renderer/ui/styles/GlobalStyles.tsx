@@ -232,4 +232,32 @@ export const GlobalStyles = createGlobalStyle`
     font-size: ${({ theme }) => theme.typography.fontSize.sm};
     color: ${({ theme }) => theme.colors.text.secondary};
   }
+
+  /* 素材库弹窗专用样式 - 确保在最上层显示 */
+  .asset-library-modal {
+    z-index: ${({ theme }) => theme.zIndex.topmost} !important;
+  }
+  
+  /* 为素材库Modal的遮罩层设置高优先级z-index */
+  .asset-library-modal > div {
+    z-index: ${({ theme }) => theme.zIndex.topmost} !important;
+  }
+
+  /* 模板库弹窗专用样式 - 与素材库保持同层级 */
+  .template-library-modal {
+    z-index: ${({ theme }) => theme.zIndex.topmost} !important;
+  }
+
+  .template-library-modal > div {
+    z-index: ${({ theme }) => theme.zIndex.topmost} !important;
+  }
+
+  /* 项目库弹窗专用样式 */
+  .project-library-modal {
+    z-index: ${({ theme }) => theme.zIndex.topmost} !important;
+  }
+
+  .project-library-modal > div {
+    z-index: ${({ theme }) => theme.zIndex.topmost} !important;
+  }
 `;

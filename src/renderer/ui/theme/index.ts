@@ -274,7 +274,7 @@ export const darkTheme: Theme = {
     },
     canvas: {
       background: '#1e293b',
-      grid: '#334155',
+      grid: '#475569', // 增强暗色模式下网格线的对比度
       selection: '#6366f1',
       selectionBg: 'rgba(99, 102, 241, 0.15)', // 稍微增强选择背景
       guide: '#f59e0b',

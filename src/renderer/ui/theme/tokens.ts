@@ -62,7 +62,7 @@ export const colors = {
     // 画布专用色彩
     canvas: {
         background: '#f8fafc',
-        grid: '#e2e8f0',
+        grid: '#cbd5e1', // 增强网格线的对比度
         selection: '#6366f1',
         selectionBg: 'rgba(99, 102, 241, 0.1)',
         guide: '#f59e0b',
@@ -279,6 +279,7 @@ export const zIndex = {
     skipLink: 1600,
     toast: 1700,
     tooltip: 1800,
+    topmost: 99999, // 最高优先级，确保在所有其他元素之上
 } as const;
 
 // 断点系统

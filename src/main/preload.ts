@@ -140,6 +140,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onExport: (callback: () => void) => safeOn('menu:export', callback),
     onUndo: (callback: () => void) => safeOn('menu:undo', callback),
     onRedo: (callback: () => void) => safeOn('menu:redo', callback),
+    onToggleRuler: (callback: () => void) => safeOn('menu:toggle-ruler', callback),
+    onToggleGuides: (callback: () => void) => safeOn('menu:toggle-guides', callback),
     onZoomIn: (callback: () => void) => safeOn('menu:zoom-in', callback),
     onZoomOut: (callback: () => void) => safeOn('menu:zoom-out', callback),
     onFitToScreen: (callback: () => void) => safeOn('menu:fit-to-screen', callback)

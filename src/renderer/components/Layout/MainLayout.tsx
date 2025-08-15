@@ -3,26 +3,35 @@
  * 包含响应式布局、面板管理、主题适配等功能
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TopToolbar } from './TopToolbar';
 // import { LeftToolPanel } from './LeftToolPanel';
 import { FigmaToolbar } from './FigmaToolbar';
 import { FigmaLayersPanel } from './FigmaLayersPanel';
-import { H5EditorCanvas } from '../../engines/h5-editor/adapter/react-adapter';
+import { H5EditorCanvas, type IH5EditorCanvasRef } from '../../engines/h5-editor/adapter/react-adapter';
 import { FigmaPropertiesPanel } from '../Properties/FigmaPropertiesPanel';
+import { H5LayersPanel } from '../../engines/h5-editor/components/H5LayersPanel';
+import { H5PropertiesPanel } from '../../engines/h5-editor/components/H5PropertiesPanel';
 import { CanvasWorkspace } from '../Canvas/CanvasWorkspace';
 import { StatusBar } from './StatusBar';
-// import { AssetsPanel } from '../Assets/AssetsPanel';
+// import { AssetLibraryPanel } from '../AssetLibrary/AssetLibraryPanel';
 import { useTheme } from '../../ui/theme/ThemeProvider';
 import { useLayoutConfig } from '../../contexts/LayoutContext';
+// import { SvgIcon } from '../../ui/components/Icon/SvgIcon';
+import { Modal } from '../../ui/components/Modal/Modal';
+import { AssetLibraryPanel } from '../AssetLibrary/AssetLibraryPanel';
+import { TemplateLibraryPanel } from '../TemplateLibrary/TemplateLibraryPanel';
+import { ProjectLibraryPanel } from '../ProjectLibrary/ProjectLibraryPanel';
+import { ZoomPanContainer } from '../common/ZoomPanContainer';
+import { RulerGuides } from '../common/RulerGuides';
 
 // 注意：全局 LayoutConfig 来源于 `FigmaLayoutCustomizer.tsx`，此处不再定义本地重复类型
 
 // Figma风格的布局容器
-const FigmaLayoutContainer = styled(motion.div)<{ 
-  $isCompact: boolean; 
+const FigmaLayoutContainer = styled(motion.div) <{
+  $isCompact: boolean;
   $devicePixelRatio: number;
   $actualMode: 'light' | 'dark';
 }>`
@@ -48,14 +57,14 @@ const FigmaLayoutContainer = styled(motion.div)<{
   `}
   
   ${({ theme, $actualMode }) => theme.colors.interface && `
-    background: ${$actualMode === 'dark' 
-      ? theme.colors.interface.canvasArea.dark 
+    background: ${$actualMode === 'dark'
+      ? theme.colors.interface.canvasArea.dark
       : theme.colors.interface.canvasArea.light};
   `}
 `;
 
 // 顶部工具栏区域
-const FigmaTopSection = styled(motion.div)<{ $height: number; $isCompact: boolean; $actualMode: 'light' | 'dark' }>`
+const FigmaTopSection = styled(motion.div) <{ $height: number; $isCompact: boolean; $actualMode: 'light' | 'dark' }>`
   flex-shrink: 0;
   height: ${({ $height, $isCompact }) => $isCompact ? $height * 0.8 : $height}px;
   background: ${({ theme }) => theme.colors.interface?.toolbar?.light || theme.colors.surface};
@@ -64,11 +73,11 @@ const FigmaTopSection = styled(motion.div)<{ $height: number; $isCompact: boolea
   transition: height ${({ theme }) => theme.animation.duration.normal} ${({ theme }) => theme.animation.easing.smooth};
   
   ${({ theme, $actualMode }) => theme.colors.interface && `
-    background: ${$actualMode === 'dark' 
-      ? theme.colors.interface.toolbar.dark 
+    background: ${$actualMode === 'dark'
+      ? theme.colors.interface.toolbar.dark
       : theme.colors.interface.toolbar.light};
-    border-bottom-color: ${$actualMode === 'dark' 
-      ? theme.colors.interface.divider.dark 
+    border-bottom-color: ${$actualMode === 'dark'
+      ? theme.colors.interface.divider.dark
       : theme.colors.interface.divider.light};
   `}
 `;
@@ -82,9 +91,9 @@ const FigmaMainSection = styled.div`
 `;
 
 // 左侧面板区域
-const FigmaLeftSection = styled(motion.div)<{ 
-  $width: number; 
-  $collapsed: boolean; 
+const FigmaLeftSection = styled(motion.div) <{
+  $width: number;
+  $collapsed: boolean;
   $isOverlay: boolean;
   $isResizing: boolean;
   $actualMode: 'light' | 'dark';
@@ -106,11 +115,11 @@ const FigmaLeftSection = styled(motion.div)<{
   `};
   
   ${({ theme, $actualMode }) => theme.colors.interface && `
-    background: ${$actualMode === 'dark' 
-      ? theme.colors.interface.sidebar.dark 
+    background: ${$actualMode === 'dark'
+      ? theme.colors.interface.sidebar.dark
       : theme.colors.interface.sidebar.light};
-    border-right-color: ${$actualMode === 'dark' 
-      ? theme.colors.interface.divider.dark 
+    border-right-color: ${$actualMode === 'dark'
+      ? theme.colors.interface.divider.dark
       : theme.colors.interface.divider.light};
   `}
 `;
@@ -133,27 +142,35 @@ const FigmaLeftSection = styled(motion.div)<{
 // `;
 
 // 侧边面板
-const FigmaSidePanel = styled(motion.div)<{ $collapsed: boolean; $actualMode: 'light' | 'dark' }>`
+const FigmaSidePanel = styled(motion.div) <{ $collapsed: boolean; $actualMode: 'light' | 'dark' }>`
   flex: 1;
   background: ${({ theme }) => theme.colors.interface?.panel?.light || theme.colors.background};
   overflow: hidden;
   
   ${({ theme, $actualMode }) => theme.colors.interface && `
-    background: ${$actualMode === 'dark' 
-      ? theme.colors.interface.panel.dark 
+    background: ${$actualMode === 'dark'
+      ? theme.colors.interface.panel.dark
       : theme.colors.interface.panel.light};
   `}
 `;
 
 // 中央画布区域
-const FigmaCenterSection = styled.div<{ $padding: number }>`
+const FigmaCenterSection = styled.div`  
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
   background: ${({ theme }) => theme.colors.canvas?.background || theme.colors.background};
 `;
+
+// 画布容器包装器，为FloatingToolbar提供相对定位上下文
+const CanvasContainer = styled.div`
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+`;
+
+// 设计模式下已在顶部工具栏内提供入口，这里不再渲染居中额外按钮
 
 // 浮动工具栏（放置在底部居中）
 const FloatingToolbar = styled.div`
@@ -165,9 +182,9 @@ const FloatingToolbar = styled.div`
 `;
 
 // 右侧面板区域
-const FigmaRightSection = styled(motion.div)<{ 
-  $width: number; 
-  $collapsed: boolean; 
+const FigmaRightSection = styled(motion.div) <{
+  $width: number;
+  $collapsed: boolean;
   $isOverlay: boolean;
   $isResizing: boolean;
   $actualMode: 'light' | 'dark';
@@ -190,11 +207,11 @@ const FigmaRightSection = styled(motion.div)<{
   `};
   
   ${({ theme, $actualMode }) => theme.colors.interface && `
-    background: ${$actualMode === 'dark' 
-      ? theme.colors.interface.panel.dark 
+    background: ${$actualMode === 'dark'
+      ? theme.colors.interface.panel.dark
       : theme.colors.interface.panel.light};
-    border-left-color: ${$actualMode === 'dark' 
-      ? theme.colors.interface.divider.dark 
+    border-left-color: ${$actualMode === 'dark'
+      ? theme.colors.interface.divider.dark
       : theme.colors.interface.divider.light};
   `}
 `;
@@ -207,11 +224,11 @@ const FigmaBottomSection = styled.div<{ $actualMode: 'light' | 'dark' }>`
   z-index: ${({ theme }) => theme.zIndex.sticky};
   
   ${({ theme, $actualMode }) => theme.colors.interface && `
-    background: ${$actualMode === 'dark' 
-      ? theme.colors.interface.toolbar.dark 
+    background: ${$actualMode === 'dark'
+      ? theme.colors.interface.toolbar.dark
       : theme.colors.interface.toolbar.light};
-    border-top-color: ${$actualMode === 'dark' 
-      ? theme.colors.interface.divider.dark 
+    border-top-color: ${$actualMode === 'dark'
+      ? theme.colors.interface.divider.dark
       : theme.colors.interface.divider.light};
   `}
 `;
@@ -257,7 +274,7 @@ const useWindowSize = () => {
 
     // 监听窗口大小变化
     window.addEventListener('resize', handleResize);
-    
+
     // 监听DPI变化（用户缩放或移动到不同显示器）
     const mediaQuery = window.matchMedia('(resolution: 1dppx)');
     const handleDPIChange = () => {
@@ -266,7 +283,7 @@ const useWindowSize = () => {
         devicePixelRatio: window.devicePixelRatio,
       }));
     };
-    
+
     // 现代浏览器支持
     if (mediaQuery.addEventListener) {
       mediaQuery.addEventListener('change', handleDPIChange);
@@ -329,18 +346,18 @@ const useLayoutPerformance = () => {
 
   const measureLayout = useCallback((callback: () => void) => {
     const startTime = performance.now();
-    
+
     callback();
-    
+
     // 使用requestAnimationFrame确保DOM更新完成后测量
     requestAnimationFrame(() => {
       const endTime = performance.now();
       const layoutTime = endTime - startTime;
-      
+
       setLayoutMetrics(prev => {
         const newCount = prev.layoutCount + 1;
         const newAverage = (prev.averageLayoutTime * prev.layoutCount + layoutTime) / newCount;
-        
+
         return {
           lastLayoutTime: layoutTime,
           averageLayoutTime: newAverage,
@@ -361,21 +378,29 @@ const useLayoutPerformance = () => {
 export const MainLayout: React.FC = () => {
   const { actualMode, reducedMotion } = useTheme();
   const windowSize = useWindowSize();
-  
+  // const { isFeatureEnabled } = useUIIntegration();
+
   // 使用布局配置上下文
   const { config: layoutConfig } = useLayoutConfig();
-  
+
   // 高DPI适配 (已在styled组件中使用devicePixelRatio)
-  
+
   // 布局性能监控
   const { measureLayout } = useLayoutPerformance();
-  
+
   // 面板状态
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   // const [activeLeftPanel, setActiveLeftPanel] = useState<'layers' | 'assets'>('layers');
   const [editorMode, setEditorMode] = useState<'design' | 'h5'>('design');
-  
+  const h5CanvasRef = useRef<IH5EditorCanvasRef>(null);
+  const [h5Pages, setH5Pages] = useState<Array<any>>([]);
+  const [h5Selected, setH5Selected] = useState<{ type: 'page' | 'component'; name?: string; props?: Record<string, any> } | null>(null);
+  // 由 ZoomPanContainer 统一管理缩放和平移，不再本地存状态
+  const [isAssetsOpen, setIsAssetsOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isProjectsOpen, setIsProjectsOpen] = useState(false);
+
   // Figma风格组件状态
   const [activeTool, setActiveTool] = useState('select');
   const [selectedObject, setSelectedObject] = useState<any>(null);
@@ -405,7 +430,34 @@ export const MainLayout: React.FC = () => {
       ]
     }
   ]);
-  
+
+  // 将图层数据转换为画布对象
+  const canvasObjects = useMemo(() => {
+    const flattenLayers = (layers: any[]): any[] => {
+      const result: any[] = [];
+      layers.forEach(layer => {
+        result.push(layer);
+        if (layer.children) {
+          result.push(...flattenLayers(layer.children));
+        }
+      });
+      return result;
+    };
+
+    const flatLayers = flattenLayers(layers);
+    return flatLayers.map((layer, index) => ({
+      id: layer.id,
+      type: layer.type === 'shape' ? 'shape' as const :
+        layer.type === 'text' ? 'text' as const : 'template' as const,
+      worldX: 100 + index * 220, // 错开显示
+      worldY: 100 + index * 120,
+      width: 200,
+      height: 100,
+      content: layer.name,
+      selected: selectedObject?.id === layer.id
+    }));
+  }, [layers, selectedObject]);
+
   // 面板调整大小
   // 将全局布局配置映射为本组件使用的派生值
   const leftPanel = usePanelResize(
@@ -414,7 +466,7 @@ export const MainLayout: React.FC = () => {
     400,
     1
   );
-  
+
   const rightPanel = usePanelResize(
     layoutConfig.rightPanelWidth || 320,
     250,
@@ -491,7 +543,7 @@ export const MainLayout: React.FC = () => {
       }
       return null;
     };
-    
+
     const layer = findLayer(layers, layerId);
     setSelectedObject(layer ? {
       type: layer.type,
@@ -591,7 +643,7 @@ export const MainLayout: React.FC = () => {
   // };
 
   return (
-    <FigmaLayoutContainer 
+    <FigmaLayoutContainer
       $isCompact={isCompactMode}
       $devicePixelRatio={windowSize.devicePixelRatio}
       $actualMode={actualMode}
@@ -600,13 +652,13 @@ export const MainLayout: React.FC = () => {
       transition={{ duration: reducedMotion ? 0 : 0.3 }}
     >
       {/* 顶部工具栏 */}
-      <FigmaTopSection 
+      <FigmaTopSection
         $height={48}
         $isCompact={isCompactMode}
         $actualMode={actualMode}
         layout={!reducedMotion}
       >
-        <TopToolbar 
+        <TopToolbar
           onToggleLeftPanel={toggleLeftPanel}
           onToggleRightPanel={toggleRightPanel}
           leftPanelCollapsed={leftPanelCollapsed}
@@ -631,33 +683,52 @@ export const MainLayout: React.FC = () => {
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
               {/* 左侧独立工具面板已合并至图层面板顶部，此处移除 */}
-              
-              <FigmaSidePanel 
+
+              <FigmaSidePanel
                 $collapsed={leftPanelCollapsed}
                 $actualMode={actualMode}
                 initial={reducedMotion ? false : { opacity: 0 }}
                 animate={reducedMotion ? false : { opacity: leftPanelCollapsed ? 0 : 1 }}
                 transition={{ duration: 0.2 }}
               >
-              <FigmaLayersPanel
-                  layers={layers}
-                  selectedLayerId={selectedObject?.id}
-                  onLayerSelect={handleLayerSelect}
-                  onLayerToggleVisibility={handleLayerToggleVisibility}
-                  onLayerToggleLock={handleLayerToggleLock}
-                  onLayerRename={handleLayerRename}
-                  onLayerToggleExpanded={handleLayerToggleExpanded}
-                  onSwitchPanel={() => {}} // 提供空函数以显示按钮
-                  onSwitchMode={(m) => {
-                    setEditorMode(m);
-                  }}
-                />
+                {editorMode === 'h5' ? (
+                  <H5LayersPanel
+                    pages={(h5Pages || []).map((p: any) => ({ id: p.id, name: p.name, width: p.width, height: p.height, isCurrent: p.isCurrent }))}
+                    onSelectPage={(pid) => {
+                      h5CanvasRef.current?.setCurrentPage(pid);
+                      const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
+                      setH5Pages(pages);
+                      const current = pages.find((p: any) => p.id === pid);
+                      if (current) setH5Selected({ type: 'page', name: current.name, props: { background: current.background } });
+                    }}
+                    currentMode={editorMode}
+                    onSwitchMode={(m) => setEditorMode(m)}
+                    onOpenTemplateLibrary={() => setIsTemplatesOpen(true)}
+                    onOpenAssetLibrary={() => setIsAssetsOpen(true)}
+                    onOpenProjectLibrary={() => setIsProjectsOpen(true)}
+                  />
+                ) : (
+                  <FigmaLayersPanel
+                    layers={layers}
+                    selectedLayerId={selectedObject?.id}
+                    onLayerSelect={handleLayerSelect}
+                    onLayerToggleVisibility={handleLayerToggleVisibility}
+                    onLayerToggleLock={handleLayerToggleLock}
+                    onLayerRename={handleLayerRename}
+                    onLayerToggleExpanded={handleLayerToggleExpanded}
+                    onSwitchPanel={() => { }} // 提供空函数以显示按钮
+                    currentMode={editorMode}
+                    onSwitchMode={(m) => {
+                      setEditorMode(m);
+                    }}
+                  />
+                )}
               </FigmaSidePanel>
 
               {/* 左侧面板调整大小手柄 */}
               {layoutConfig.leftPanelVisible && !leftPanelCollapsed && (
-                <ResizeHandle 
-                  $position="right" 
+                <ResizeHandle
+                  $position="right"
                   onMouseDown={leftPanel.startResize}
                 />
               )}
@@ -666,20 +737,46 @@ export const MainLayout: React.FC = () => {
         </AnimatePresence>
 
         {/* 中央画布区域 */}
-        <FigmaCenterSection $padding={20}>
-          {/* Figma风格工具栏 */}
-          <FloatingToolbar>
-            <FigmaToolbar
-              activeTool={activeTool}
-              onToolChange={handleToolChange}
-            />
-          </FloatingToolbar>
-          
-          {editorMode === 'h5' ? (
-            <H5EditorCanvas width={375} height={667} />
-          ) : (
-            <CanvasWorkspace />
-          )}
+        <FigmaCenterSection>
+          <CanvasContainer>
+            {/* Figma风格工具栏 */}
+            <FloatingToolbar>
+              <FigmaToolbar
+                activeTool={activeTool}
+                onToolChange={handleToolChange}
+              />
+            </FloatingToolbar>
+
+            {editorMode === 'h5' ? (
+              <ZoomPanContainer className="h5-zoom-container" enableShortcuts overlay={<RulerGuides mode="h5" />}>
+                <H5EditorCanvas
+                  ref={h5CanvasRef}
+                  width={375}
+                  height={667}
+                  onReady={() => {
+                    const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
+                    setH5Pages(pages);
+                    const current = pages.find((p: any) => p.isCurrent);
+                    setH5Selected(current ? { type: 'page', name: current.name, props: { background: current.background } } : null);
+                  }}
+                  onPageChange={(page) => {
+                    const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
+                    setH5Pages(pages);
+                    setH5Selected({ type: 'page', name: page.name, props: { background: (page as any).background } });
+                  }}
+                />
+              </ZoomPanContainer>
+            ) : (
+              // 设计模式：统一使用ZoomPanContainer + RulerGuides的组合
+              <ZoomPanContainer className="design-zoom-container" enableShortcuts overlay={<RulerGuides mode="design" />}>
+                <CanvasWorkspace
+                  externalObjects={canvasObjects}
+                />
+              </ZoomPanContainer>
+            )}
+          </CanvasContainer>
+
+          {/* 设计模式下不再渲染居中的模式/库按钮，避免与顶部工具栏重复 */}
         </FigmaCenterSection>
 
         {/* 右侧面板区域 */}
@@ -698,16 +795,29 @@ export const MainLayout: React.FC = () => {
             >
               {/* 右侧面板调整大小手柄 */}
               {layoutConfig.rightPanelVisible && !rightPanelCollapsed && (
-                <ResizeHandle 
-                  $position="left" 
+                <ResizeHandle
+                  $position="left"
                   onMouseDown={rightPanel.startResize}
                 />
               )}
-              
-              <FigmaPropertiesPanel
-                selectedObject={selectedObject}
-                onPropertyChange={handlePropertyChange}
-              />
+
+              {editorMode === 'h5' ? (
+                <H5PropertiesPanel
+                  selected={h5Selected}
+                  onChange={(key, value) => {
+                    if (key === 'background') {
+                      h5CanvasRef.current?.setColorBackground(value);
+                    }
+                    const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
+                    setH5Pages(pages);
+                  }}
+                />
+              ) : (
+                <FigmaPropertiesPanel
+                  selectedObject={selectedObject}
+                  onPropertyChange={handlePropertyChange}
+                />
+              )}
             </FigmaRightSection>
           )}
         </AnimatePresence>
@@ -717,6 +827,61 @@ export const MainLayout: React.FC = () => {
       <FigmaBottomSection $actualMode={actualMode}>
         <StatusBar />
       </FigmaBottomSection>
+
+      {/* 素材库弹窗（全局入口） */}
+      <Modal
+        isOpen={isAssetsOpen}
+        onClose={() => setIsAssetsOpen(false)}
+        title="🎨 素材库"
+        size="adaptive"
+        className="asset-library-modal"
+        zIndexLevel="topmost"
+      >
+        <div style={{ height: 'calc(85vh - 120px)', margin: '-24px', display: 'flex', flexDirection: 'column' }}>
+          <AssetLibraryPanel
+            onAssetSelect={() => { }}
+            onAssetDoubleClick={() => setIsAssetsOpen(false)}
+            style={{ height: '100%', border: 'none', borderRadius: 0, backgroundColor: 'transparent' }}
+          />
+        </div>
+      </Modal>
+
+      {/* 模板库弹窗（全局入口） */}
+      <Modal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        title="📚 模板库"
+        size="adaptive"
+        className="template-library-modal"
+        zIndexLevel="topmost"
+      >
+        <div style={{ height: 'calc(85vh - 120px)', margin: '-24px', display: 'flex', flexDirection: 'column' }}>
+          <TemplateLibraryPanel
+            onUseTemplate={() => setIsTemplatesOpen(false)}
+            onPreviewTemplate={() => { }}
+            style={{ height: '100%', border: 'none', borderRadius: 0, backgroundColor: 'transparent' }}
+          />
+        </div>
+      </Modal>
+
+      {/* 项目库弹窗（全局入口） */}
+      <Modal
+        isOpen={isProjectsOpen}
+        onClose={() => setIsProjectsOpen(false)}
+        title="📁 项目库"
+        size="adaptive"
+        className="project-library-modal"
+        zIndexLevel="topmost"
+      >
+        <div style={{ height: 'calc(85vh - 120px)', margin: '-24px', display: 'flex', flexDirection: 'column' }}>
+          <ProjectLibraryPanel
+            onOpenProject={() => setIsProjectsOpen(false)}
+            onCreateProject={() => setIsProjectsOpen(false)}
+            onImportProject={() => setIsProjectsOpen(false)}
+            style={{ height: '100%', border: 'none', borderRadius: 0, backgroundColor: 'transparent' }}
+          />
+        </div>
+      </Modal>
     </FigmaLayoutContainer>
   );
 };

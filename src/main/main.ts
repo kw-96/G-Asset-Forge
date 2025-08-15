@@ -246,6 +246,21 @@ class Application {
         label: '视图',
         submenu: [
           {
+            label: '显示/隐藏标尺',
+            accelerator: 'CmdOrCtrl+R',
+            click: () => {
+              this.mainWindow?.webContents.send('menu:toggle-ruler');
+            }
+          },
+          {
+            label: '显示/隐藏参考线',
+            accelerator: 'CmdOrCtrl+Shift+R',
+            click: () => {
+              this.mainWindow?.webContents.send('menu:toggle-guides');
+            }
+          },
+          { type: 'separator' },
+          {
             label: '放大',
             accelerator: 'CmdOrCtrl+Plus',
             click: () => {

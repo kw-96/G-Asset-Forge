@@ -369,6 +369,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     { id: 'canvas__zoom_in', label: '放大', group: '画布', shortcut: 'Ctrl++', onSelect: () => canvasEvents.emit('zoomIn') },
     { id: 'canvas__zoom_out', label: '缩小', group: '画布', shortcut: 'Ctrl+-', onSelect: () => canvasEvents.emit('zoomOut') },
     { id: 'canvas__toggle_grid', label: '显示/隐藏网格', group: '画布', shortcut: 'G', onSelect: () => canvasEvents.emit('toggleGrid') },
+    { id: 'canvas__toggle_ruler', label: '显示/隐藏标尺', group: '画布', shortcut: 'Shift+R', onSelect: () => canvasEvents.emit('toggleRuler') },
     { id: 'canvas__toggle_guides', label: '显示/隐藏参考线', group: '画布', shortcut: 'R', onSelect: () => canvasEvents.emit('toggleGuides') },
 
     // 系统

@@ -433,7 +433,9 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
         display: 'flex', 
         flexDirection: 'column', 
         height: '100%',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: style?.backgroundColor || '#f8f9fa',
+        borderRadius: style?.borderRadius !== undefined ? style.borderRadius : '8px',
+        overflow: 'hidden',
         ...style 
       }}
       onDragOver={handleDragOver}
@@ -441,32 +443,49 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
     >
       {/* 头部工具栏 */}
       <div style={{
-        padding: '16px',
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e0e0e0',
+        padding: '20px',
+        backgroundColor: '#ffffff',
+        borderBottom: '1px solid #e9ecef',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px'
+        gap: '16px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-            素材库
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+              发现和管理你的创作素材
+            </span>
+          </div>
           
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               type="button"
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
               style={{
-                padding: '6px 12px',
-                border: '1px solid #ddd',
-                backgroundColor: 'white',
-                borderRadius: '4px',
+                padding: '8px 16px',
+                border: '1px solid #e9ecef',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '12px'
+                fontSize: '13px',
+                fontWeight: '500',
+                color: '#495057',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e9ecef';
+                e.currentTarget.style.borderColor = '#dee2e6';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f8f9fa';
+                e.currentTarget.style.borderColor = '#e9ecef';
               }}
             >
-              {viewMode === 'grid' ? '📋 列表' : '⊞ 网格'}
+              {viewMode === 'grid' ? '📋 列表视图' : '⊞ 网格视图'}
             </button>
             
             <button
@@ -474,45 +493,91 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
               onClick={() => setShowUploadPanel(true)}
               disabled={isUploading}
               style={{
-                padding: '6px 12px',
-                border: '1px solid #007bff',
-                backgroundColor: '#007bff',
+                padding: '8px 16px',
+                border: '1px solid #0066cc',
+                backgroundColor: '#0066cc',
                 color: 'white',
-                borderRadius: '4px',
+                borderRadius: '6px',
                 cursor: isUploading ? 'not-allowed' : 'pointer',
-                fontSize: '12px'
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: isUploading ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!isUploading) {
+                  e.currentTarget.style.backgroundColor = '#0052a3';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isUploading) {
+                  e.currentTarget.style.backgroundColor = '#0066cc';
+                }
               }}
             >
-              {isUploading ? '⏳ 上传中...' : '📤 上传'}
+              {isUploading ? '⏳ 上传中...' : '📤 上传素材'}
             </button>
             
             <button
               type="button"
               onClick={() => setShowFavoriteManager(true)}
               style={{
-                padding: '6px 12px',
+                padding: '8px 16px',
                 border: '1px solid #dc3545',
                 backgroundColor: 'white',
                 color: '#dc3545',
-                borderRadius: '4px',
+                borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '12px'
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#dc3545';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.color = '#dc3545';
               }}
             >
-              ❤️ 收藏
+              ❤️ 收藏管理
             </button>
             
             <button
               type="button"
               onClick={() => setShowBatchManager(!showBatchManager)}
               style={{
-                padding: '6px 12px',
-                border: `1px solid ${showBatchManager ? '#28a745' : '#ddd'}`,
+                padding: '8px 16px',
+                border: `1px solid ${showBatchManager ? '#28a745' : '#6c757d'}`,
                 backgroundColor: showBatchManager ? '#28a745' : 'white',
-                color: showBatchManager ? 'white' : '#666',
-                borderRadius: '4px',
+                color: showBatchManager ? 'white' : '#6c757d',
+                borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '12px'
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                if (!showBatchManager) {
+                  e.currentTarget.style.backgroundColor = '#6c757d';
+                  e.currentTarget.style.color = 'white';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!showBatchManager) {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.color = '#6c757d';
+                }
               }}
             >
               ⚙️ 批量管理
@@ -524,8 +589,13 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
         <AssetSearchBar
           onSearch={handleSearch}
           getSuggestions={getSuggestions}
-          placeholder="搜索素材..."
-          style={{ marginBottom: '8px' }}
+          placeholder="🔍 搜索素材名称、标签或分类..."
+          style={{ 
+            marginBottom: '12px',
+            border: '1px solid #e9ecef',
+            borderRadius: '8px',
+            padding: '2px'
+          }}
         />
 
         {/* 过滤和排序工具栏 */}
@@ -535,13 +605,15 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
               type="button"
               onClick={() => setShowFilterPanel(!showFilterPanel)}
               style={{
-                padding: '6px 12px',
-                border: `1px solid ${showFilterPanel ? '#007bff' : '#ddd'}`,
-                backgroundColor: showFilterPanel ? '#007bff' : 'white',
-                color: showFilterPanel ? 'white' : '#666',
-                borderRadius: '4px',
+                padding: '8px 12px',
+                border: `1px solid ${showFilterPanel ? '#007bff' : '#e9ecef'}`,
+                backgroundColor: showFilterPanel ? '#007bff' : '#f8f9fa',
+                color: showFilterPanel ? 'white' : '#495057',
+                borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '12px'
+                fontSize: '12px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
               }}
             >
               🔍 过滤器
@@ -551,13 +623,15 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
               type="button"
               onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
               style={{
-                padding: '6px 12px',
-                border: `1px solid ${showAdvancedSearch ? '#28a745' : '#ddd'}`,
-                backgroundColor: showAdvancedSearch ? '#28a745' : 'white',
-                color: showAdvancedSearch ? 'white' : '#666',
-                borderRadius: '4px',
+                padding: '8px 12px',
+                border: `1px solid ${showAdvancedSearch ? '#28a745' : '#e9ecef'}`,
+                backgroundColor: showAdvancedSearch ? '#28a745' : '#f8f9fa',
+                color: showAdvancedSearch ? 'white' : '#495057',
+                borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '12px'
+                fontSize: '12px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
               }}
             >
               ⚙️ 高级搜索
@@ -565,11 +639,19 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
           </div>
           
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px' }}>
-            <span>排序:</span>
+            <span style={{ color: '#6c757d', fontWeight: '500' }}>排序:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              style={{ padding: '4px 8px', border: '1px solid #ddd', borderRadius: '4px' }}
+              style={{ 
+                padding: '6px 10px', 
+                border: '1px solid #e9ecef', 
+                borderRadius: '6px',
+                backgroundColor: '#f8f9fa',
+                fontSize: '12px',
+                fontWeight: '500',
+                color: '#495057'
+              }}
             >
               <option value="createdAt">创建时间</option>
               <option value="name">名称</option>
@@ -581,14 +663,24 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
               type="button"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
               style={{
-                padding: '4px 8px',
-                border: '1px solid #ddd',
-                backgroundColor: 'white',
-                borderRadius: '4px',
-                cursor: 'pointer'
+                padding: '6px 10px',
+                border: '1px solid #e9ecef',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#495057',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e9ecef';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f8f9fa';
               }}
             >
-              {sortOrder === 'asc' ? '↑' : '↓'}
+              {sortOrder === 'asc' ? '↗️' : '↙️'}
             </button>
           </div>
         </div>
@@ -640,7 +732,12 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
       )}
 
       {/* 素材列表 */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+      <div style={{ 
+        flex: 1, 
+        overflow: 'auto', 
+        padding: '16px',
+        minHeight: 0 // 关键：允许flex子项收缩
+      }}>
         <AssetSearchResults
           assets={searchResult.assets}
           categories={categories}
@@ -656,13 +753,15 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
       {/* 底部状态栏 */}
       <div style={{
         padding: '12px 16px',
-        backgroundColor: 'white',
-        borderTop: '1px solid #e0e0e0',
+        backgroundColor: '#ffffff',
+        borderTop: '1px solid #e9ecef',
         fontSize: '12px',
-        color: '#666',
+        color: '#6c757d',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexShrink: 0, // 防止状态栏被压缩
+        boxShadow: '0 -2px 4px rgba(0,0,0,0.05)'
       }}>
         <div>
           共 {searchResult.totalCount} 个素材
