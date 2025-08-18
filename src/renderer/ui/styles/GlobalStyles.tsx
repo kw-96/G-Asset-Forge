@@ -1,5 +1,9 @@
-// 全局样式 - 基于新的UI系统
-import { createGlobalStyle } from 'styled-components';
+/**
+ * 全局样式 - 基于新的UI系统和响应式设计
+ * 包含可访问性支持、性能优化和主题适配
+ */
+import { createGlobalStyle, css } from 'styled-components';
+import { mixins } from '../theme/mixins';
 
 export const GlobalStyles = createGlobalStyle`
   * {
@@ -118,17 +122,10 @@ export const GlobalStyles = createGlobalStyle`
     font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   }
 
-  /* 工具类 */
-  .visually-hidden {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
+  /* 可访问性工具类 */
+  .visually-hidden,
+  .sr-only {
+    ${mixins.accessibility.srOnly()}
   }
 
   .no-select {
@@ -136,6 +133,59 @@ export const GlobalStyles = createGlobalStyle`
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+  }
+
+  /* 焦点管理 */
+  .focus-visible {
+    ${mixins.accessibility.focusRing()}
+  }
+
+  /* 减少动画偏好支持 */
+  ${mixins.responsive.reducedMotion(css`
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  `)}
+
+  /* 高对比度模式支持 */
+  ${mixins.accessibility.highContrast(css`
+    * {
+      border-color: ButtonText !important;
+      color: ButtonText !important;
+    }
+    
+    button, input, select, textarea {
+      background: ButtonFace !important;
+      color: ButtonText !important;
+    }
+  `)}
+
+  /* 响应式字体大小 */
+  ${mixins.responsive.below('sm')(css`
+    body {
+      font-size: ${({ theme }) => theme.typography.fontSize.sm};
+    }
+  `)}
+
+  ${mixins.responsive.above('lg')(css`
+    body {
+      font-size: ${({ theme }) => theme.typography.fontSize.lg};
+    }
+  `)}
+
+  /* 性能优化 */
+  * {
+    ${mixins.performance.gpuAcceleration()}
+  }
+
+  /* 滚动优化 */
+  html {
+    ${mixins.performance.smoothScroll()}
   }
 
   /* 应用布局 - 增强视觉层次 */

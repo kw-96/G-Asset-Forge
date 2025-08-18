@@ -4,8 +4,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { radixUIPerformanceMonitor } from '../utils/RadixUIPerformanceMonitor';
-// 移除已删除的ReactLoopFix依赖
+import { radixUIPerformanceMonitor } from '../logic/utils/RadixUIPerformanceMonitor';
 
 export interface UseRadixUIPerformanceOptions {
   componentName: string;

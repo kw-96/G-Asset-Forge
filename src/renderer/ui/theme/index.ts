@@ -3,7 +3,20 @@
  * 提供完整的设计令牌和主题配置
  */
 
-import { colors, spacing, typography, borderRadius, shadows, animation, zIndex } from './tokens';
+import { 
+  colors, 
+  spacing, 
+  typography, 
+  borderRadius, 
+  shadows, 
+  animation, 
+  zIndex,
+  breakpoints,
+  sizes,
+  responsive,
+  accessibility,
+  performance
+} from './tokens';
 
 // 简化的主题接口
 export interface Theme {
@@ -154,6 +167,11 @@ export interface Theme {
   shadows: typeof shadows;
   animation: typeof animation;
   zIndex: typeof zIndex;
+  breakpoints: typeof breakpoints;
+  sizes: typeof sizes;
+  responsive: typeof responsive;
+  accessibility: typeof accessibility;
+  performance: typeof performance;
 }
 
 // 亮色主题 - 优化视觉层次和对比度
@@ -238,6 +256,11 @@ export const lightTheme: Theme = {
   shadows,
   animation,
   zIndex,
+  breakpoints,
+  sizes,
+  responsive,
+  accessibility,
+  performance,
 };
 
 // 暗色主题 - 优化对比度和视觉舒适度
@@ -296,3 +319,4 @@ export type ThemeSpacing = Theme['spacing'];
 // 导出所有相关内容
 export * from './tokens';
 export * from './ThemeProvider';
+export * from './mixins';

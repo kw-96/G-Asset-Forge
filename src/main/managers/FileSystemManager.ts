@@ -1,3 +1,8 @@
+/**
+ * 文件系统管理器 - 负责应用的文件系统操作和路径解析
+ * @description 管理用户数据、共享驱动器、配置文件等文件系统相关功能
+ * @author 开发团队
+ */
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { app } from 'electron';
@@ -70,7 +75,7 @@ export class FileSystemManager {
     try {
       const fullPath = this.resolvePath(filePath);
       await fs.ensureDir(path.dirname(fullPath));
-      
+
       // Try shared drive first, fallback to local
       if (this.isSharedPath(filePath) && this.sharedDrivePath) {
         try {
@@ -80,9 +85,9 @@ export class FileSystemManager {
           // Fallback to local storage
           const localPath = this.getLocalFallbackPath(filePath);
           await fs.writeFile(localPath, data, 'utf8');
-          return { 
-            success: true, 
-            path: localPath, 
+          return {
+            success: true,
+            path: localPath,
             location: 'local',
             fallbackUsed: true,
             originalError: (error as Error).message
@@ -160,22 +165,22 @@ export class FileSystemManager {
     try {
       const configDir = path.join(this.userDataPath, 'config');
       await fs.ensureDir(configDir);
-      
+
       const configPath = path.join(configDir, `${configKey}.json`);
       const configString = JSON.stringify(configData, null, 2);
-      
+
       await fs.writeFile(configPath, configString, 'utf8');
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         path: configPath,
         size: configString.length,
         timestamp: Date.now()
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: (error as Error).message 
+      return {
+        success: false,
+        error: (error as Error).message
       };
     }
   }
@@ -186,28 +191,28 @@ export class FileSystemManager {
   async loadConfig(configKey: string): Promise<any> {
     try {
       const configPath = path.join(this.userDataPath, 'config', `${configKey}.json`);
-      
+
       if (!(await fs.pathExists(configPath))) {
-        return { 
-          success: false, 
-          error: 'Configuration file not found' 
+        return {
+          success: false,
+          error: 'Configuration file not found'
         };
       }
-      
+
       const configString = await fs.readFile(configPath, 'utf8');
       const configData = JSON.parse(configString);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         data: configData,
         path: configPath,
         size: configString.length,
         lastModified: (await fs.stat(configPath)).mtime.getTime()
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: (error as Error).message 
+      return {
+        success: false,
+        error: (error as Error).message
       };
     }
   }
@@ -230,24 +235,24 @@ export class FileSystemManager {
   async deleteConfig(configKey: string): Promise<any> {
     try {
       const configPath = path.join(this.userDataPath, 'config', `${configKey}.json`);
-      
+
       if (!(await fs.pathExists(configPath))) {
-        return { 
-          success: false, 
-          error: 'Configuration file not found' 
+        return {
+          success: false,
+          error: 'Configuration file not found'
         };
       }
-      
+
       await fs.remove(configPath);
-      
-      return { 
-        success: true, 
-        path: configPath 
+
+      return {
+        success: true,
+        path: configPath
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: (error as Error).message 
+      return {
+        success: false,
+        error: (error as Error).message
       };
     }
   }
@@ -258,23 +263,23 @@ export class FileSystemManager {
   async listConfigs(): Promise<any> {
     try {
       const configDir = path.join(this.userDataPath, 'config');
-      
+
       if (!(await fs.pathExists(configDir))) {
-        return { 
-          success: true, 
-          configs: [] 
+        return {
+          success: true,
+          configs: []
         };
       }
-      
+
       const files = await fs.readdir(configDir);
       const configFiles = files.filter(file => file.endsWith('.json'));
-      
+
       const configs = await Promise.all(
         configFiles.map(async (file) => {
           const configPath = path.join(configDir, file);
           const stats = await fs.stat(configPath);
           const configKey = path.basename(file, '.json');
-          
+
           return {
             key: configKey,
             filename: file,
@@ -285,15 +290,15 @@ export class FileSystemManager {
           };
         })
       );
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         configs: configs.sort((a, b) => b.modified - a.modified)
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: (error as Error).message 
+      return {
+        success: false,
+        error: (error as Error).message
       };
     }
   }
@@ -304,31 +309,31 @@ export class FileSystemManager {
   async backupConfig(configKey: string): Promise<any> {
     try {
       const configPath = path.join(this.userDataPath, 'config', `${configKey}.json`);
-      
+
       if (!(await fs.pathExists(configPath))) {
-        return { 
-          success: false, 
-          error: 'Configuration file not found' 
+        return {
+          success: false,
+          error: 'Configuration file not found'
         };
       }
-      
+
       const backupDir = path.join(this.userDataPath, 'config', 'backups');
       await fs.ensureDir(backupDir);
-      
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const backupPath = path.join(backupDir, `${configKey}-${timestamp}.json`);
-      
+
       await fs.copy(configPath, backupPath);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         backupPath,
         originalPath: configPath
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: (error as Error).message 
+      return {
+        success: false,
+        error: (error as Error).message
       };
     }
   }
@@ -339,33 +344,33 @@ export class FileSystemManager {
   async restoreConfigBackup(configKey: string, backupFilename: string): Promise<any> {
     try {
       const backupPath = path.join(this.userDataPath, 'config', 'backups', backupFilename);
-      
+
       if (!(await fs.pathExists(backupPath))) {
-        return { 
-          success: false, 
-          error: 'Backup file not found' 
+        return {
+          success: false,
+          error: 'Backup file not found'
         };
       }
-      
+
       const configPath = path.join(this.userDataPath, 'config', `${configKey}.json`);
-      
+
       // 备份当前配置
       if (await fs.pathExists(configPath)) {
         await this.backupConfig(configKey);
       }
-      
+
       // 恢复备份
       await fs.copy(backupPath, configPath);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         configPath,
         backupPath
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: (error as Error).message 
+      return {
+        success: false,
+        error: (error as Error).message
       };
     }
   }

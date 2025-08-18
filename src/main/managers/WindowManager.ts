@@ -1,3 +1,8 @@
+/**
+ * 窗口管理器 - 负责应用的窗口创建、控制和事件处理
+ * @description 管理主窗口、子窗口、窗口状态、尺寸调整等窗口管理功能
+ * @author 开发团队
+ */
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
 import { SecurityConfig } from '../config/security';
@@ -5,13 +10,19 @@ import { SecurityConfig } from '../config/security';
 export class WindowManager {
   private windows: Map<string, BrowserWindow> = new Map();
 
-  createMainWindow(): BrowserWindow {
+  createMainWindow(options?: {
+    width?: number;
+    height?: number;
+    minWidth?: number;
+    minHeight?: number;
+    webPreferences?: any;
+  }): BrowserWindow {
     // 欢迎模式尺寸：加载阶段与欢迎页保持一致
     const mainWindow = new BrowserWindow({
-      width: 480,
-      height: 320,
-      minWidth: 480,
-      minHeight: 320,
+      width: options?.width ?? 480,
+      height: options?.height ?? 320,
+      minWidth: options?.minWidth ?? 480,
+      minHeight: options?.minHeight ?? 320,
       webPreferences: {
         ...SecurityConfig.webSecurity,
         preload: path.join(__dirname, './preload.js'),
@@ -20,6 +31,7 @@ export class WindowManager {
         disableDialogs: false, // 允许对话框（用于错误报告）
         safeDialogs: true, // 启用安全对话框
         safeDialogsMessage: 'G-Asset-Forge检测到不安全的对话框尝试', // 安全对话框消息
+        ...options?.webPreferences,
       },
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
       frame: false, // 隐藏系统窗口框架，使用自定义标题栏

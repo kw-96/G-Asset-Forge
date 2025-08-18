@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../stores/appStore';
-import { reactLoopFixToolkit } from '../utils/ReactLoopFix';
+import { reactLoopFixToolkit } from '../logic/utils/ReactLoopFix';
 
 export interface UseStoreMonitorOptions {
   enableRenderTracking?: boolean;

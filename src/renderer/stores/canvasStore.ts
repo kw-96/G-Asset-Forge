@@ -1,3 +1,9 @@
+/**
+ * 画布状态管理 - 管理无限画布的视图和显示状态
+ * @description 管理画布缩放、平移、网格、标尺等视图相关状态
+ * @author 开发团队
+ */
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 

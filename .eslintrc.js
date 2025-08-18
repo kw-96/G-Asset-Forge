@@ -13,12 +13,14 @@ module.exports = {
     '@typescript-eslint',
     'react',
     'react-hooks',
+    'jsdoc',
   ],
   extends: [
     'eslint:recommended',
     '@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:jsdoc/recommended',
   ],
   env: {
     browser: true,
@@ -108,7 +110,41 @@ module.exports = {
     'no-unsafe-negation': 'error',
     'no-unsafe-optional-chaining': 'error',
     'use-isnan': 'error',
-    'valid-typeof': 'error'
+    'valid-typeof': 'error',
+
+    // JSDoc中文注释规则
+    'jsdoc/require-description': 'error',
+    'jsdoc/require-param-description': 'error',
+    'jsdoc/require-returns-description': 'error',
+    'jsdoc/require-example': ['error', {
+      'exemptedBy': ['private', 'internal', 'override']
+    }],
+    'jsdoc/check-descriptions': ['error', {
+      'matchDescription': '[\u4e00-\u9fa5]' // 检查是否包含中文字符
+    }],
+    'jsdoc/require-jsdoc': ['error', {
+      'require': {
+        'FunctionDeclaration': true,
+        'MethodDefinition': true,
+        'ClassDeclaration': true,
+        'ArrowFunctionExpression': true,
+        'FunctionExpression': true
+      },
+      'contexts': [
+        'TSInterfaceDeclaration',
+        'TSTypeAliasDeclaration',
+        'ExportNamedDeclaration > TSInterfaceDeclaration',
+        'ExportNamedDeclaration > TSTypeAliasDeclaration',
+        'ExportNamedDeclaration > FunctionDeclaration',
+        'ExportNamedDeclaration > ClassDeclaration'
+      ]
+    }],
+    'jsdoc/check-param-names': 'error',
+    'jsdoc/check-tag-names': 'error',
+    'jsdoc/check-types': 'error',
+    'jsdoc/newline-after-description': 'error',
+    'jsdoc/no-undefined-types': 'off', // TypeScript处理类型检查
+    'jsdoc/valid-types': 'off' // TypeScript处理类型检查
   },
   overrides: [
     {

@@ -1,3 +1,22 @@
+/**
+ * IPC通信处理器
+ * @description 负责处理主进程和渲染进程之间的IPC通信，提供文件系统、窗口控制、应用信息等功能
+ * @author 开发团队
+ * 
+ * 功能模块：
+ * - 文件系统操作：读写文件、目录管理、JSON处理
+ * - 配置管理：保存、加载、删除应用配置
+ * - 窗口控制：最大化、最小化、关闭、尺寸调整
+ * - 应用信息：版本、平台、路径获取
+ * - 对话框：文件选择、保存对话框
+ * - 健康检查：IPC通信状态检测
+ * 
+ * 特性：
+ * - 统一的错误处理和响应格式
+ * - 参数验证和安全检查
+ * - 自动清理和资源管理
+ * - 窗口事件监听和转发
+ */
 import { ipcMain, app, BrowserWindow, dialog } from 'electron';
 import * as fs from 'fs-extra';
 import * as path from 'path';

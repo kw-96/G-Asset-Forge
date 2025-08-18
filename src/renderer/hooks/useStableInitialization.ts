@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '../stores/appStore';
-import { reactLoopFixToolkit } from '../utils/ReactLoopFix';
 
 export interface UseStableInitializationOptions {
   enableAutoInit?: boolean;
@@ -52,13 +51,6 @@ export function useStableInitialization(options: UseStableInitializationOptions 
     try {
       setState(prev => ({ ...prev, isInitializing: true, hasAttemptedInit: true }));
 
-      reactLoopFixToolkit.debugLogger.info(
-        'stable-init',
-        '开始稳定初始化',
-        { enableAutoInit },
-        'useStableInitialization'
-      );
-
       await initializeAppOnce();
 
       setState(prev => ({
@@ -72,13 +64,6 @@ export function useStableInitialization(options: UseStableInitializationOptions 
         callbacksRef.current.onInitialized();
       }
 
-      reactLoopFixToolkit.debugLogger.info(
-        'stable-init',
-        '稳定初始化完成',
-        {},
-        'useStableInitialization'
-      );
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       
@@ -91,13 +76,6 @@ export function useStableInitialization(options: UseStableInitializationOptions 
       if (callbacksRef.current.onError) {
         callbacksRef.current.onError(error instanceof Error ? error : new Error(String(error)));
       }
-
-      reactLoopFixToolkit.debugLogger.error(
-        'stable-init',
-        '稳定初始化失败',
-        { error: errorMessage },
-        'useStableInitialization'
-      );
 
       throw error;
     }
@@ -123,12 +101,6 @@ export function useStableInitialization(options: UseStableInitializationOptions 
   // 手动初始化方法
   const manualInit = useCallback(async () => {
     if (state.isInitialized || state.isInitializing) {
-      reactLoopFixToolkit.debugLogger.warn(
-        'stable-init',
-        '尝试手动初始化已初始化的应用',
-        { isInitialized: state.isInitialized, isInitializing: state.isInitializing },
-        'useStableInitialization'
-      );
       return;
     }
 
@@ -143,13 +115,6 @@ export function useStableInitialization(options: UseStableInitializationOptions 
       initializationError: null,
       hasAttemptedInit: false,
     });
-
-    reactLoopFixToolkit.debugLogger.info(
-      'stable-init',
-      '重置初始化状态',
-      {},
-      'useStableInitialization'
-    );
   }, []);
 
   return {

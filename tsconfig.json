@@ -84,7 +84,8 @@
     "开发文档/",
     "CLAUDE.md",
     "README.md",
-    "temp-suika/"
+    "temp-suika/",
+    "src/renderer/ui/theme/mixins.ts"
   ],
   "ts-node": {
     "esm": true,

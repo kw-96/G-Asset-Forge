@@ -26,7 +26,11 @@
     "clean:all": "node scripts/clean.js all",
     "reinstall": "npm run clean:all && npm install",
     "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix"
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "check-comments": "node scripts/check-comment-coverage.js",
+    "add-comments": "node scripts/add-comment-templates.js",
+    "add-comments:dry-run": "node scripts/add-comment-templates.js --dry-run",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [
     "electron",
@@ -65,6 +69,7 @@
     "electron": "^26.2.1",
     "electron-builder": "^24.6.4",
     "eslint": "^8.49.0",
+    "eslint-plugin-jsdoc": "^46.8.2",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "events": "^3.3.0",

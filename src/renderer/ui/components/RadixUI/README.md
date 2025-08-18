@@ -5,18 +5,21 @@
 ## 功能特性
 
 ### 🔧 稳定性优化
+
 - **React.memo优化**: 防止不必要的重新渲染
 - **useCallback稳定化**: 稳定化回调函数引用
 - **useMemo稳定化**: 稳定化复杂计算和对象引用
 - **空依赖数组**: 正确使用useEffect依赖数组
 
 ### 📊 性能监控
+
 - **渲染次数监控**: 实时监控组件渲染频率
 - **渲染时间测量**: 测量组件渲染性能
 - **异常检测**: 自动检测异常渲染模式
 - **性能警报**: 智能性能问题提醒
 
 ### 🛡️ 错误保护
+
 - **错误边界包装**: 每个组件都有错误边界保护
 - **回调错误捕获**: 安全的回调函数执行
 - **错误日志记录**: 详细的错误信息记录
@@ -24,6 +27,7 @@
 ## 组件列表
 
 ### StableDropdown
+
 稳定的下拉菜单组件，解决Radix UI Dropdown的useEffect问题。
 
 ```tsx
@@ -44,6 +48,7 @@ function MyComponent() {
 ```
 
 ### StableSwitch
+
 稳定的开关组件，解决Radix UI Switch的useEffect问题。
 
 ```tsx
@@ -64,6 +69,7 @@ function MyComponent() {
 ```
 
 ### StableSlider
+
 稳定的滑块组件，解决Radix UI Slider的useEffect问题。
 
 ```tsx
@@ -191,6 +197,7 @@ import {
 ## 最佳实践
 
 ### 1. 优先使用稳定版本
+
 ```tsx
 // ✅ 推荐：使用稳定版本
 import { StableDropdown } from '@/ui/components/RadixUI';
@@ -200,6 +207,7 @@ import { Dropdown } from '@/ui/components/RadixUI';
 ```
 
 ### 2. 启用性能监控
+
 ```tsx
 // 在开发环境中启用性能监控
 const performanceOptions = {
@@ -212,6 +220,7 @@ const { renderCount } = useRadixUIPerformance(performanceOptions);
 ```
 
 ### 3. 处理错误回调
+
 ```tsx
 // ✅ 推荐：使用try-catch处理回调错误
 const handleSelect = useCallback((event) => {
@@ -229,6 +238,7 @@ const handleSelect = useCallback((event) => {
 ```
 
 ### 4. 稳定化props
+
 ```tsx
 // ✅ 推荐：使用useMemo稳定化复杂props
 const dropdownProps = useMemo(() => ({
@@ -257,7 +267,8 @@ A: 建议只在开发环境启用详细的性能监控，生产环境可以禁�
 
 ### 调试技巧
 
-1. **启用调试模式**
+1 **启用调试模式**
+
 ```tsx
 const { renderCount } = useRadixUIPerformance({
   componentName: 'MyComponent',
@@ -265,7 +276,8 @@ const { renderCount } = useRadixUIPerformance({
 });
 ```
 
-2. **检查性能警报**
+2 **检查性能警报**
+
 ```tsx
 const alerts = radixUIPerformanceMonitor.getPerformanceAlerts('MyComponent');
 alerts.forEach(alert => {
@@ -273,7 +285,8 @@ alerts.forEach(alert => {
 });
 ```
 
-3. **重置性能指标**
+3 **重置性能指标**
+
 ```tsx
 // 重置特定组件的指标
 radixUIPerformanceMonitor.resetComponentMetrics('MyComponent');
@@ -307,6 +320,7 @@ radixUIPerformanceMonitor.resetComponentMetrics();
 ## 更新日志
 
 ### v1.0.0
+
 - 初始版本发布
 - 支持StableDropdown、StableSwitch、StableSlider
 - 完整的性能监控系统

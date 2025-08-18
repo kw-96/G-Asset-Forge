@@ -47,7 +47,7 @@ export const useTheme = (): ThemeContextType => {
   return context;
 };
 
-interface ThemeProviderProps {
+interface FigmaThemeProviderProps {
   children: ReactNode;
 }
 
@@ -106,7 +106,7 @@ const saveThemeConfig = (mode: ThemeMode, config: ThemeConfig) => {
   }
 };
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+export const ThemeProvider: React.FC<FigmaThemeProviderProps> = ({ children }) => {
   const [systemPreference, setSystemPreference] = useState<'light' | 'dark'>(getSystemTheme);
   const [mode, setMode] = useState<ThemeMode>('system');
   const [config, setConfig] = useState<ThemeConfig>({
@@ -280,3 +280,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     </ThemeContext.Provider>
   );
 };
+
+export type { FigmaThemeProviderProps as ThemeProviderProps };
+export { ThemeProvider as FigmaThemeProvider };

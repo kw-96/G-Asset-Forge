@@ -18,9 +18,9 @@ module.exports = (env, argv) => {
     },
     entry: {
       main: './src/renderer/index.tsx',
-      // 多编辑器入口点
-      suika: './src/renderer/engines/suika/index.ts',
-      'h5-editor': './src/renderer/engines/h5-editor/index.ts'
+      // 多编辑器入口点（已迁移到 logic/engines 下）
+      suika: './src/renderer/logic/engines/suika/index.ts',
+      'h5-editor': './src/renderer/logic/engines/h5-editor/index.ts'
     },
     output: {
       path: path.resolve(__dirname, 'dist/renderer'),
@@ -92,7 +92,7 @@ module.exports = (env, argv) => {
       watchFiles: {
         paths: [
           'src/renderer/**/*',
-          'src/renderer/engines/**/*',
+          'src/renderer/logic/engines/**/*',
           'src/renderer/components/**/*',
           'src/renderer/managers/**/*'
         ],
@@ -134,7 +134,7 @@ module.exports = (env, argv) => {
               chunks: 'all'
             },
             engines: {
-              test: /[\\/]src[\\/]renderer[\\/]engines[\\/]/,
+              test: /[\\/]src[\\/]renderer[\\/]logic[\\/]engines[\\/]/,
               name: 'engines',
               chunks: 'all'
             },

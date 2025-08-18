@@ -5,6 +5,7 @@ if (typeof global === 'undefined') {
 }
 
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+// import type { ElectronAPI } from '../interfaces/types/electron';
 
 // Safe wrapper for IPC calls with error handling
 const safeInvoke = async (channel: string, ...args: unknown[]) => {
@@ -164,7 +165,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // Health check for communication
-  healthCheck: () => safeInvoke('ipc:healthCheck')
+  healthCheck: () => safeInvoke('ipc:healthCheck'),
+
+  // DevTools 控制（从渲染进程访问主进程 DevTools API）
+  devtools: {
+    open: (options?: { mode?: 'left' | 'right' | 'bottom' | 'undocked' | 'detach'; activate?: boolean; title?: string }) => safeInvoke('devtools:open', options),
+    close: () => safeInvoke('devtools:close'),
+    toggle: () => safeInvoke('devtools:toggle'),
+    isOpened: () => safeInvoke('devtools:isOpened')
+  }
 });
 
 // Type definitions for the exposed API
@@ -235,10 +244,16 @@ export interface ElectronAPI {
   };
   removeAllListeners: (channel: string) => void;
   healthCheck: () => Promise<{ success: boolean; timestamp?: number; message?: string }>;
+  devtools: {
+    open: (options?: { mode?: 'left' | 'right' | 'bottom' | 'undocked' | 'detach'; activate?: boolean; title?: string }) => Promise<{ success: boolean; error?: string }>;
+    close: () => Promise<{ success: boolean; error?: string }>;
+    toggle: () => Promise<{ success: boolean; error?: string }>;
+    isOpened: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
+  };
 }
 
-declare global {
-  interface Window {
-    electronAPI: ElectronAPI;
-  }
-}
+// declare global {
+//   interface Window {
+//     electronAPI: ElectronAPI;
+//   }
+// }

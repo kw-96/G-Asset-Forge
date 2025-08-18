@@ -1,20 +1,38 @@
 # 技术栈与构建系统
 
-## 核心技术
+## 核心技术 (基于现有实现)
 
-- **桌面框架**: Electron 26+ (跨平台桌面应用)
-- **前端框架**: React 18 + TypeScript 5.2+
+- **桌面框架**: Electron (已实现Application类、WindowManager、IPC通信)
+- **前端框架**: React 18 + TypeScript (已实现AppContainer、MainLayout等组件)
 - **画布引擎**:
-  - **Suika引擎**: 主要画布系统（高性能2D渲染）
-  - **h5-editor引擎**: H5编辑器模式（专业导出）
-  - **Fabric.js**: 备用画布引擎（向后兼容）
-- **状态管理**: Zustand (轻量级状态管理)
-- **UI框架**: 自定义UI组件系统（移除Ant Design依赖）
-  - styled-components 样式系统
-  - @radix-ui 无障碍组件基础
-  - 支持暗色/亮色主题切换
-- **构建系统**: Webpack 5 多编辑器架构配置
-- **包管理器**: npm (支持pnpm)
+  - **Suika引擎**: 主要画布系统（已集成SuikaCanvasEngine，高性能2D渲染）
+  - **h5-editor引擎**: H5编辑器模式（已集成H5EditorCanvas，专业导出）
+  - **引擎工厂**: EngineFactory统一管理引擎创建
+- **状态管理**: Zustand (已实现appStore、canvasStore，轻量级状态管理)
+- **UI框架**: 自定义UI组件系统
+  - styled-components 样式系统 (已广泛使用)
+  - @radix-ui 无障碍组件基础 (已部分集成)
+  - framer-motion 动画支持 (已集成)
+  - 支持暗色/亮色主题切换 (ThemeProvider已实现)
+- **构建系统**: Webpack 5 多编辑器架构配置 (已配置多入口构建)
+- **包管理器**: npm
+
+## 架构重构技术栈
+
+### 代码规范技术
+
+- **注释规范**: 统一的中文JSDoc注释标准
+- **代码检查**: ESLint + @typescript-eslint + 中文注释验证规则
+- **格式化**: Prettier + 自定义中文注释格式化
+- **文档生成**: 基于中文JSDoc的API文档自动生成
+
+### 分层架构技术
+
+- **UI界面层**: 原子设计理论 + styled-components + 主题系统
+- **前端逻辑层**: Zustand + 管理器模式 + 服务层架构
+- **接口层**: TypeScript类型系统 + 数据验证 + API契约
+- **主进程核心**: 模块化Electron架构 + IPC服务化
+- **跨局域网同步**: WebRTC/Socket.io + 状态同步算法
 
 ## 多编辑器架构
 
@@ -101,16 +119,42 @@ npm run reinstall     # 清理安装依赖
 
 ## 架构模式
 
+### 现有架构模式 (保持)
+
 - **进程分离**: 主进程(Node.js) + 渲染进程(React)
-- **IPC通信**: 安全的预加载脚本用于进程间通信
+- **IPC通信**: 安全的预加载脚本用于进程间通信 (已实现IPCHandlers)
 - **模块化设计**: 基于组件的架构，清晰的关注点分离
-- **性能优先**: 60fps渲染目标配合内存监控
+- **性能优先**: 60fps渲染目标配合内存监控 (已集成性能监控)
 - **路径映射**: 广泛的TypeScript路径别名实现清晰导入
 
+### 重构架构模式 (新增)
+
+- **分层架构**: UI界面层、前端逻辑层、接口层、主进程核心、跨局域网同步
+- **原子设计**: UI组件按atoms、molecules、organisms、templates分层
+- **管理器模式**: 业务逻辑封装在专用管理器中 (扩展现有managers/)
+- **服务层模式**: 业务服务提供统一的业务接口
+- **适配器模式**: 引擎适配器统一不同引擎的接口 (基于现有engines/)
+- **观察者模式**: 状态管理和事件系统 (基于现有Zustand stores)
+
 ## 配置文件
+
+### 构建配置 (保持现有)
 
 - `webpack.common.js` - 共享webpack配置
 - `webpack.main.config.js` - Electron主进程构建
 - `webpack.renderer.config.js` - React渲染进程构建
 - `tsconfig.json` - TypeScript严格模式配置
 - `electron-builder.json` - 分发打包配置
+
+### 代码规范配置 (新增/扩展)
+
+- `.eslintrc.js` - ESLint配置 (扩展中文注释检查规则)
+- `.prettierrc` - Prettier配置 (中文注释格式化)
+- `jsdoc.config.js` - JSDoc配置 (中文文档生成)
+- `comment-templates/` - 中文注释模板文件
+
+### 架构配置 (新增)
+
+- `architecture.config.js` - 架构验证配置
+- `layer-boundaries.config.js` - 分层边界检查配置
+- `import-rules.config.js` - 导入规则配置

@@ -1,5 +1,12 @@
+/**
+ * 文件操作性能监控Hook
+ * 提供文件操作性能的实时监控和统计功能
+ * @description 监控文件保存、加载等操作的性能指标，并提供性能警告和健康状态判断
+ * @author 开发团队
+ */
+
 import { useState, useEffect, useCallback } from 'react';
-import { fileOperationOptimizer, FileOperationMetrics } from '../utils/performance/FileOperationOptimizer';
+import { fileOperationOptimizer, FileOperationMetrics } from '../logic/utils/performance/FileOperationOptimizer';
 
 interface FileOperationPerformanceHook {
   // 性能统计

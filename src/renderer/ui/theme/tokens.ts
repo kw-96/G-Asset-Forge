@@ -282,16 +282,19 @@ export const zIndex = {
     topmost: 99999, // 最高优先级，确保在所有其他元素之上
 } as const;
 
-// 断点系统
+// 断点系统 - 针对桌面应用优化
 export const breakpoints = {
-    sm: '640px',
-    md: '768px',
-    lg: '1024px',
-    xl: '1280px',
-    '2xl': '1536px',
+    xs: '480px',   // 超小屏幕
+    sm: '640px',   // 小屏幕
+    md: '768px',   // 中等屏幕
+    lg: '1024px',  // 大屏幕
+    xl: '1280px',  // 超大屏幕
+    '2xl': '1536px', // 2K屏幕
+    '3xl': '1920px', // 全高清屏幕
+    '4xl': '2560px', // 4K屏幕
 } as const;
 
-// 组件尺寸
+// 组件尺寸系统 - 更细致的尺寸控制
 export const sizes = {
     xs: '20px',
     sm: '24px',
@@ -299,4 +302,109 @@ export const sizes = {
     lg: '40px',
     xl: '48px',
     '2xl': '56px',
+    '3xl': '64px',
+    '4xl': '72px',
+    '5xl': '80px',
+} as const;
+
+// 响应式设计令牌
+export const responsive = {
+    // 媒体查询助手
+    mediaQueries: {
+        xs: `@media (min-width: ${breakpoints.xs})`,
+        sm: `@media (min-width: ${breakpoints.sm})`,
+        md: `@media (min-width: ${breakpoints.md})`,
+        lg: `@media (min-width: ${breakpoints.lg})`,
+        xl: `@media (min-width: ${breakpoints.xl})`,
+        '2xl': `@media (min-width: ${breakpoints['2xl']})`,
+        '3xl': `@media (min-width: ${breakpoints['3xl']})`,
+        '4xl': `@media (min-width: ${breakpoints['4xl']})`,
+        // 高分辨率屏幕
+        retina: '@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi)',
+        // 暗色模式
+        dark: '@media (prefers-color-scheme: dark)',
+        // 减少动画
+        reducedMotion: '@media (prefers-reduced-motion: reduce)',
+    },
+    
+    // 容器尺寸
+    containers: {
+        xs: '320px',
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+        full: '100%',
+    },
+    
+    // 网格系统
+    grid: {
+        columns: 12,
+        gutter: {
+            xs: spacing[2],
+            sm: spacing[4],
+            md: spacing[6],
+            lg: spacing[8],
+        },
+    },
+} as const;
+
+// 可访问性令牌
+export const accessibility = {
+    // 焦点环
+    focusRing: {
+        width: '2px',
+        style: 'solid',
+        color: colors.primary[500],
+        offset: '2px',
+        radius: borderRadius.sm,
+    },
+    
+    // 最小触摸目标尺寸
+    minTouchTarget: '44px',
+    
+    // 对比度比例
+    contrastRatios: {
+        aa: 4.5,      // WCAG AA标准
+        aaa: 7,       // WCAG AAA标准
+        large: 3,     // 大文本AA标准
+    },
+    
+    // 屏幕阅读器专用样式
+    srOnly: {
+        position: 'absolute',
+        width: '1px',
+        height: '1px',
+        padding: '0',
+        margin: '-1px',
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        border: '0',
+    },
+} as const;
+
+// 性能优化令牌
+export const performance = {
+    // 虚拟化阈值
+    virtualization: {
+        threshold: 100,
+        itemHeight: 40,
+        overscan: 5,
+    },
+    
+    // 防抖延迟
+    debounce: {
+        search: 300,
+        resize: 150,
+        scroll: 16,
+    },
+    
+    // 节流延迟
+    throttle: {
+        scroll: 16,
+        resize: 100,
+        mousemove: 16,
+    },
 } as const;

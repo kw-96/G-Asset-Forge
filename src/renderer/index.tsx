@@ -1,8 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-// import AppTest from './App-test';
-import { EnhancedErrorBoundary as ErrorBoundary } from './components/ErrorBoundary';
+// import AppTest from 'ui/components/business/App/App-test.tsx';
+import { EnhancedErrorBoundary as ErrorBoundary } from './ui/business/ErrorBoundary/EnhancedErrorBoundary';
 import { ThemeProvider } from './ui/theme/ThemeProvider';
 import { GlobalStyles } from './ui/styles/GlobalStyles';
 
@@ -46,9 +46,7 @@ try {
       </ErrorBoundary>
     </React.StrictMode>
   );
-  console.log('React app rendered successfully');
 } catch (error) {
-  console.error('Failed to render React app:', error);
   // 简单的fallback界面
   document.body.innerHTML = `
     <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: system-ui;">

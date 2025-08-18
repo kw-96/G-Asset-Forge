@@ -1,3 +1,9 @@
+/**
+ * Electron主进程入口文件 - 应用程序的核心启动和管理逻辑
+ * @description 负责Electron应用的初始化、窗口管理、IPC通信、菜单设置和生命周期管理
+ * @author 开发团队
+ */
+
 // Global polyfill for Electron main process
 if (typeof global === 'undefined') {
   // eslint-disable-next-line no-global-assign
@@ -11,17 +17,35 @@ import { SecurityConfig } from './config/security';
 import { IpcHandlers } from './handlers/ipcHandlers';
 import { logger } from './utils/logger';
 
+/**
+ * 应用程序主类 - 管理Electron应用的整个生命周期
+ * @description 负责应用初始化、窗口创建、IPC设置、菜单配置和资源清理
+ * @author 开发团队
+ * @since 1.0.0
+ * @example
+ * // 应用程序会自动创建实例并初始化
+ * new Application();
+ */
 class Application {
   private mainWindow: BrowserWindow | null = null;
   private windowManager: WindowManager;
   private ipcHandlers: IpcHandlers;
 
+  /**
+   * 构造函数 - 初始化应用程序实例
+   * @description 创建窗口管理器和IPC处理器实例，并启动应用初始化流程
+   */
   constructor() {
     this.windowManager = new WindowManager();
     this.ipcHandlers = new IpcHandlers();
     this.initializeApp();
   }
 
+  /**
+   * 初始化应用程序 - 设置应用事件监听和生命周期管理
+   * @description 配置应用就绪、窗口关闭、退出前等事件的处理逻辑，并设置安全策略
+   * @private
+   */
   private initializeApp(): void {
     // Handle app ready
     app.whenReady().then(() => {
@@ -108,6 +132,11 @@ class Application {
     });
   }
 
+  /**
+   * 创建主窗口 - 创建并配置应用程序的主窗口
+   * @description 通过窗口管理器创建主窗口，加载渲染进程页面，设置开发工具和窗口事件
+   * @private
+   */
   private createMainWindow(): void {
     this.mainWindow = this.windowManager.createMainWindow();
     
@@ -131,6 +160,11 @@ class Application {
   }
 
 
+  /**
+   * 设置IPC处理器 - 配置主进程与渲染进程间的通信处理
+   * @description 通过IPC处理器设置所有进程间通信的处理程序
+   * @private
+   */
   private setupIpcHandlers(): void {
     // 使用统一的IPC处理器设置所有处理程序
     this.ipcHandlers.setupHandlers(this.mainWindow);
@@ -138,6 +172,11 @@ class Application {
     logger.warn('IPC handlers setup completed');
   }
 
+  /**
+   * 清理应用资源 - 在应用退出前清理所有资源
+   * @description 清理IPC处理器、窗口监听器等资源，确保应用正常退出
+   * @private
+   */
   private cleanup(): void {
     try {
       logger.warn('Starting application cleanup...');
@@ -157,6 +196,11 @@ class Application {
     }
   }
 
+  /**
+   * 设置应用菜单 - 创建和配置应用程序的菜单栏
+   * @description 创建包含文件、编辑、视图等功能的完整菜单系统，并设置快捷键
+   * @private
+   */
   private setupMenu(): void {
     const template: Electron.MenuItemConstructorOptions[] = [
       {

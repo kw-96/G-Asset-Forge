@@ -4,7 +4,7 @@
  */
 
 import { useRef, useEffect } from 'react';
-import { reactLoopFixToolkit } from '../utils/ReactLoopFix';
+import { reactLoopFixToolkit } from '../logic/utils/ReactLoopFix';
 
 export interface UseRenderCounterOptions {
   componentName: string;

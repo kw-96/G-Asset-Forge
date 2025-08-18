@@ -8,33 +8,35 @@ export {
   StableDropdown, 
   StableDropdownItem, 
   StableDropdownSeparator 
-} from '../Dropdown/StableDropdown';
+} from '../molecules/Dropdown/Dropdown';
 export type { 
   StableDropdownProps, 
   StableDropdownItemProps 
-} from '../Dropdown/StableDropdown';
+} from '../molecules/Dropdown/Dropdown';
 
-export { StableSwitch } from '../Switch/StableSwitch';
-export type { StableSwitchProps } from '../Switch/StableSwitch';
+export { StableSwitch } from '../atoms/Switch/Switch';
+export type { StableSwitchProps } from '../atoms/Switch/Switch';
 
-export { StableSlider } from '../Slider/StableSlider';
-export type { StableSliderProps } from '../Slider/StableSlider';
+export { StableSlider } from '../atoms/Slider/Slider';
+export type { StableSliderProps } from '../atoms/Slider/Slider';
 
 // 原始组件（向后兼容）
 export { 
-  Dropdown, 
-  DropdownItem, 
-  DropdownSeparatorComponent as DropdownSeparator 
-} from '../Dropdown/Dropdown';
-export { Switch } from '../Switch/Switch';
-export { Slider } from '../Slider/Slider';
+  StableDropdownSeparator as DropdownSeparator 
+} from '../molecules/Dropdown/Dropdown';
+export { 
+  StableSwitch as Switch 
+} from '../atoms/Switch/Switch';
+export { 
+  StableSlider as Slider 
+} from '../atoms/Slider/Slider';
 
 // 性能监控工具
-export { radixUIPerformanceMonitor } from '../../../utils/RadixUIPerformanceMonitor';
+export { radixUIPerformanceMonitor } from '../../../logic/utils/RadixUIPerformanceMonitor';
 export type { 
   ComponentPerformanceMetrics, 
   PerformanceAlert 
-} from '../../../utils/RadixUIPerformanceMonitor';
+} from '../../../logic/utils/RadixUIPerformanceMonitor';
 
 // 性能监控Hooks
 export { 
@@ -48,8 +50,8 @@ export type {
 } from '../../../hooks/useRadixUIPerformance';
 
 // 重新导出稳定组件作为别名（推荐使用）
-export { StableDropdown as SafeDropdown } from '../Dropdown/StableDropdown';
-export { StableDropdownItem as SafeDropdownItem } from '../Dropdown/StableDropdown';
-export { StableDropdownSeparator as SafeDropdownSeparator } from '../Dropdown/StableDropdown';
-export { StableSwitch as SafeSwitch } from '../Switch/StableSwitch';
-export { StableSlider as SafeSlider } from '../Slider/StableSlider';
+export { StableDropdown as SafeDropdown } from '../molecules/Dropdown/Dropdown';
+export { StableDropdownItem as SafeDropdownItem } from '../molecules/Dropdown/Dropdown';
+export { StableDropdownSeparator as SafeDropdownSeparator } from '../molecules/Dropdown/Dropdown';
+export { StableSwitch as SafeSwitch } from '../atoms/Switch/Switch';
+export { StableSlider as SafeSlider } from '../atoms/Slider/Slider';
