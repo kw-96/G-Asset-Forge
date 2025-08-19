@@ -58,9 +58,9 @@ export interface FitOptions {
  */
 export class ViewportManager {
   private static instance: ViewportManager | null = null;
-  private readonly ZOOM_LEVELS = [25, 50, 75, 100, 125, 150, 200, 300, 400];
-  private readonly MIN_ZOOM = 25;
-  private readonly MAX_ZOOM = 400;
+  private readonly ZOOM_LEVELS = [10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 500, 800, 1200, 1600, 2400, 3200];
+  private readonly MIN_ZOOM = 10;  // 支持10%最小缩放
+  private readonly MAX_ZOOM = 3200; // 支持3200%最大缩放，用于精确编辑
   private readonly DEFAULT_ZOOM = 100;
   
   // 视口尺寸（应该从实际画布容器获取）

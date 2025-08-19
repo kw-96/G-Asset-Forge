@@ -1,4 +1,5 @@
 node_modules
+suika/
 
 # 构建输出目录
 dist/

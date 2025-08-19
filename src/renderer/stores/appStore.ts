@@ -149,10 +149,10 @@ export const useAppStore = create<AppState>()(
        * @throws {Error} 当初始化失败时抛出错误
        */
       initializeApp: async () => {
-        const state = get();
+        // const state = get();
 
         // 记录初始化开始
-        console.info('[app-store] 开始应用初始化', { isInitialized: state.isInitialized });
+        // console.info('[app-store] 开始应用初始化', { isInitialized: state.isInitialized });
 
         try {
           // 设置初始化状态
@@ -166,7 +166,7 @@ export const useAppStore = create<AppState>()(
           console.info(`[app-store] 首次使用检测: ${isFirstTime}`, { hasUsedBefore: !!hasUsedBefore });
 
           // Initialize app-level configurations
-          console.log('GAF App initialized');
+          // console.log('GAF App initialized');
 
           // 添加一些示例元素
           const sampleElements: Record<string, CanvasElement> = {
@@ -247,7 +247,7 @@ export const useAppStore = create<AppState>()(
             localStorage.setItem('g-asset-forge-used', 'true');
           }
 
-          console.info('[app-store] 应用初始化完成', { elementsCount: Object.keys(sampleElements).length });
+          // console.info('[app-store] 应用初始化完成', { elementsCount: Object.keys(sampleElements).length });
 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '未知错误';
@@ -273,7 +273,7 @@ export const useAppStore = create<AppState>()(
 
         // 如果已经初始化，直接返回
         if (state.isInitialized) {
-          console.info('[app-store] 应用已初始化，跳过重复初始化', { isInitialized: state.isInitialized });
+          // console.info('[app-store] 应用已初始化，跳过重复初始化', { isInitialized: state.isInitialized });
           return;
         }
 

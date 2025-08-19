@@ -95,7 +95,7 @@ export class UIEnhancementManager {
         initializationTime: initTime
       });
 
-      console.log(`UI功能 ${feature} 已启用 (${initTime.toFixed(2)}ms)`);
+      // console.log(`UI功能 ${feature} 已启用 (${initTime.toFixed(2)}ms)`);
       // 关闭“功能已启用”通知弹窗
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -193,7 +193,7 @@ export class UIEnhancementManager {
         this.handlePerformanceReport(report);
       });
       
-      console.log('性能监控已启动 (包含Figma监控器)');
+      // console.log('性能监控已启动 (包含Figma监控器)');
     } catch (error) {
       console.warn('Figma性能监控器启动失败:', error);
       console.log('性能监控已启动 (仅内置监控)');
@@ -322,7 +322,7 @@ export class UIEnhancementManager {
   private async initializeAccessibility(): Promise<void> {
     // 检查是否支持无障碍API
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      console.log('无障碍功能已初始化');
+      // console.log('无障碍功能已初始化');
     }
   }
 
@@ -331,7 +331,7 @@ export class UIEnhancementManager {
    */
   private async initializeCustomLayout(): Promise<void> {
     // 加载布局配置
-    console.log('自定义布局功能已初始化');
+    // console.log('自定义布局功能已初始化');
   }
 
   /**
@@ -340,7 +340,7 @@ export class UIEnhancementManager {
   private async initializeBatchUpdates(): Promise<void> {
     try {
       // 批量更新管理器为按需使用，无需显式启动
-      console.log('批量更新功能已初始化');
+      // console.log('批量更新功能已初始化');
     } catch (error) {
       console.warn('批量更新管理器启动失败:', error);
       throw error;
@@ -353,7 +353,7 @@ export class UIEnhancementManager {
   private async initializeNotifications(): Promise<void> {
     try {
       // 初始化通知系统
-      console.log('通知功能已初始化');
+      // console.log('通知功能已初始化');
       // 关闭“UI增强功能已启用”全局提示
     } catch (error) {
       console.warn('通知系统初始化失败:', error);
@@ -370,42 +370,42 @@ export class UIEnhancementManager {
     if (!prefersReducedMotion) {
       document.documentElement.style.setProperty('--animation-enabled', '1');
     }
-    console.log('动画功能已初始化');
+    // console.log('动画功能已初始化');
   }
 
   /**
    * 初始化虚拟化功能
    */
   private async initializeVirtualization(): Promise<void> {
-    console.log('虚拟化功能已初始化');
+    // console.log('虚拟化功能已初始化');
   }
 
   /**
    * 初始化交互组件功能
    */
   private async initializeInteractiveComponents(): Promise<void> {
-    console.log('交互组件功能已初始化');
+    // console.log('交互组件功能已初始化');
   }
 
   /**
    * 初始化工具提示功能
    */
   private async initializeTooltips(): Promise<void> {
-    console.log('工具提示功能已初始化');
+    // console.log('工具提示功能已初始化');
   }
 
   /**
    * 初始化过渡动画功能
    */
   private async initializeTransitions(): Promise<void> {
-    console.log('过渡动画功能已初始化');
+    // console.log('过渡动画功能已初始化');
   }
 
   /**
    * 清理无障碍功能
    */
   private cleanupAccessibility(): void {
-    console.log('无障碍功能已清理');
+    // console.log('无障碍功能已清理');
   }
 
   /**
@@ -413,7 +413,7 @@ export class UIEnhancementManager {
    */
   private cleanupAnimations(): void {
     document.documentElement.style.removeProperty('--animation-enabled');
-    console.log('动画功能已清理');
+    // console.log('动画功能已清理');
   }
 
   /**
@@ -550,7 +550,7 @@ export class UIEnhancementManager {
     // 启用批量更新
     if (!this.isFeatureEnabled(UIFeature.BATCH_UPDATES)) {
       this.enableFeature(UIFeature.BATCH_UPDATES);
-      console.log('已启用批量更新以提升性能');
+      // console.log('已启用批量更新以提升性能');
     }
 
     // 默认不展示性能警告弹窗，避免干扰

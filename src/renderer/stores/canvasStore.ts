@@ -23,7 +23,7 @@ const SIMPLE_GAME_ASSET_PRESETS = {
 
 export interface CanvasState {
   // 无限画布属性
-  zoom: number; // 缩放级别 (25-400)
+  zoom: number; // 缩放级别 (1 = 100%, 0.1 = 10%, 32 = 3200%)
   panX: number; // 水平平移
   panY: number; // 垂直平移
   
@@ -73,14 +73,14 @@ export const useCanvasStore = create<CanvasState>()(
   devtools(
     (set, get) => ({
       // 初始状态
-      zoom: 100,
+      zoom: 1, // 改为倍数系统：1 = 100%
       panX: 0,
       panY: 0,
       showGrid: true,
       showRuler: true,
       snapToGrid: false,
       backgroundColor: '#ffffff',
-      gridSize: 20,
+      gridSize: 1, // 改为1px，支持1px精度的网格线
       fps: 60,
       memoryUsage: 0,
       objectCount: 0,
@@ -94,7 +94,7 @@ export const useCanvasStore = create<CanvasState>()(
             fps: 60, 
             memoryUsage: 0, 
             objectCount: 0,
-            zoom: 100,
+            zoom: 1, // 改为倍数系统：1 = 100%
             panX: 0,
             panY: 0
           });
@@ -103,15 +103,16 @@ export const useCanvasStore = create<CanvasState>()(
         }
       },
 
-      // 缩放控制
+      // 缩放控制 - 统一使用倍数系统，与ZoomPanContext保持一致
       setZoom: (zoom: number) => {
-        const clampedZoom = Math.max(25, Math.min(400, zoom));
+        const clampedZoom = Math.max(0.1, Math.min(32, zoom)); // 支持0.1-32倍缩放 (10%-3200%)
         set({ zoom: clampedZoom });
       },
 
       zoomIn: () => {
         const { zoom } = get();
-        const zoomLevels = [25, 50, 75, 100, 125, 150, 200, 300, 400];
+        // 扩展缩放级别，支持精确编辑 - 使用倍数系统
+        const zoomLevels = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5, 8, 12, 16, 24, 32];
         const currentIndex = zoomLevels.findIndex(level => level >= zoom);
         const nextIndex = Math.min(currentIndex + 1, zoomLevels.length - 1);
         const nextZoom = zoomLevels[nextIndex];
@@ -122,7 +123,8 @@ export const useCanvasStore = create<CanvasState>()(
 
       zoomOut: () => {
         const { zoom } = get();
-        const zoomLevels = [25, 50, 75, 100, 125, 150, 200, 300, 400];
+        // 扩展缩放级别，支持精确编辑 - 使用倍数系统
+        const zoomLevels = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5, 8, 12, 16, 24, 32];
         const currentIndex = zoomLevels.findIndex(level => level >= zoom);
         const prevIndex = Math.max(currentIndex - 1, 0);
         const prevZoom = zoomLevels[prevIndex];
@@ -133,7 +135,7 @@ export const useCanvasStore = create<CanvasState>()(
 
       zoomToFit: () => {
         // TODO: 根据元素范围计算合适的缩放级别
-        set({ zoom: 100, panX: 0, panY: 0 });
+        set({ zoom: 1, panX: 0, panY: 0 }); // 改为倍数系统：1 = 100%
       },
 
       // 平移控制
@@ -146,7 +148,7 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       resetView: () => {
-        set({ zoom: 100, panX: 0, panY: 0 });
+        set({ zoom: 1, panX: 0, panY: 0 }); // 改为倍数系统：1 = 100%
       },
 
       // 显示选项

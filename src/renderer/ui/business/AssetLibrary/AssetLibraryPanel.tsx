@@ -218,11 +218,40 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
     };
 
     try {
-      const result = searchEngineRef.current.search(options as any);
-      setSearchResult(result as any);
+      const result = searchEngineRef.current.search(options as any) as any;
+      // 确保搜索结果有有效的结构
+      if (result && typeof result === 'object' && result.assets) {
+        setSearchResult({
+          assets: result.assets || [],
+          totalCount: result.totalCount || 0,
+          page: result.page || 1,
+          pageSize: result.pageSize || 20,
+          totalPages: result.totalPages || 0,
+          hasMore: result.hasMore || false
+        });
+      } else {
+        // 如果搜索结果无效，设置为默认值
+        setSearchResult({
+          assets: [],
+          totalCount: 0,
+          page: 1,
+          pageSize: 20,
+          totalPages: 0,
+          hasMore: false
+        });
+      }
       setIsLoading(false);
     } catch (error) {
       console.error('搜索失败:', error);
+      // 搜索失败时设置为默认值
+      setSearchResult({
+        assets: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 20,
+        totalPages: 0,
+        hasMore: false
+      });
       setIsLoading(false);
     }
   }, [currentFilter, sortBy, sortOrder]);

@@ -223,10 +223,10 @@ export const UIIntegrationProvider: React.FC<UIIntegrationProviderProps> = ({
         lastError: null
       });
 
-      console.log('UI增强功能初始化完成', {
-        enabledFeatures: Array.from(manager.getEnabledFeatures()),
-        config
-      });
+      // console.log('UI增强功能初始化完成', {
+      //   enabledFeatures: Array.from(manager.getEnabledFeatures()),
+      //   config
+      // });
 
     } catch (error) {
       handleError(error instanceof Error ? error : new Error(String(error)));

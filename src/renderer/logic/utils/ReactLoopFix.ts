@@ -3,27 +3,30 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 function log(level: LogLevel, ...args: any[]) {
-  // 将日志输出到控制台，避免引入额外依赖
-  // eslint-disable-next-line no-console
-  console[level === 'debug' ? 'log' : level](...args);
+  // 只在开发模式下输出日志到控制台
+  if (process.env['NODE_ENV'] === 'development') {
+    // eslint-disable-next-line no-console
+    console[level === 'debug' ? 'log' : level](...args);
+  }
 }
 
 export const reactLoopFixToolkit = {
   debugLogger: {
     debug(_tag: string, _msg: string, _data?: any, _source?: string) {
-      log('debug', '[debug]', _tag, _msg, _data, _source);
+      log('debug', '[调试]', _tag, _msg, _data, _source);
     },
     info(_tag: string, _msg: string, _data?: any, _source?: string) {
-      log('info', '[info]', _tag, _msg, _data, _source);
+      log('info', '[信息]', _tag, _msg, _data, _source);
     },
     warn(_tag: string, _msg: string, _data?: any, _source?: string) {
-      log('warn', '[warn]', _tag, _msg, _data, _source);
+      log('warn', '[警告]', _tag, _msg, _data, _source);
     },
     error(_tag: string, _msg: string, _data?: any, _source?: string) {
-      log('error', '[error]', _tag, _msg, _data, _source);
+      log('error', '[错误]', _tag, _msg, _data, _source);
     },
-    logRender(componentName: string, count: number, data?: any, reason?: string) {
-      log('debug', '[render]', componentName, count, data, reason);
+    logRender(_componentName: string, _count: number, _data?: any, _reason?: string) {
+      // 渲染信息不在控制台显示
+      // log('debug', '[渲染]', componentName, count, data, reason);
     },
   },
 
@@ -31,7 +34,7 @@ export const reactLoopFixToolkit = {
     return {
       createdAt: new Date().toISOString(),
       loopsDetected: false,
-      notes: 'diagnostic placeholder',
+      notes: '诊断占位',
     };
   },
 

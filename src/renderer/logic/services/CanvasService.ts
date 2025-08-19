@@ -266,7 +266,7 @@ export class CanvasService {
     try {
       const canvasStore = useCanvasStore.getState();
       const currentZoom = canvasStore.zoom;
-      const newZoom = Math.max(25, Math.min(400, currentZoom + delta));
+      const newZoom = Math.max(10, Math.min(3200, currentZoom + delta)); // 支持10%-3200%缩放
 
       canvasStore.setZoom(newZoom);
 

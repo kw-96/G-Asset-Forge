@@ -40,7 +40,7 @@ export class IpcHandlers {
 
   public setupHandlers(mainWindow: BrowserWindow | null): void {
     try {
-      console.log('Setting up IPC handlers...');
+      console.log('正在设置IPC处理器...');
       this.mainWindow = mainWindow;
 
       // File system operations
@@ -241,9 +241,9 @@ export class IpcHandlers {
         };
       });
 
-      console.log(`IPC handlers registered: ${this.handlers.size} handlers`);
+      console.log(`IPC处理器注册完成: ${this.handlers.size} 个处理器`);
     } catch (error) {
-      console.error('Failed to setup IPC handlers:', error);
+      console.error('设置IPC处理器失败:', error);
       throw error;
     }
   }
@@ -274,7 +274,7 @@ export class IpcHandlers {
             data: result
           };
         } catch (error) {
-          console.error(`IPC handler error for channel ${channel}:`, error);
+          console.error(`IPC处理器错误，通道 ${channel}:`, error);
           return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -286,9 +286,9 @@ export class IpcHandlers {
       ipcMain.handle(channel, wrappedHandler);
       this.handlers.set(channel, handler);
 
-      console.log(`Registered IPC handler: ${channel}`);
+      console.log(`已注册IPC处理器: ${channel}`);
     } catch (error) {
-      console.error(`Failed to register handler for channel ${channel}:`, error);
+      console.error(`注册通道 ${channel} 的处理器失败:`, error);
     }
   }
 
@@ -316,19 +316,19 @@ export class IpcHandlers {
           return true;
       }
     } catch (error) {
-      console.error(`Validation error for channel ${channel}:`, error);
+      console.error(`通道 ${channel} 验证错误:`, error);
       return false;
     }
   }
 
   public cleanup(): void {
     try {
-      console.log('Cleaning up IPC handlers...');
+      console.log('正在清理IPC处理器...');
       
       // 移除所有注册的处理器
       for (const channel of this.handlers.keys()) {
         ipcMain.removeHandler(channel);
-        console.log(`Removed IPC handler: ${channel}`);
+        console.log(`已移除IPC处理器: ${channel}`);
       }
       
       // 清空处理器映射
@@ -337,9 +337,9 @@ export class IpcHandlers {
       // 清理对象引用
       this.mainWindow = null;
       
-      console.log('IPC handlers cleanup completed');
+      console.log('IPC处理器清理完成');
     } catch (error) {
-      console.error('Error during IPC handlers cleanup:', error);
+      console.error('清理IPC处理器时发生错误:', error);
     }
   }
 

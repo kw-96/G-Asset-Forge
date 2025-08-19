@@ -58,6 +58,29 @@ export const AssetSearchResults: React.FC<IAssetSearchResultsProps> = ({
     onToggleFavorite?.(asset, e);
   }, [onToggleFavorite]);
 
+  // 安全检查：确保 assets 是数组
+  if (!assets || !Array.isArray(assets)) {
+    return (
+      <div 
+        className={className} 
+        style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '200px',
+          fontSize: '14px',
+          color: '#666',
+          ...style 
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚠️</div>
+          <div>素材数据加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div 

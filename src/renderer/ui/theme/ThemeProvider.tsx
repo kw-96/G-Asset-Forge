@@ -84,7 +84,7 @@ const loadThemeConfig = (): { mode: ThemeMode; config: ThemeConfig } => {
       };
     }
   } catch (error) {
-    console.warn('Failed to load theme config from localStorage:', error);
+    console.warn('从localStorage加载主题配置失败:', error);
   }
 
   return {
@@ -102,7 +102,7 @@ const saveThemeConfig = (mode: ThemeMode, config: ThemeConfig) => {
   try {
     localStorage.setItem('theme-config', JSON.stringify({ mode, ...config }));
   } catch (error) {
-    console.warn('Failed to save theme config to localStorage:', error);
+    console.warn('保存主题配置到localStorage失败:', error);
   }
 };
 

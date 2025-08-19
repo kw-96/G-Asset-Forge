@@ -254,7 +254,7 @@ export const H5EditorCanvas = forwardRef<H5EditorCanvasRef, H5EditorCanvasProps>
             onReady(editor, managerRef.current!);
           }
         } catch (error) {
-          console.error('Failed to initialize H5Editor:', error);
+          console.error('初始化H5编辑器失败:', error);
           if (onError) {
             onError(error as Error);
           }

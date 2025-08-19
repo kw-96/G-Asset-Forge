@@ -164,7 +164,7 @@ export class UnifiedPerformanceMonitor {
     this.startMemoryMonitoring();
     this.startReporting();
     
-    console.log('统一性能监控已启动');
+    // console.log('统一性能监控已启动');
   }
 
   /**

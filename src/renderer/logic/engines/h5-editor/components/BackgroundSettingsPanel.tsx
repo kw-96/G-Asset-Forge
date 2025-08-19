@@ -62,7 +62,7 @@ export const BackgroundSettingsPanel: React.FC<IBackgroundSettingsPanelProps> = 
       });
       
       backgroundManagerRef.current.on('error', (error) => {
-        console.error('Background manager error:', error);
+        console.error('背景管理器错误:', error);
       });
       
       // 加载预设和分类
@@ -160,7 +160,7 @@ export const BackgroundSettingsPanel: React.FC<IBackgroundSettingsPanelProps> = 
     try {
       await backgroundManagerRef.current.uploadImageBackground(file);
     } catch (error) {
-      console.error('Failed to upload image:', error);
+      console.error('图片上传失败:', error);
       alert('图片上传失败，请检查文件格式');
     }
   }, []);

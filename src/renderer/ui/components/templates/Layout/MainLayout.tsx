@@ -94,6 +94,7 @@ const FigmaMainSection = styled.div`
   flex: 1;
   overflow: hidden;
   position: relative;
+  height: 100%; /* 强制设置高度 */
 `;
 
 // 左侧面板区域
@@ -167,14 +168,11 @@ const FigmaCenterSection = styled.div`
   flex-direction: column;
   overflow: hidden;
   background: ${({ theme }) => theme.colors.canvas?.background || theme.colors.background};
+  min-height: 0; /* 确保flex子元素能够正确收缩 */
+  height: 100%; /* 强制设置高度 */
 `;
 
-// 画布容器包装器，为FloatingToolbar提供相对定位上下文
-const CanvasContainer = styled.div`
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-`;
+// 画布容器包装器已由ZoomPanContainer代替，无需单独定义
 
 // 设计模式下已在顶部工具栏内提供入口，这里不再渲染居中额外按钮
 
@@ -559,7 +557,7 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
   // Figma风格组件处理函数
   const handleToolChange = useCallback((toolId: string) => {
     setActiveTool(toolId);
-    console.log('Tool changed to:', toolId);
+    console.log('工具已切换到:', toolId);
   }, []);
 
   const handleLayerSelect = useCallback((layerId: string) => {
@@ -768,43 +766,54 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
 
         {/* 中央画布区域 */}
         <FigmaCenterSection>
-          <CanvasContainer>
-            {/* Figma风格工具栏 */}
-            <FloatingToolbar>
-              <FigmaToolbar
-                activeTool={activeTool}
-                onToolChange={handleToolChange}
-              />
-            </FloatingToolbar>
+          {/* Figma风格工具栏 */}
+          <FloatingToolbar>
+            <FigmaToolbar
+              activeTool={activeTool}
+              onToolChange={handleToolChange}
+            />
+          </FloatingToolbar>
 
-            {editorMode === 'h5' ? (
-              <ZoomPanContainer className="h5-zoom-container" enableShortcuts overlay={<RulerGuides mode="h5" />}>
-                <H5EditorCanvas
-                  ref={h5CanvasRef}
-                  width={375}
-                  height={667}
-                  onReady={() => {
-                    const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
-                    setH5Pages(pages);
-                    const current = pages.find((p: any) => p.isCurrent);
-                    setH5Selected(current ? { type: 'page', name: current.name, props: { background: current.background as any } } : null);
-                  }}
-                  onPageChange={(page) => {
-                    const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
-                    setH5Pages(pages);
-                    setH5Selected({ type: 'page', name: page.name, props: { background: (page as any).background as any } });
-                  }}
-                />
-              </ZoomPanContainer>
-            ) : (
-              // 设计模式：统一使用ZoomPanContainer + RulerGuides的组合
-              <ZoomPanContainer className="design-zoom-container" enableShortcuts overlay={<RulerGuides mode="design" />}>
-                <CanvasWorkspace
-                  externalObjects={canvasObjects}
-                />
-              </ZoomPanContainer>
-            )}
-          </CanvasContainer>
+          {editorMode === 'h5' ? (
+            <ZoomPanContainer 
+              className="h5-zoom-container" 
+              enableShortcuts 
+              overlay={<RulerGuides mode="h5" />}
+              canvasWidth={375}
+              canvasHeight={667}
+            >
+              <H5EditorCanvas
+                ref={h5CanvasRef}
+                width={375}
+                height={667}
+                onReady={() => {
+                  const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
+                  setH5Pages(pages);
+                  const current = pages.find((p: any) => p.isCurrent);
+                  setH5Selected(current ? { type: 'page', name: current.name, props: { background: current.background as any } } : null);
+                }}
+                onPageChange={(page) => {
+                  const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
+                  setH5Pages(pages);
+                  setH5Selected({ type: 'page', name: page.name, props: { background: (page as any).background as any } });
+                }}
+              />
+            </ZoomPanContainer>
+          ) : (
+            // 设计模式：无限画布实现
+            <ZoomPanContainer 
+              className="design-zoom-container" 
+              enableShortcuts 
+              overlay={<RulerGuides mode="design" />}
+              initialGridSize={1}
+              initialShowGrid={true}
+              initialShowRuler={true}
+            >
+              <CanvasWorkspace
+                externalObjects={canvasObjects}
+              />
+            </ZoomPanContainer>
+          )}
 
           {/* 设计模式下不再渲染居中的模式/库按钮，避免与顶部工具栏重复 */}
         </FigmaCenterSection>

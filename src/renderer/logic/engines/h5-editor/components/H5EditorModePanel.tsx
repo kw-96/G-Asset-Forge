@@ -477,7 +477,13 @@ export const H5EditorModePanel: React.FC<IH5EditorModePanelProps> = ({
       </div>
 
       {/* H5编辑器画布 */}
-      <ZoomPanContainer className="h5-mode-zoom" enableShortcuts>
+      <ZoomPanContainer 
+        className="h5-mode-zoom" 
+        enableShortcuts
+        initialGridSize={1}
+        initialShowGrid={true}
+        initialShowRuler={true}
+      >
         <H5EditorCanvas
           ref={editorRef}
           width={canvasSize.width}

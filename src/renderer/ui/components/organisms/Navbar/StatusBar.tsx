@@ -168,7 +168,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           variant="ghost"
           size="xs"
           icon={<SvgIcon name="icon.16.tint" size={12} title="主题" />}
-          onClick={() => console.log('Toggle theme')}
+          onClick={() => console.log('切换主题')}
         />
       </StatusSection>
     </StatusBarContainer>

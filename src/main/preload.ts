@@ -23,7 +23,7 @@ const safeInvoke = async (channel: string, ...args: unknown[]) => {
     return { success: true, data: result };
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error(`IPC invoke failed for ${channel}:`, error);
+    console.error(`IPC调用失败，通道 ${channel}:`, error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -39,14 +39,14 @@ const safeOn = (channel: string, callback: (...args: unknown[]) => void) => {
         callback(...args);
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error(`Event handler failed for ${channel}:`, error);
+        console.error(`事件处理器失败，通道 ${channel}:`, error);
       }
     };
     ipcRenderer.on(channel, wrappedCallback);
     return () => ipcRenderer.removeListener(channel, wrappedCallback);
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error(`Failed to setup listener for ${channel}:`, error);
+    console.error(`设置监听器失败，通道 ${channel}:`, error);
     return () => {};
   }
 };
@@ -160,7 +160,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners(channel);
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error(`Failed to remove listeners for ${channel}:`, error);
+      console.error(`移除监听器失败，通道 ${channel}:`, error);
     }
   },
 

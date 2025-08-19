@@ -167,11 +167,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
     switch (selectedOption) {
       case 'tutorial':
         // 启动教程模式
-        console.log('Starting tutorial mode');
+        console.log('正在启动教程模式');
         break;
       case 'template':
         // 显示模板选择
-        console.log('Opening template selection');
+        console.log('正在打开模板选择');
         break;
       default:
         // 直接进入主界面

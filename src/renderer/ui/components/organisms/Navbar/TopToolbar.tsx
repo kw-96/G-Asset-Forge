@@ -31,7 +31,7 @@ const createEmptyProject = (name: string) => ({
     tags: [] as string[],
   },
   settings: {
-    canvas: { width: 800, height: 600, backgroundColor: '#ffffff', gridEnabled: true, gridSize: 20, snapToGrid: false, rulers: true },
+    canvas: { width: 800, height: 600, backgroundColor: '#ffffff', gridEnabled: true, gridSize: 1, snapToGrid: false, rulers: true },
     tools: { defaultTool: 'select', brushSize: 5, brushOpacity: 1, textFont: 'Arial', textSize: 16, textColor: '#000000' },
     export: { format: 'png', quality: 90, scale: 1, transparent: false },
     custom: {} as Record<string, any>
@@ -224,7 +224,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   }, []);
 
   const handleEditAction = (action: string) => {
-    console.log('Edit action:', action);
+    console.log('编辑操作:', action);
   };
 
   const handleSettingsClick = () => {
@@ -388,8 +388,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
     // 系统
     { id: 'settings__open', label: '设置', group: '系统', shortcut: 'Ctrl+,', children: <></>, onSelect: () => handleSettingsClick() },
-    { id: 'help__docs', label: '帮助', group: '系统', children: <></>, onSelect: () => console.log('open help') },
-    { id: 'about__app', label: '关于', group: '系统', children: <></>, onSelect: () => console.log('open about') },
+    { id: 'help__docs', label: '帮助', group: '系统', children: <></>, onSelect: () => console.log('打开帮助') },
+    { id: 'about__app', label: '关于', group: '系统', children: <></>, onSelect: () => console.log('打开关于') },
   ];
 
   return (
@@ -401,7 +401,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           <IconButton
             icon={<SvgIcon name="icon.24.home" size={20} title="主页" />}
             variant="ghost"
-            onClick={() => console.log('open home')}
+            onClick={() => console.log('打开主页')}
             aria-label="主页"
             title="主页"
             style={{ height: '100%', width: '100%' }}
