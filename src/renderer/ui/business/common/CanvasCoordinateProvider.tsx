@@ -8,6 +8,8 @@
 import React, { useState, useCallback, useMemo, ReactNode } from 'react';
 import { CanvasCoordinateContext, CanvasCoordinateContextValue } from './CanvasCoordinateContext';
 
+
+
 export interface CanvasCoordinateProviderProps {
   children: ReactNode;
   initialZoom?: number;
@@ -58,11 +60,23 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
   // 缩放控制
   const setZoom = useCallback((newZoom: number) => {
     const clampedZoom = Math.max(0.1, Math.min(32, newZoom));
+    
+    // 调试信息：记录缩放变化
+    // if (process.env['NODE_ENV'] === 'development') {
+    //   // console.log(`🎛️ 坐标系统缩放: ${zoom.toFixed(2)}x → ${clampedZoom.toFixed(2)}x`, {
+    //     原始值: newZoom.toFixed(2),
+    //     限制后: clampedZoom.toFixed(2),
+    //     变化: ((clampedZoom - zoom) > 0 ? '+' : '') + (clampedZoom - zoom).toFixed(2),
+    //     网格阈值: clampedZoom >= 8 ? '✅ 达到' : '❌ 未达到'
+    //   });
+    // }
+    
     setZoomState(clampedZoom);
-  }, []);
+  }, [zoom]);
 
   const zoomIn = useCallback(() => {
-    const zoomLevels = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5, 8, 12, 16, 24, 32];
+    // 参考Suika的缩放级别数组
+    const zoomLevels = [0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256];
     const currentIndex = zoomLevels.findIndex(level => level >= zoom);
     const nextIndex = Math.min(currentIndex + 1, zoomLevels.length - 1);
     const nextZoom = zoomLevels[nextIndex];
@@ -72,7 +86,8 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
   }, [zoom]);
 
   const zoomOut = useCallback(() => {
-    const zoomLevels = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5, 8, 12, 16, 24, 32];
+    // 参考Suika的缩放级别数组
+    const zoomLevels = [0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256];
     const currentIndex = zoomLevels.findIndex(level => level >= zoom);
     const prevIndex = Math.max(currentIndex - 1, 0);
     const prevZoom = zoomLevels[prevIndex];
@@ -83,13 +98,13 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
 
   const resetView = useCallback(() => {
     setZoomState(1);
-    setPanState({ x: 0, y: 0 });
+    setPanState({ x: 0, y: 0 }); // 无限画布：支持任意pan值
   }, []);
 
   const zoomToFit = useCallback(() => {
     // TODO: 根据内容计算合适的缩放级别
     setZoomState(1);
-    setPanState({ x: 0, y: 0 });
+    setPanState({ x: 0, y: 0 }); // 无限画布：支持任意pan值
   }, []);
 
   // 平移控制
@@ -179,43 +194,38 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
     y: (screenY - pan.y) / zoom
   }), [zoom, pan.x, pan.y]);
 
-  // 网格相关计算 - 完全基于世界坐标，与标尺刻度对齐
+  // 网格相关计算 - 固定1px网格，与标尺刻度完全对齐
   const getGridSize = useCallback(() => {
-    // 使用与标尺刻度相同的间距逻辑
-    const getTickIntervals = (zoomLevel: number) => {
-      if (zoomLevel < 0.3) return { major: 500, minor: 100, micro: 1 };
-      if (zoomLevel < 0.8) return { major: 200, minor: 50, micro: 1 };
-      if (zoomLevel < 2) return { major: 100, minor: 20, micro: 1 };
-      if (zoomLevel < 5) return { major: 50, minor: 10, micro: 1 };
-      if (zoomLevel < 10) return { major: 20, minor: 5, micro: 1 };
-      if (zoomLevel < 20) return { major: 10, minor: 2, micro: 1 };
-      return { major: 10, minor: 5, micro: 1 };
+    // 网格大小固定为1px，确保与标尺的1px刻度完全对齐
+    const baseGridSize = 1; // 固定1px网格
+    
+    // 屏幕网格大小 = 1px * zoom
+    const screenGridSize = baseGridSize * zoom;
+    
+    return { 
+      base: baseGridSize, 
+      screen: screenGridSize, 
+      intervals: { major: 1, minor: 1, micro: 1 } // 固定间隔
     };
-    
-         const intervals = getTickIntervals(zoom);
-     // 网格大小使用微刻度间距，确保与1px精度微刻度完全对齐
-     const alignedGridSize = intervals.micro; // 使用微刻度间距，即1个世界单位
-     
-     const baseGridSize = Math.max(1, alignedGridSize);
-     const screenGridSize = Math.max(1, baseGridSize * zoom);
-     
-     return { base: baseGridSize, screen: screenGridSize, intervals };
-  }, [gridSize, zoom]);
+  }, [zoom]);
 
-  // 检查网格是否应该显示（基于最小像素阈值）
+  // 检查网格是否应该显示（参考Suika的简化逻辑）
   const shouldShowGrid = useCallback(() => {
-    if (!showGrid) return false;
+    if (!showGrid) {
+      return false;
+    }
     
-    const { screen } = getGridSize();
-    // 网格现在基于微刻度（1px世界单位），需要更小的最小阈值
-    const minGridPixelSize = 10; // 最小网格像素大小，允许更精细的网格显示
+    // 修复：参考Suika，降低缩放阈值，让网格在正常缩放级别下显示
+    // 与Suika保持一致，网格应该在1x缩放时就能显示
+    const minPixelGridZoom = 1; // 修复：从8改为1，与Suika一致
     
-    return screen >= minGridPixelSize;
-  }, [showGrid, getGridSize]);
+    return zoom >= minPixelGridZoom;
+  }, [showGrid, zoom]);
 
   // 统一的坐标计算函数，确保网格和标尺刻度完全同步
   const getUnifiedCoordinateInfo = useCallback((isHorizontal: boolean, containerSize: number) => {
-    const { base } = getGridSize();
+    // 网格固定为1px，从(0,0)开始对齐
+    const base = 1;
     
     // 使用与标尺刻度完全相同的可见范围计算逻辑
     const startWorld = isHorizontal ? 
@@ -229,7 +239,7 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
     const visibleStart = Math.min(startWorld, endWorld) - buffer;
     const visibleEnd = Math.max(startWorld, endWorld) + buffer;
     
-    // 计算世界坐标中的网格起始点，与标尺刻度使用完全相同的起始点
+    // 网格从(0,0)开始，每1px一个，与标尺刻度完全对齐
     const gridStart = Math.floor(visibleStart / base) * base;
     
     // 计算网格偏移，确保与标尺刻度完全同步
@@ -243,20 +253,15 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
       worldOffset,
       containerSize
     };
-  }, [getGridSize, screenToWorld]);
+  }, [screenToWorld]);
 
   // 基于世界坐标计算网格偏移，与标尺刻度完全对齐
   const getGridOffset = useCallback(() => {
-    const { base, worldOffset } = getUnifiedCoordinateInfo(true, Math.max(viewportSize.width, viewportSize.height));
+    const { worldOffset } = getUnifiedCoordinateInfo(true, Math.max(viewportSize.width, viewportSize.height));
     
     // 转换回屏幕坐标
     const screenOffsetX = worldOffset * zoom;
     const screenOffsetY = worldOffset * zoom;
-    
-    // 调试输出
-    if (typeof window !== 'undefined' && (window as any).__GAF_DEBUG_GRID) {
-      console.log(`网格偏移计算: base=${base}, zoom=${zoom}, pan=[${pan.x}, ${pan.y}], 世界偏移=${worldOffset.toFixed(2)}, 屏幕偏移=[${screenOffsetX.toFixed(2)}, ${screenOffsetY.toFixed(2)}]`);
-    }
     
     return {
       x: screenOffsetX,
@@ -281,11 +286,6 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
     // 转换回屏幕坐标
     const snappedX = snappedWorldX * zoom + pan.x;
     const snappedY = snappedWorldY * zoom + pan.y;
-    
-    // 调试输出
-    if (typeof window !== 'undefined' && (window as any).__GAF_DEBUG_GRID) {
-      console.log(`网格捕捉: 输入=[${x}, ${y}], 世界坐标=[${worldX.toFixed(2)}, ${worldY.toFixed(2)}], 捕捉后世界坐标=[${snappedWorldX}, ${snappedWorldY}], 输出=[${snappedX.toFixed(2)}, ${snappedY.toFixed(2)}]`);
-    }
     
     return { x: snappedX, y: snappedY };
   }, [snapToGridEnabled, getGridSize, zoom, pan.x, pan.y]);
@@ -383,16 +383,29 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
       showLabel: boolean;
     }> = [];
 
-    // 计算刻度间距 - 确保微刻度精确到1px
+    // 计算刻度间距（参考Suika的算法）
     const getTickIntervals = (zoomLevel: number) => {
-      // 基于1px精度的刻度设计
-      if (zoomLevel < 0.3) return { major: 1000, minor: 500, micro: 1 }; // 1px精度
-      if (zoomLevel < 0.8) return { major: 200, minor: 100, micro: 1 };  // 1px精度
-      if (zoomLevel < 2) return { major: 100, minor: 50, micro: 1 };    // 1px精度
-      // if (zoomLevel < 5) return { major: 50, minor: 10, micro: 1 };     // 1px精度
-      if (zoomLevel < 10) return { major: 20, minor: 10, micro: 1 };     // 1px精度
-      if (zoomLevel < 20) return { major: 10, minor: 5, micro: 1 };     // 1px精度
-      return { major: 5, minor: 1, micro: 1 };                        // 最大缩放下的间距
+      // 参考Suika的步长算法：50 / zoom = 步长
+      const steps = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
+      const step = 50 / zoomLevel;
+      
+      let majorStep = steps[0]!; // 确保不为undefined
+      for (let i = 0, len = steps.length; i < len; i++) {
+        if (steps[i]! >= step) {
+          majorStep = steps[i]!;
+          break;
+        }
+      }
+      
+      // 计算次要和微小刻度
+      const minorStep = Math.max(1, majorStep / 5);
+      const microStep = 1; // 网格固定为1px
+      
+      return { 
+        major: majorStep, 
+        minor: minorStep, 
+        micro: microStep 
+      };
     };
 
     const intervals = getTickIntervals(zoom);
@@ -430,7 +443,7 @@ export const CanvasCoordinateProvider: React.FC<CanvasCoordinateProviderProps> =
       
       // 调试输出
       if (typeof window !== 'undefined' && (window as any).__GAF_DEBUG_MICRO) {
-        console.log(`微刻度生成: zoom=${zoom}, intervals=${JSON.stringify(intervals)}, 生成数量=${microCount}, 世界范围=[${Math.floor(visibleStart)}, ${Math.ceil(visibleEnd)}]`);
+        // console.log(`微刻度生成: zoom=${zoom}, intervals=${JSON.stringify(intervals)}, 生成数量=${microCount}, 世界范围=[${Math.floor(visibleStart)}, ${Math.ceil(visibleEnd)}]`);
       }
     }
 

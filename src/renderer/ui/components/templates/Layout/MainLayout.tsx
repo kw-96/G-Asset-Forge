@@ -23,7 +23,7 @@ import { AssetLibraryPanel } from '../../../business/AssetLibrary/AssetLibraryPa
 import { TemplateLibraryPanel } from '../../../business/TemplateLibrary/TemplateLibraryPanel';
 import { ProjectLibraryPanel } from '../../../business/ProjectLibrary/ProjectLibraryPanel';
 import { ZoomPanContainer } from '../../../business/common/ZoomPanContainer';
-import { RulerGuides } from '../../../business/common/RulerGuides';
+// RulerGuides已删除，使用Suika核心系统
 
 /**
  * Figma主布局组件Props类型定义
@@ -778,9 +778,14 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
             <ZoomPanContainer 
               className="h5-zoom-container" 
               enableShortcuts 
-              overlay={<RulerGuides mode="h5" />}
-              canvasWidth={375}
-              canvasHeight={667}
+              overlay={null}
+              // canvasWidth={375}
+              // canvasHeight={667}
+              initialShowGrid={false}
+              initialShowRuler={true}
+              initialShowGuides={true}
+              mode="h5"
+              selectedObjects={h5Selected ? [h5Selected] : []}
             >
               <H5EditorCanvas
                 ref={h5CanvasRef}
@@ -804,10 +809,13 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
             <ZoomPanContainer 
               className="design-zoom-container" 
               enableShortcuts 
-              overlay={<RulerGuides mode="design" />}
+              overlay={null}
               initialGridSize={1}
               initialShowGrid={true}
               initialShowRuler={true}
+              initialShowGuides={true}
+              mode="design"
+              selectedObjects={selectedObject ? [selectedObject] : []}
             >
               <CanvasWorkspace
                 externalObjects={canvasObjects}

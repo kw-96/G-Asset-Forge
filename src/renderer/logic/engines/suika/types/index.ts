@@ -1,43 +1,29 @@
-// Suika引擎类型定义
-export interface ISuikaPoint {
-  x: number;
-  y: number;
+/**
+ * Suika引擎类型定义 - 引擎相关的类型定义
+ * @description 提供Suika引擎使用的类型定义
+ * @author 开发团队
+ */
+
+// 重新导出几何类型
+export * from '../geo/type';
+
+// 重新导出设置类型
+export type { SettingValue } from '../core/setting';
+
+// 引擎特定类型
+export interface SuikaEngineOptions {
+  showPerfMonitor?: boolean;
+  userPreference?: Record<string, any>;
+  enableGrid?: boolean;
+  enableRuler?: boolean;
+  backgroundColor?: string;
 }
 
-export interface ISuikaSize {
-  width: number;
-  height: number;
+export interface SuikaEngineState {
+  zoom: number;
+  viewport: {
+    x: number;
+    y: number;
+  };
+  selectedObjects: any[];
 }
-
-export interface ISuikaBounds extends ISuikaPoint, ISuikaSize {}
-
-export interface ISuikaTransform {
-  x: number;
-  y: number;
-  rotation: number;
-  scaleX: number;
-  scaleY: number;
-}
-
-export interface ISuikaStyle {
-  fill?: string;
-  stroke?: string;
-  strokeWidth?: number;
-  opacity?: number;
-}
-
-export interface ISuikaGraphicsAttrs extends ISuikaTransform, ISuikaStyle {
-  id: string;
-  type: string;
-  visible: boolean;
-  locked: boolean;
-  name?: string;
-}
-
-// 导出核心类
-export { SuikaEditor, type ISuikaEditorOptions } from '../core/editor';
-export { ViewportManager, type IViewport } from '../core/viewport-manager';
-export { ZoomManager } from '../core/zoom-manager';
-export { SceneGraph } from '../core/scene-graph';
-export { ToolManager, type ITool } from '../core/tool-manager';
-export { CommandManager, BaseCommand, type ICommand } from '../core/command-manager';

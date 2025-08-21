@@ -320,7 +320,7 @@ export class SuikaMemoryManager {
     
     // 估算对象内存使用
     const objects = this.editor.sceneGraph.getObjects();
-    const objectMemory = objects.reduce((total, obj) => {
+    const objectMemory = objects.reduce((total: number, obj: any) => {
       return total + this.estimateObjectMemory(obj);
     }, 0);
     
@@ -427,7 +427,7 @@ export class SuikaMemoryManager {
   private cleanupSceneGraph(): void {
     // 清理不可见的对象
     const objects = this.editor.sceneGraph.getObjects();
-    const visibleObjects = objects.filter(obj => obj.visible !== false);
+    const visibleObjects = objects.filter((obj: any) => obj.visible !== false);
     
     if (visibleObjects.length < objects.length) {
       // 有不可见对象，触发重新渲染

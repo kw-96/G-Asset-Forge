@@ -1,37 +1,23 @@
 /**
- * 统一坐标系统导出文件
- * - 提供所有坐标系统相关的组件和hooks
- * - 方便其他组件统一导入使用
- * - 包含兼容性接口，支持原有代码平滑迁移
+ * 通用画布组件导出
+ * @description 导出画布相关的通用组件和工具
+ * @author 开发团队
  */
 
-// 核心上下文和Provider
-export { CanvasCoordinateContext, useCanvasCoordinate } from './CanvasCoordinateContext';
+// Canvas相关组件
+export { default as CanvasContainer } from './CanvasContainer';
+export { default as ZoomPanContainer } from './ZoomPanContainer';
+// export { default as GridSettingsPanel } from './GridSettingsPanel';
 export { CanvasCoordinateProvider } from './CanvasCoordinateProvider';
+export { useCanvasCoordinate, useCanvasViewport } from './CanvasCoordinateContext';
+export { CanvasDisplayProvider, useCanvasDisplay } from './CanvasDisplayContext';
 
-// 便捷Hooks
-export { useCanvasViewport, useCanvasGrid, useCanvasRuler, useCanvasGuide } from './CanvasCoordinateContext';
-
-// 统一组件
-export { CanvasContainer } from './CanvasContainer';
-export { CanvasGrid } from './CanvasGrid';
-export { CanvasRulers } from './CanvasRuler';
-
-// 兼容性接口 - 支持原有代码平滑迁移
-export { ZoomPanContainer } from './ZoomPanContainer';
-export { useZoomPan, ZoomPanContext } from './ZoomPanContext';
-export { RulerGuides } from './RulerGuides';
-
-// 类型导出
-export type { 
-  CanvasCoordinateContextValue,
-  CanvasCoordinateState,
-  CanvasCoordinateActions,
-  CanvasCoordinateTransforms
-} from './CanvasCoordinateContext';
-
-export type {
-  ZoomPanState,
-  ZoomPanActions,
-  ZoomPanContextValue
-} from './ZoomPanContext';
+// Suika核心组件
+export { default as SuikaGridAdapter } from './SuikaGridAdapter';
+export { SuikaGrid } from './SuikaGrid';
+export { default as SuikaRulerAdapter } from './SuikaRulerAdapter';
+export { SuikaRuler } from './SuikaRuler';
+export { default as SuikaRefLineAdapter } from './SuikaRefLineAdapter';
+export { SuikaViewportManager } from './SuikaViewportManager';
+export * from './SuikaCanvasStyles';
+export * from './utils';

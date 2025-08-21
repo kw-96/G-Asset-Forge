@@ -1,335 +1,350 @@
-// Suika视口管理器
-import { SuikaEditor } from './editor';
+/**
+ * Suika视口管理器 - 管理画布的视口变换、缩放和平移
+ * @description 提供视口矩阵管理、缩放控制、平移控制和坐标转换功能
+ * @author Suika团队
+ */
 
-export interface IViewport {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import { EventEmitter, getDevicePixelRatio } from '../common';
+import {
+  boxToRect,
+  type IBox,
+  type IPoint,
+  type IRect,
+  type ISize,
+  Matrix,
+} from '../geo';
 
-export interface IViewportOptions {
-  minZoom: number;
-  maxZoom: number;
-  zoomStep: number;
-  smoothZoom: boolean;
-  enablePan: boolean;
-  enableZoom: boolean;
+interface Events {
+  xOrYChange(x: number | undefined, y: number): void;
+  viewMatrixChange(viewMatrix: Matrix): void;
+  zoomChange(zoom: number): void;
 }
 
 export class ViewportManager {
-  private editor: SuikaEditor;
-  private viewport: IViewport;
-  private options: IViewportOptions;
-  private isPanning = false;
-  private panStart = { x: 0, y: 0 };
-  private lastPanTime = 0;
-  private panVelocity = { x: 0, y: 0 };
-
-  constructor(editor: SuikaEditor) {
-    this.editor = editor;
-    this.viewport = { x: 0, y: 0, width: 0, height: 0 };
-    
-    this.options = {
-      minZoom: 0.5,    // 50% 最小缩放
-      maxZoom: 2.0,    // 200% 最大缩放
-      zoomStep: 0.1,   // 缩放步长
-      smoothZoom: true, // 平滑缩放
-      enablePan: true,  // 启用平移
-      enableZoom: true  // 启用缩放
+  getViewportState(): {
+    bounds: any; panX: number; panY: number; zoom: number;
+} {
+    return {
+  panX: this.viewMatrix.tx,
+  panY: this.viewMatrix.ty,
+  zoom: this.getZoom(),
+  bounds: {
+    minX: 0,
+    minY: 0,
+    maxX: 0,
+    maxY: 0,
+  },
+};
+  }
+  getViewport(): { panX: number; panY: number; zoom: number } {
+    return {
+      panX: this.viewMatrix.tx,
+      panY: this.viewMatrix.ty,
+      zoom: this.getZoom(),
     };
   }
+  private viewMatrix = new Matrix();
+  private eventEmitter = new EventEmitter<Events>();
 
-  // 设置视口
-  setViewport(viewport: Partial<IViewport>): void {
-    this.viewport = { ...this.viewport, ...viewport };
-    this.clampViewport();
-    this.editor.render();
-  }
+  constructor(private editor: any) {}
 
-  // 获取视口
-  getViewport(): IViewport {
-    return { ...this.viewport };
-  }
-
-  // 平移视口
-  pan(dx: number, dy: number): void {
-    if (!this.options.enablePan) return;
-
-    this.viewport.x += dx;
-    this.viewport.y += dy;
-    this.clampViewport();
-    this.editor.render();
-  }
-
-  // 平滑平移
-  smoothPan(dx: number, dy: number, duration: number = 300): void {
-    if (!this.options.enablePan) return;
-
-    const startTime = performance.now();
-    const startX = this.viewport.x;
-    const startY = this.viewport.y;
-    const targetX = startX + dx;
-    const targetY = startY + dy;
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // 使用缓动函数
-      const easeProgress = this.easeOutCubic(progress);
-      
-      this.viewport.x = startX + (targetX - startX) * easeProgress;
-      this.viewport.y = startY + (targetY - startY) * easeProgress;
-      
-      this.clampViewport();
-      this.editor.render();
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }
-
-  // 缩放到指定点
-  zoomAt(x: number, y: number, zoomDelta: number): void {
-    if (!this.options.enableZoom) return;
-
-    const currentZoom = this.editor.zoomManager.getZoom();
-    const newZoom = Math.max(
-      this.options.minZoom,
-      Math.min(this.options.maxZoom, currentZoom * zoomDelta)
-    );
-
-    if (newZoom !== currentZoom) {
-      // 计算缩放中心点
-      const zoomCenterX = x;
-      const zoomCenterY = y;
-
-      // 计算新的视口位置
-      const zoomRatio = newZoom / currentZoom;
-      this.viewport.x = zoomCenterX - (zoomCenterX - this.viewport.x) * zoomRatio;
-      this.viewport.y = zoomCenterY - (zoomCenterY - this.viewport.y) * zoomRatio;
-
-      this.editor.zoomManager.setZoom(newZoom);
-      this.clampViewport();
-      this.editor.render();
-    }
-  }
-
-  // 适应屏幕
-  fitToScreen(): void {
-    const canvas = this.editor.canvasElement;
-    const container = this.editor.containerElement;
-    
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-
-    // 计算缩放比例
-    const scaleX = containerWidth / canvasWidth;
-    const scaleY = containerHeight / canvasHeight;
-    const scale = Math.min(scaleX, scaleY, this.options.maxZoom);
-
-    // 计算居中位置
-    const scaledWidth = canvasWidth * scale;
-    const scaledHeight = canvasHeight * scale;
-    const x = (containerWidth - scaledWidth) / 2;
-    const y = (containerHeight - scaledHeight) / 2;
-
-    this.viewport = { x, y, width: containerWidth, height: containerHeight };
-    this.editor.zoomManager.setZoom(scale);
-    this.editor.render();
-  }
-
-  // 适应内容
-  fitToContent(): void {
-    const bounds = this.editor.sceneGraph.getAllBounds();
-    if (!bounds) return;
-
-    const container = this.editor.containerElement;
-    
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-
-    // 添加边距
-    const padding = 50;
-    const contentWidth = bounds.width + padding * 2;
-    const contentHeight = bounds.height + padding * 2;
-
-    // 计算缩放比例
-    const scaleX = containerWidth / contentWidth;
-    const scaleY = containerHeight / contentHeight;
-    const scale = Math.min(scaleX, scaleY, this.options.maxZoom);
-
-    // 计算居中位置
-    const scaledWidth = contentWidth * scale;
-    const scaledHeight = contentHeight * scale;
-    const x = (containerWidth - scaledWidth) / 2 - bounds.x * scale;
-    const y = (containerHeight - scaledHeight) / 2 - bounds.y * scale;
-
-    this.viewport = { x, y, width: containerWidth, height: containerHeight };
-    this.editor.zoomManager.setZoom(scale);
-    this.editor.render();
-  }
-
-  // 重置视口
-  resetViewport(): void {
-    this.viewport = { x: 0, y: 0, width: 0, height: 0 };
-    this.editor.zoomManager.setZoom(1);
-    this.editor.render();
-  }
-
-  // 开始平移
-  startPan(x: number, y: number): void {
-    if (!this.options.enablePan) return;
-
-    this.isPanning = true;
-    this.panStart = { x, y };
-    this.panVelocity = { x: 0, y: 0 };
-    this.lastPanTime = performance.now();
-  }
-
-  // 更新平移
-  updatePan(x: number, y: number): void {
-    if (!this.isPanning || !this.options.enablePan) return;
-
-    const dx = x - this.panStart.x;
-    const dy = y - this.panStart.y;
-    
-    this.pan(-dx, -dy);
-    
-    // 计算平移速度
-    const currentTime = performance.now();
-    const deltaTime = currentTime - this.lastPanTime;
-    if (deltaTime > 0) {
-      this.panVelocity.x = -dx / deltaTime;
-      this.panVelocity.y = -dy / deltaTime;
-    }
-    
-    this.panStart = { x, y };
-    this.lastPanTime = currentTime;
-  }
-
-  // 结束平移
-  endPan(): void {
-    if (!this.isPanning) return;
-
-    this.isPanning = false;
-    
-    // 应用惯性滚动
-    if (Math.abs(this.panVelocity.x) > 0.1 || Math.abs(this.panVelocity.y) > 0.1) {
-      this.applyInertia();
-    }
-  }
-
-  // 应用惯性
-  private applyInertia(): void {
-    const friction = 0.95;
-    const minVelocity = 0.1;
-    
-    const animate = () => {
-      if (Math.abs(this.panVelocity.x) < minVelocity && Math.abs(this.panVelocity.y) < minVelocity) {
-        return;
-      }
-
-      this.pan(this.panVelocity.x, this.panVelocity.y);
-      
-      this.panVelocity.x *= friction;
-      this.panVelocity.y *= friction;
-      
-      // 使用friction和minVelocity变量避免TS6133错误
-      if (friction > 0 && minVelocity > 0) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }
-
-  // 无限画布不限制视口范围 - 支持无限制平移
-  private clampViewport(): void {
-    // 无限画布模式下不限制视口范围，允许无限制平移
-    // 这是无限画布的核心特性之一
-    
-    // 可选：添加性能优化，当视口距离内容过远时给出警告
-    const contentBounds = this.getContentBounds();
-    const maxDistance = 50000; // 最大合理距离
-    
-    if (contentBounds && (
-      Math.abs(this.viewport.x - contentBounds.centerX) > maxDistance ||
-      Math.abs(this.viewport.y - contentBounds.centerY) > maxDistance
-    )) {
-      console.warn('视口距离内容过远，可能影响性能');
-    }
-    
-    // 无限画布不进行位置限制
+  /**
+   * 获取视图矩阵副本
+   */
+  getViewMatrix() {
+    return this.viewMatrix.clone();
   }
 
   /**
-   * 获取内容边界框
+   * 设置视图矩阵
    */
-  private getContentBounds(): { centerX: number; centerY: number; width: number; height: number } | null {
-    const objects = this.editor.sceneGraph.getObjects();
-    
-    if (objects.length === 0) {
-      return null;
+  setViewMatrix(viewMatrix: Matrix) {
+    const prevX = this.viewMatrix.tx;
+    const prevY = this.viewMatrix.ty;
+    const prevZoom = this.getZoom();
+    this.viewMatrix = viewMatrix;
+    this.eventEmitter.emit('viewMatrixChange', viewMatrix);
+
+    if (prevZoom !== this.getZoom()) {
+      this.eventEmitter.emit('zoomChange', this.getZoom());
+    }
+    if (prevX !== viewMatrix.tx || prevY !== viewMatrix.ty) {
+      this.eventEmitter.emit('xOrYChange', viewMatrix.tx, viewMatrix.ty);
+    }
+  }
+
+  /**
+   * 获取当前缩放级别
+   */
+  getZoom() {
+    return this.viewMatrix.a;
+  }
+
+  /**
+   * 放大
+   */
+  zoomIn(opts?: { center?: IPoint; isLevelZoom?: boolean; deltaY?: number }) {
+    const prevZoom = this.getZoom();
+
+    let zoom: number;
+    if (opts?.isLevelZoom) {
+      const levels = this.editor.setting.get('zoomLevels');
+      const [, right] = this.getNearestVals(levels, prevZoom);
+      zoom = right;
+    } else {
+      const zoomStep = opts?.deltaY
+        ? this.deltaYToZoomStep(opts.deltaY)
+        : this.editor.setting.get('zoomStep');
+      zoom = Math.min(
+        prevZoom * (1 + zoomStep),
+        this.editor.setting.get('zoomMax'),
+      );
     }
 
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    const center = opts?.center ?? this.getViewportCenter();
+    this.setZoom(zoom, center);
+  }
 
-    objects.forEach((obj: any) => {
-      if (obj.x !== undefined && obj.y !== undefined) {
-        const objMinX = obj.x;
-        const objMinY = obj.y;
-        const objMaxX = obj.x + (obj.width || 0);
-        const objMaxY = obj.y + (obj.height || 0);
+  /**
+   * 缩小
+   */
+  zoomOut(opts?: { center?: IPoint; isLevelZoom?: boolean; deltaY?: number }) {
+    const prevZoom = this.getZoom();
+    let zoom: number;
+    if (opts?.isLevelZoom) {
+      const levels = this.editor.setting.get('zoomLevels');
+      const [left] = this.getNearestVals(levels, prevZoom);
+      zoom = left;
+    } else {
+      const zoomStep = opts?.deltaY
+        ? this.deltaYToZoomStep(opts.deltaY)
+        : this.editor.setting.get('zoomStep');
+      zoom = Math.max(
+        prevZoom / (1 + zoomStep),
+        this.editor.setting.get('zoomMin'),
+      );
+    }
+    const center = opts?.center ?? this.getViewportCenter();
+    this.setZoom(zoom, center);
+  }
 
-        minX = Math.min(minX, objMinX);
-        minY = Math.min(minY, objMinY);
-        maxX = Math.max(maxX, objMaxX);
-        maxY = Math.max(maxY, objMaxY);
-      }
+  /**
+   * 设置缩放级别
+   */
+  setZoom(zoom: number, center: IPoint) {
+    const deltaZoom = zoom / this.getZoom();
+    const newViewMatrix = this.viewMatrix
+      .clone()
+      .translate(-center.x, -center.y)
+      .scale(deltaZoom, deltaZoom)
+      .translate(center.x, center.y);
+
+    this.setViewMatrix(newViewMatrix);
+    this.eventEmitter.emit('zoomChange', this.getZoom());
+  }
+
+  /**
+   * 缩放以适应所有元素
+   */
+  zoomToFit(maxZoom?: number) {
+    const canvasBbox = this.editor.getCanvasChildrenBbox();
+    if (!canvasBbox) {
+      this.resetViewport();
+      return;
+    }
+    this.zoomRectToFit(boxToRect(canvasBbox), maxZoom);
+  }
+
+  /**
+   * 缩放以适应选中元素
+   */
+  zoomToSelection() {
+    const selectedBoundingRect = this.editor.selectedElements.getBoundingRect();
+    if (!selectedBoundingRect) {
+      this.zoomToFit();
+    } else {
+      this.zoomRectToFit(selectedBoundingRect);
+    }
+  }
+
+  /**
+   * 缩放以适应指定矩形
+   */
+  private zoomRectToFit(targetRect: IRect, maxZoom?: number) {
+    const padding = this.editor.setting.get('zoomToFixPadding');
+    const rulerWidth = this.editor.setting.get('enableRuler')
+      ? this.editor.setting.get('rulerWidth')
+      : 0;
+
+    const pageSize = this.getPageSize();
+    const viewRect = boxToRect({
+      minX: 0,
+      minY: 0,
+      maxX: pageSize.width,
+      maxY: pageSize.height,
     });
 
-    if (minX === Infinity) {
-      return null;
+    const zoomX =
+      (viewRect.width - padding * 2 - rulerWidth) / targetRect.width;
+    const zoomY =
+      (viewRect.height - padding * 2 - rulerWidth) / targetRect.height;
+    let zoom = Math.min(zoomX, zoomY);
+
+    if (maxZoom) {
+      zoom = Math.min(zoom, maxZoom);
     }
 
+    const newViewMatrix = new Matrix()
+      .translate(
+        -(targetRect.x + targetRect.width / 2),
+        -(targetRect.y + targetRect.height / 2),
+      )
+      .translate(viewRect.width / 2, viewRect.height / 2)
+      .translate(-pageSize.width / 2, -pageSize.height / 2)
+      .scale(zoom, zoom)
+      .translate(pageSize.width / 2, pageSize.height / 2)
+      .translate(rulerWidth / 2, rulerWidth / 2);
+
+    this.setViewMatrix(newViewMatrix);
+  }
+
+  /**
+   * 重置视口到默认状态
+   */
+  resetViewport() {
+    const center = this.getViewportCenter();
+    const newViewMatrix = new Matrix().clone().translate(center.x, center.y);
+    this.setViewMatrix(newViewMatrix);
+  }
+
+  /**
+   * 获取视口中心点
+   */
+  private getViewportCenter() {
+    const { width, height } = this.getPageSize();
     return {
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2,
-      width: maxX - minX,
-      height: maxY - minY
+      x: width / 2,
+      y: height / 2,
     };
   }
 
-  // 缓动函数
-  private easeOutCubic(t: number): number {
-    return 1 - Math.pow(1 - t, 3);
-  }
-
-  // 获取视口选项
-  getOptions(): IViewportOptions {
-    return { ...this.options };
-  }
-
-  // 设置视口选项
-  setOptions(options: Partial<IViewportOptions>): void {
-    this.options = { ...this.options, ...options };
-  }
-
-  // 获取视口状态
-  getViewportState(): { viewport: IViewport; isPanning: boolean } {
+  /**
+   * 获取视口位置
+   */
+  getPos() {
     return {
-      viewport: this.getViewport(),
-      isPanning: this.isPanning
+      x: this.viewMatrix.tx,
+      y: this.viewMatrix.ty,
     };
+  }
+
+  /**
+   * 获取页面尺寸
+   */
+  getPageSize() {
+    return {
+      width: parseFloat(this.editor.canvasElement.style.width),
+      height: parseFloat(this.editor.canvasElement.style.height),
+    };
+  }
+
+  /**
+   * 设置视口尺寸
+   */
+  setViewportSize({ width, height }: ISize) {
+    const dpr = getDevicePixelRatio();
+
+    this.editor.canvasElement.width = width * dpr;
+    this.editor.canvasElement.style.width = width + 'px';
+
+    this.editor.canvasElement.height = height * dpr;
+    this.editor.canvasElement.style.height = height + 'px';
+  }
+
+  /**
+   * 获取场景中心点
+   */
+  getSceneCenter() {
+    const size = this.getPageSize();
+    return this.viewMatrix.applyInverse({
+      x: size.width / 2,
+      y: size.height / 2,
+    });
+  }
+
+  /**
+   * 平移视口
+   */
+  translate(dx: number, dy: number) {
+    const newViewMatrix = this.viewMatrix.clone().translate(dx, dy);
+    this.setViewMatrix(newViewMatrix);
+  }
+
+  /**
+   * 设置缩放并更新视口
+   */
+  setZoomAndUpdateViewport(zoom: number) {
+    const size = this.getPageSize();
+    this.setZoom(zoom, {
+      x: size.width / 2,
+      y: size.height / 2,
+    });
+  }
+
+  /**
+   * 获取场景边界框
+   */
+  getSceneBbox(): IBox {
+    const { width, height } = this.getPageSize();
+    const { x: minX, y: minY } = this.viewMatrix.applyInverse({ x: 0, y: 0 });
+    const { x: maxX, y: maxY } = this.viewMatrix.applyInverse({
+      x: width,
+      y: height,
+    });
+    return { minX, minY, maxX, maxY };
+  }
+
+  /**
+   * 监听事件
+   */
+  on<K extends keyof Events>(eventName: K, handler: Events[K]) {
+    this.eventEmitter.on(eventName, handler);
+  }
+
+  /**
+   * 移除事件监听
+   */
+  off<K extends keyof Events>(eventName: K, handler: Events[K]) {
+    this.eventEmitter.off(eventName, handler);
+  }
+
+  /**
+   * 二分查找最近的值
+   */
+  private getNearestVals<T>(arr: T[], target: T): [T, T] {
+    let left = 0;
+    let right = arr.length - 1;
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      if (arr[mid] === target) {
+        right = mid - 1;
+        left = mid + 1;
+        break;
+      } else if (arr[mid]! < target) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+    if (right < 0) right = 0;
+    if (left >= arr.length) left = arr.length - 1;
+    return [arr[right]!, arr[left]!];
+  }
+
+  /**
+   * 将deltaY转换为缩放步长
+   */
+  private deltaYToZoomStep(deltaY: number) {
+    return Math.max(0.05, 0.12937973 * Math.log(Math.abs(deltaY)) - 0.33227472);
   }
 }

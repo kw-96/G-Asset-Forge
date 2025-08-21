@@ -38,3 +38,6 @@ export * from './FigmaBatchUpdateManager';
 // 事件系统
 export * from './EventEmitter';
 export * from './TypedEventEmitter';
+
+// 工具函数
+export * from './rafThrottle';

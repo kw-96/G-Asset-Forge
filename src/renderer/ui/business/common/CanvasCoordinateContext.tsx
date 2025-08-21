@@ -181,7 +181,8 @@ export const useCanvasGrid = () => {
     getGridOffset: context.getGridOffset,
     snapToGrid: context.snapToGrid,
     getGridSize: context.getGridSize,
-    shouldShowGrid: context.shouldShowGrid
+    shouldShowGrid: context.shouldShowGrid,
+    worldToScreen: context.worldToScreen
   };
 };
 

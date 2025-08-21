@@ -142,15 +142,15 @@ export class SceneGraph {
   // 渲染场景 - 支持视口裁剪优化
   render(ctx: CanvasRenderingContext2D): void {
     // 获取当前视口信息进行裁剪优化
-    const viewport = this.editor.viewportManager.getViewport();
-    const zoom = this.editor.zoomManager.getZoom();
+    const viewport = this.editor.viewportManager.getViewportState();
+    const zoom = this.editor.viewportManager.getZoom();
 
     // 计算视口在世界坐标系中的区域
     const viewportWorldBounds = {
-      x: -viewport.x / zoom,
-      y: -viewport.y / zoom,
-      width: viewport.width / zoom,
-      height: viewport.height / zoom
+      x: -viewport.panX / zoom,
+      y: -viewport.panY / zoom,
+      width: viewport.bounds.width / zoom,
+      height: viewport.bounds.height / zoom
     };
 
     // 使用空间索引查询可见对象

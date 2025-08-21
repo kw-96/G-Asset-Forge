@@ -18,6 +18,7 @@ import type {
   ExportOptions
 } from '../core/EngineInterface';
 import { type CanvasElement } from '../../../../interfaces/types/canvas';
+// 网格系统现在由Suika核心直接管理
 
 /**
  * H5Editor引擎适配器类
@@ -49,6 +50,9 @@ export class H5EditorEngineAdapter implements CanvasEngine, EngineAdapter {
   // 工具和状态
   private activeTool: string | null = null;
   private viewport: ViewportTransform;
+  
+  // 统一网格服务
+  private gridService: any = null;
 
   constructor() {
     // 默认配置
@@ -84,6 +88,9 @@ export class H5EditorEngineAdapter implements CanvasEngine, EngineAdapter {
       textureCount: 0,
       lastUpdateTime: Date.now(),
     };
+    
+    // 网格系统现在由Suika核心直接管理
+    console.log('网格系统已由Suika核心接管');
   }
 
   // 基础属性访问器
@@ -549,7 +556,60 @@ export class H5EditorEngineAdapter implements CanvasEngine, EngineAdapter {
   // 简化的其他方法实现
   public setActiveTool(toolType: string): void { this.activeTool = toolType; }
   public getActiveTool(): string | null { return this.activeTool; }
-  public setGridVisible(visible: boolean): void { this._config.enableGrid = visible; this.requestRender(); }
+  public setGridVisible(visible: boolean): void { 
+    this._config.enableGrid = visible; 
+    
+    // 渲染网格
+    if (visible && this.gridService) {
+      this.renderGrid();
+    }
+    
+    this.requestRender(); 
+  }
+
+  /**
+   * 渲染网格
+   */
+  private renderGrid(): void {
+    if (!this.gridService) return;
+
+    // 创建临时Canvas来渲染网格
+    const canvas = document.createElement('canvas');
+    canvas.width = this._config.width;
+    canvas.height = this._config.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const viewport = {
+      width: this._config.width,
+      height: this._config.height,
+      bounds: {
+        minX: 0,
+        maxX: this._config.width,
+        minY: 0,
+        maxY: this._config.height,
+      }
+    };
+
+    const gridSize = {
+      base: 20,
+      screen: 20,
+      intervals: {
+        major: 200,
+        minor: 50,
+        micro: 20
+      }
+    };
+
+    this.gridService.renderGrid({
+      ctx,
+      viewport,
+      gridSize,
+      zoom: this.viewport.zoom,
+      pan: { x: this.viewport.panX, y: this.viewport.panY },
+      mode: 'edit'
+    });
+  }
   public setRulersVisible(visible: boolean): void { this._config.enableRulers = visible; this.requestRender(); }
   public setSnapToGrid(enabled: boolean): void { this._config.enableSnapping = enabled; }
   public setBackgroundColor(color: string): void { this._config.backgroundColor = color; this.requestRender(); }

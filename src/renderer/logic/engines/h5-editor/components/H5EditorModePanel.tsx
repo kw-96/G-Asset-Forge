@@ -1,6 +1,6 @@
 // H5编辑器模式面板组件 - 展示H5编辑器的完整功能
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { RulerGuides } from '../../../../ui/business/common/RulerGuides';
+// RulerGuides已删除，使用Suika核心系统
 import { ZoomPanContainer } from '../../../../ui/business/common/ZoomPanContainer';
 import { H5EditorCanvas, type H5EditorCanvasRef } from '../adapter/react-adapter';
 import { type H5Page } from '../core/h5-editor';
@@ -503,7 +503,7 @@ export const H5EditorModePanel: React.FC<IH5EditorModePanelProps> = ({
           onError={(error) => console.error('H5编辑器错误:', error)}
           style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '8px' }}
         />
-        <RulerGuides />
+        {/* RulerGuides已删除，使用Suika核心系统 */}
       </ZoomPanContainer>
 
       {/* 状态信息 */}

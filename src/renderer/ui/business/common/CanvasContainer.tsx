@@ -9,8 +9,8 @@ import React, { useRef, useEffect, useCallback, ReactNode } from 'react';
 import styled from 'styled-components';
 import { useCanvasCoordinate, useCanvasViewport } from './CanvasCoordinateContext';
 import { CanvasCoordinateProvider } from './CanvasCoordinateProvider';
-import { CanvasGrid } from './CanvasGrid';
-import { CanvasRulers } from './CanvasRuler';
+import { SuikaGridAdapter } from './SuikaGridAdapter';
+// CanvasRuler已删除，使用Suika核心的标尺系统
 
 const CanvasWrapper = styled.div`
   position: relative;
@@ -165,16 +165,23 @@ const CanvasInteractionLayer: React.FC = () => {
           case '=':
           case '+':
             e.preventDefault();
-            setZoom(Math.max(0.1, Math.min(32, zoom * 1.1)));
+            // 参考Suika的默认缩放步长
+            setZoom(Math.max(0.1, Math.min(32, zoom * (1 + 0.2325))));
             break;
           case '-':
             e.preventDefault();
-            setZoom(Math.max(0.1, Math.min(32, zoom * 0.9)));
+            // 参考Suika的默认缩放步长
+            setZoom(Math.max(0.1, Math.min(32, zoom / (1 + 0.2325))));
             break;
           case '0':
             e.preventDefault();
             setZoom(1);
-            setPan({ x: 0, y: 0 });
+            setPan({ x: 0, y: 0 }); // 无限画布：支持任意pan值
+            break;
+          case '8':
+            e.preventDefault();
+            // 快捷键：直接跳转到8x缩放（网格显示级别）
+            setZoom(8);
             break;
         }
       }
@@ -213,11 +220,10 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({
       initialShowRuler={initialShowRuler}
     >
       <CanvasWrapper>
-        {/* 标尺 - 动态尺寸 */}
-        <CanvasRulers />
+        {/* 标尺 - 由Suika核心系统处理 */}
         
         {/* 网格 */}
-        <CanvasGrid />
+        <SuikaGridAdapter minZoomThreshold={8} />
         
         {/* 画布内容 */}
         <CanvasContentComponent>

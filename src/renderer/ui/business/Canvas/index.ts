@@ -16,6 +16,9 @@ export { default as CanvasInitializationChecker } from './CanvasInitializationCh
 export { default as InfiniteCanvasGuide } from './InfiniteCanvasGuide';
 
 // 画布通用组件
-export { RulerGuides } from '../common/RulerGuides';
 export { ZoomPanContainer } from '../common/ZoomPanContainer';
-export { ZoomPanContext } from '../common/ZoomPanContext';
+// RulerGuides和ZoomPanContext已删除，使用Suika核心系统
+
+// 新的Suika画布组件
+export { SuikaCanvasComponent } from './SuikaCanvasComponent';
+// export { SuikaCanvasDemo } from './SuikaCanvasDemo';

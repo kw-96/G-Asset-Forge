@@ -1,5 +1,6 @@
 // H5-Editor核心类 - 扩展版本，支持更多功能
 import { EventEmitter } from '../utils/event-emitter';
+// 网格系统现在由Suika核心直接管理
 
 export interface H5EditorOptions {
   containerElement: HTMLDivElement;
@@ -98,6 +99,7 @@ export class H5Editor {
   private componentLibrary: Map<string, H5ComponentLibraryItem> = new Map();
   private options: H5EditorOptions;
   private isDestroyed = false;
+  // 网格系统现在由Suika核心直接管理
 
   constructor(options: H5EditorOptions) {
     this.options = {
@@ -114,6 +116,9 @@ export class H5Editor {
     this.initializeComponentLibrary();
     this.initializeTemplates();
     this.createDefaultPage();
+    
+    // 网格系统现在由Suika核心直接管理
+    console.log('网格系统已由Suika核心接管');
   }
 
   private initializeCanvases(): void {
@@ -670,26 +675,8 @@ export class H5Editor {
   private renderPreviewGrid(): void {
     if (!this.previewCtx || !this.currentPage) return;
 
-    const { width, height } = this.currentPage;
-    const gridSize = 20;
-
-    this.previewCtx.strokeStyle = '#e0e0e0';
-    this.previewCtx.lineWidth = 0.5;
-
-    // 绘制网格
-    for (let x = 0; x <= width; x += gridSize) {
-      this.previewCtx.beginPath();
-      this.previewCtx.moveTo(x, 0);
-      this.previewCtx.lineTo(x, height);
-      this.previewCtx.stroke();
-    }
-
-    for (let y = 0; y <= height; y += gridSize) {
-      this.previewCtx.beginPath();
-      this.previewCtx.moveTo(0, y);
-      this.previewCtx.lineTo(width, y);
-      this.previewCtx.stroke();
-    }
+    // 网格渲染已由Suika系统处理
+    // 预览网格功能暂时禁用，由Suika系统统一管理
   }
 
   togglePreview(visible: boolean): void {

@@ -23,7 +23,7 @@ export class ZoomManager {
     
     this.options = {
       minZoom: 0.1,      // 10% 最小缩放 - 支持更大的缩放范围
-      maxZoom: 5.0,      // 500% 最大缩放 - 支持更大的缩放范围
+      maxZoom: 32.0,     // 3200% 最大缩放 - Suika风格
       zoomStep: 0.1,     // 缩放步长
       smoothZoom: true,   // 平滑缩放
       zoomDuration: 300   // 缩放动画持续时间
@@ -60,17 +60,36 @@ export class ZoomManager {
       const zoomRatio = newZoom / this.currentZoom;
       const viewport = this.editor.viewportManager.getViewport();
       
-      const newViewportX = zoomCenterX - (zoomCenterX - viewport.x) * zoomRatio;
-      const newViewportY = zoomCenterY - (zoomCenterY - viewport.y) * zoomRatio;
+      const newViewportX = zoomCenterX - (zoomCenterX - viewport.panX) * zoomRatio;
+      const newViewportY = zoomCenterY - (zoomCenterY - viewport.panY) * zoomRatio;
 
       // 同时更新视口和缩放
-      this.editor.viewportManager.setViewport({
-        x: newViewportX,
-        y: newViewportY
-      });
+      this.editor.viewportManager.setZoom(newZoom, { x: newViewportX, y: newViewportY });
       
       this.setZoom(newZoom);
     }
+  }
+  
+  // Suika风格的动态缩放步长算法
+  getDynamicZoomStep(deltaY: number): number {
+    const absDelta = Math.abs(deltaY);
+    const baseStep = 0.1;
+    
+    // 根据滚动速度动态调整缩放步长
+    if (absDelta < 10) {
+      return baseStep; // 慢速滚动，小步长
+    } else if (absDelta < 50) {
+      return baseStep * 2; // 中速滚动，中等步长
+    } else {
+      return baseStep * 4; // 快速滚动，大步长
+    }
+  }
+  
+  // 智能缩放 - 使用动态步长
+  smartZoomAt(x: number, y: number, deltaY: number): void {
+    const step = this.getDynamicZoomStep(deltaY);
+    const zoomDelta = deltaY > 0 ? (1 - step) : (1 + step);
+    this.zoomAt(x, y, zoomDelta);
   }
 
   // 缩放到适应屏幕
@@ -140,8 +159,8 @@ export class ZoomManager {
   viewportToScene(x: number, y: number): { x: number; y: number } {
     const viewport = this.editor.viewportManager.getViewport();
     return {
-      x: (x - viewport.x) / this.currentZoom,
-      y: (y - viewport.y) / this.currentZoom
+      x: (x - viewport.panX) / this.currentZoom,
+      y: (y - viewport.panY) / this.currentZoom
     };
   }
 
@@ -149,8 +168,8 @@ export class ZoomManager {
   sceneToViewport(x: number, y: number): { x: number; y: number } {
     const viewport = this.editor.viewportManager.getViewport();
     return {
-      x: x * this.currentZoom + viewport.x,
-      y: y * this.currentZoom + viewport.y
+      x: x * this.currentZoom + viewport.panX,
+      y: y * this.currentZoom + viewport.panY
     };
   }
 

@@ -17,12 +17,14 @@ import type {
   CanvasElement
 } from '../../../../interfaces/types/canvas';
 import { CanvasEngineType } from '../../core/canvas/canvas-manager';
+// 网格系统现在由Suika核心直接管理
 
 export class H5EditorCanvasEngine implements CanvasEngine {
   public readonly type = CanvasEngineType.H5_EDITOR;
   private editor: H5Editor | null = null;
   private manager: H5EditorManager | null = null;
   private suikaIntegration: SuikaH5Integration | null = null;
+  private gridService: any = null;
   async initialize(container: HTMLElement, config: CanvasConfig): Promise<void> {
     try {
       // 创建管理器
@@ -59,6 +61,14 @@ export class H5EditorCanvasEngine implements CanvasEngine {
         syncInterval: 1000,
         conflictResolution: 'h5-priority'
       });
+
+            // 网格系统现在由Suika核心直接管理
+    console.log('网格系统已由Suika核心接管');
+
+  // 如果启用网格，立即渲染一次
+  if (config.gridEnabled) {
+    this.renderGrid();
+  }
 
       console.log('H5EditorCanvasEngine initialized successfully');
     } catch (error) {
@@ -530,5 +540,49 @@ export class H5EditorCanvasEngine implements CanvasEngine {
       default:
         return ElementType.SHAPE;
     }
+  }
+
+  /**
+   * 渲染网格
+   */
+  private renderGrid(): void {
+    if (!this.gridService) return;
+
+    // 创建临时Canvas来渲染网格
+    const canvas = document.createElement('canvas');
+    canvas.width = 800; // 默认宽度
+    canvas.height = 600; // 默认高度
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const viewport = {
+      width: 800,
+      height: 600,
+      bounds: {
+        minX: 0,
+        maxX: 800,
+        minY: 0,
+        maxY: 600,
+      }
+    };
+
+    const gridSize = {
+      base: 20,
+      screen: 20,
+      intervals: {
+        major: 200,
+        minor: 50,
+        micro: 20
+      }
+    };
+
+    this.gridService.renderGrid({
+      ctx,
+      viewport,
+      gridSize,
+      zoom: 1,
+      pan: { x: 0, y: 0 },
+      mode: 'edit'
+    });
   }
 }

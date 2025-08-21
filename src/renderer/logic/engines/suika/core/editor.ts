@@ -1,405 +1,323 @@
-// Suika编辑器核心类 - 从temp-suika提取并适配
-import { EventEmitter } from '../utils/event-emitter';
-import { genUuid } from '../utils/uuid';
-import { ViewportManager } from './viewport-manager';
-import { ZoomManager } from './zoom-manager';
-import { SceneGraph } from './scene-graph';
-import { ToolManager } from './tool-manager';
-import { CommandManager } from './command-manager';
+/**
+ * Suika编辑器核心 - 主编辑器类，管理所有子系统
+ * @description 提供编辑器的核心功能，包括画布管理、视口控制、工具管理等
+ * @author Suika团队
+ */
 
-export interface ISuikaEditorOptions {
+import { EventEmitter, genUuid } from '../common';
+import { mergeBoxes } from '../geo';
+import { Setting, type SettingValue } from './setting';
+import { ViewportManager } from './viewport-manager';
+import { Ruler } from './ruler';
+import { RefLine } from './ref-line';
+
+export interface SuikaEditorOptions {
   containerElement: HTMLDivElement;
   width: number;
   height: number;
   offsetX?: number;
   offsetY?: number;
   showPerfMonitor?: boolean;
-  userPreference?: Record<string, any>;
+  userPreference?: Partial<SettingValue>;
 }
 
-export interface ISuikaEditorEvents extends Record<string, (...args: any[]) => void> {
+interface Events {
   destroy(): void;
   render(): void;
   selectionChange(): void;
-  objectAdded(): void;
-  objectRemoved(): void;
-  objectUpdated(): void;
-  zoomChanged(zoom: number): void;
-  panChanged(pan: { x: number; y: number }): void;
 }
 
+/**
+ * Suika编辑器主类
+ */
 export class SuikaEditor {
   containerElement: HTMLDivElement;
   canvasElement: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
-  
-  private emitter = new EventEmitter<ISuikaEditorEvents>();
-  
-  // 核心管理器
-  viewportManager: ViewportManager;
-  zoomManager: ZoomManager;
-  sceneGraph: SceneGraph;
-  toolManager: ToolManager;
-  commandManager: CommandManager;
-  
-  // 配置
-  private options: ISuikaEditorOptions;
+
+  appVersion = 'suika-editor_0.0.3';
   paperId: string;
-  
+
+  private emitter = new EventEmitter<Events>();
+
+  // 核心系统
+  setting: Setting;
+  viewportManager: ViewportManager;
+  ruler: Ruler;
+  refLine: RefLine;
+
+  // 简化的文档和场景图
+  doc: any;
+  sceneGraph: any;
+  selectedElements: any;
+
   // 性能监控
-  private perfMonitor: any = null;
-  private lastRenderTime: number = 0;
-  
-  constructor(options: ISuikaEditorOptions) {
-    this.options = options;
+  perfMonitor: any;
+
+  constructor(options: SuikaEditorOptions) {
     this.containerElement = options.containerElement;
-    this.paperId = genUuid();
-    
-    // 清理容器元素
-    while (this.containerElement.firstChild) {
-      this.containerElement.removeChild(this.containerElement.firstChild);
-    }
-    
-    // 创建canvas元素
     this.canvasElement = document.createElement('canvas');
-    this.canvasElement.style.width = '100%';
-    this.canvasElement.style.height = '100%';
-    this.canvasElement.setAttribute('data-suika-canvas', 'true');
-    
-    // 确保安全地添加到容器
-    try {
-      this.containerElement.appendChild(this.canvasElement);
-    } catch (error) {
-      console.error('Failed to append canvas to container:', error);
-      throw error;
+    this.containerElement.appendChild(this.canvasElement);
+    this.ctx = this.canvasElement.getContext('2d')!;
+
+    this.setting = new Setting(options.userPreference);
+    if (options.offsetX) {
+      this.setting.set('offsetX', options.offsetX);
     }
-    
-    const context = this.canvasElement.getContext('2d');
-    if (!context) {
-      throw new Error('Failed to get 2D rendering context');
+    if (options.offsetY) {
+      this.setting.set('offsetY', options.offsetY);
     }
-    this.ctx = context;
-    
-    // 设置canvas尺寸
-    this.resizeCanvas();
-    
-    // 初始化管理器
+
     this.viewportManager = new ViewportManager(this);
-    this.zoomManager = new ZoomManager(this);
-    this.sceneGraph = new SceneGraph(this);
-    this.toolManager = new ToolManager(this);
-    this.commandManager = new CommandManager(this);
-    
-    // 设置初始视口
-    this.viewportManager.setViewport({
-      x: -options.width / 2,
-      y: -options.height / 2,
+    this.ruler = new Ruler(this);
+    this.refLine = new RefLine(this);
+
+    // 简化的文档和场景图实现
+    this.doc = this.createSimpleDocument();
+    this.sceneGraph = this.createSimpleSceneGraph();
+    this.selectedElements = this.createSimpleSelectedElements();
+
+    this.paperId = genUuid();
+
+    this.viewportManager.setViewportSize({
       width: options.width,
       height: options.height,
     });
-    
-    // 初始化性能监控
+
+    // 性能监控（简化实现）
+    this.perfMonitor = {
+      start: () => {},
+      destroy: () => {},
+    };
+
     if (options.showPerfMonitor) {
-      this.initPerfMonitor();
+      this.perfMonitor.start(this.containerElement);
     }
-    
-    // 绑定事件
-    this.bindEvents();
-    
+
     // 异步渲染
     Promise.resolve().then(() => {
       this.render();
     });
   }
-  
-  // 调整canvas尺寸
-  private resizeCanvas(): void {
-    const rect = this.containerElement.getBoundingClientRect();
-    this.canvasElement.width = rect.width;
-    this.canvasElement.height = rect.height;
-  }
-  
-  // 初始化性能监控
-  private initPerfMonitor(): void {
-    // 简单的性能监控实现
-    this.perfMonitor = {
-      startTime: 0,
-      frameCount: 0,
-      fps: 0
-    };
-  }
-  
-  // 存储事件处理函数的引用，用于后续清理
-  private boundHandlers: {
-    mouseDown: (event: MouseEvent) => void;
-    mouseMove: (event: MouseEvent) => void;
-    mouseUp: (event: MouseEvent) => void;
-    wheel: (event: WheelEvent) => void;
-  } | null = null;
-  private resizeObserver: ResizeObserver | null = null;
 
-  // 绑定事件
-  private bindEvents(): void {
-    // 存储绑定的事件处理函数
-    this.boundHandlers = {
-      mouseDown: this.handleMouseDown.bind(this),
-      mouseMove: this.handleMouseMove.bind(this),
-      mouseUp: this.handleMouseUp.bind(this),
-      wheel: this.handleWheel.bind(this)
-    };
+  /**
+   * 销毁编辑器
+   */
+  destroy() {
+    this.containerElement.removeChild(this.canvasElement);
+    this.perfMonitor.destroy();
+    this.emitter.emit('destroy');
+  }
 
-    // 监听容器大小变化
-    this.resizeObserver = new ResizeObserver(() => {
-      this.resizeCanvas();
-      this.render();
-    });
-    this.resizeObserver.observe(this.containerElement);
-    
-    // 监听鼠标事件
-    this.canvasElement.addEventListener('mousedown', this.boundHandlers.mouseDown);
-    this.canvasElement.addEventListener('mousemove', this.boundHandlers.mouseMove);
-    this.canvasElement.addEventListener('mouseup', this.boundHandlers.mouseUp);
-    this.canvasElement.addEventListener('wheel', this.boundHandlers.wheel);
+  /**
+   * 设置光标
+   */
+  setCursor(cursor: any) {
+    this.containerElement.style.cursor = cursor.type || 'default';
   }
-  
-  // 鼠标事件处理
-  private handleMouseDown(event: MouseEvent): void {
-    const { x, y } = this.getSceneCursorXY(event);
-    this.toolManager.handleMouseDown(x, y, event);
+
+  /**
+   * 获取光标
+   */
+  getCursor() {
+    return { type: this.containerElement.style.cursor || 'default' };
   }
-  
-  private handleMouseMove(event: MouseEvent): void {
-    const { x, y } = this.getSceneCursorXY(event);
-    this.toolManager.handleMouseMove(x, y, event);
-  }
-  
-  private handleMouseUp(event: MouseEvent): void {
-    const { x, y } = this.getSceneCursorXY(event);
-    this.toolManager.handleMouseUp(x, y, event);
-  }
-  
-  private handleWheel(event: WheelEvent): void {
-    event.preventDefault();
-    const { x, y } = this.getSceneCursorXY(event);
-    const delta = event.deltaY > 0 ? 0.9 : 1.1;
-    this.zoomManager.zoomAt(x, y, delta);
-  }
-  
-  // 坐标转换方法
-  toScenePt(x: number, y: number): { x: number; y: number } {
-    const zoom = this.zoomManager.getZoom();
-    const viewport = this.viewportManager.getViewport();
-    return {
-      x: (x - viewport.x) / zoom,
-      y: (y - viewport.y) / zoom
-    };
-  }
-  
-  toViewportPt(x: number, y: number): { x: number; y: number } {
-    const zoom = this.zoomManager.getZoom();
-    const viewport = this.viewportManager.getViewport();
-    return {
-      x: x * zoom + viewport.x,
-      y: y * zoom + viewport.y
-    };
-  }
-  
-  // 获取鼠标坐标
-  getCursorXY(event: { clientX: number; clientY: number }): { x: number; y: number } {
-    const rect = this.canvasElement.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left - (this.options.offsetX || 0),
-      y: event.clientY - rect.top - (this.options.offsetY || 0)
-    };
-  }
-  
-  getSceneCursorXY(event: { clientX: number; clientY: number }): { x: number; y: number } {
-    const { x, y } = this.getCursorXY(event);
-    return this.toScenePt(x, y);
-  }
-  
-  // 渲染方法
-  render(): void {
-    // 清除画布
-    this.ctx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
-    
-    // 应用视口变换
-    const zoom = this.zoomManager.getZoom();
-    const viewport = this.viewportManager.getViewport();
-    
-    this.ctx.save();
-    this.ctx.translate(viewport.x, viewport.y);
-    this.ctx.scale(zoom, zoom);
-    
-    // 渲染场景图
-    this.sceneGraph.render(this.ctx);
-    
-    this.ctx.restore();
-    
-    // 渲染工具
-    this.toolManager.render(this.ctx);
-    
-    // 性能监控
-    if (this.perfMonitor) {
-      const endTime = performance.now();
-      this.perfMonitor.frameCount++;
-      this.perfMonitor.fps = 1000 / (endTime - this.lastRenderTime);
-      this.lastRenderTime = endTime;
+
+  /**
+   * 视口坐标转场景坐标
+   */
+  toScenePt(x: number, y: number, round = false) {
+    const viewMatrix = this.viewportManager.getViewMatrix();
+    const scenePt = viewMatrix.applyInverse({ x, y });
+    if (round) {
+      scenePt.x = Math.round(scenePt.x);
+      scenePt.y = Math.round(scenePt.y);
     }
+    return scenePt;
+  }
+
+  /**
+   * 场景坐标转视口坐标
+   */
+  toViewportPt(x: number, y: number) {
+    const viewMatrix = this.viewportManager.getViewMatrix();
+    return viewMatrix.apply({ x, y });
+  }
+
+  /**
+   * 场景尺寸转视口尺寸
+   */
+  toSceneSize(size: number) {
+    const zoom = this.viewportManager.getZoom();
+    return size / zoom;
+  }
+
+  /**
+   * 视口尺寸转场景尺寸
+   */
+  toViewportSize(size: number) {
+    const zoom = this.viewportManager.getZoom();
+    return size * zoom;
+  }
+
+  /**
+   * 获取光标视口坐标
+   */
+  getCursorXY(event: { clientX: number; clientY: number }) {
+    return {
+      x: event.clientX - this.setting.get('offsetX'),
+      y: event.clientY - this.setting.get('offsetY'),
+    };
+  }
+
+  /**
+   * 获取光标场景坐标
+   */
+  getSceneCursorXY(event: { clientX: number; clientY: number }, round = false) {
+    const { x, y } = this.getCursorXY(event);
+    return this.toScenePt(x, y, round);
+  }
+
+  /**
+   * 渲染画布
+   */
+  render() {
+    const ctx = this.ctx;
+    const { width, height } = this.viewportManager.getPageSize();
     
+    // 清除画布
+    ctx.clearRect(0, 0, width, height);
+    
+    // 绘制背景
+    ctx.fillStyle = this.setting.get('canvasBgColor');
+    ctx.fillRect(0, 0, width, height);
+
+    // 绘制场景图（简化实现）
+    this.sceneGraph.render(ctx);
+
+    // 绘制标尺
+    if (this.setting.get('enableRuler') && this.ruler.visible) {
+      this.ruler.draw();
+    }
+
+    // 绘制参考线
+    this.refLine.drawRefLine(ctx);
+
     this.emitter.emit('render');
   }
-  
-  // 获取性能信息
-  getPerformanceInfo(): { fps: number; frameCount: number } {
+
+  /**
+   * 获取画布子元素边界框
+   */
+  getCanvasChildrenBbox() {
+    const canvasGraphics = this.doc.getCurrentCanvas();
+    if (!canvasGraphics) {
+      return null;
+    }
+    const children = canvasGraphics
+      .getChildren()
+      .filter((item: any) => item.isVisible());
+    if (children.length === 0) return null;
+    return mergeBoxes(children.map((item: any) => item.getBbox()));
+  }
+
+  /**
+   * 获取编辑器状态
+   */
+  getState() {
     return {
-      fps: this.perfMonitor?.fps || 0,
-      frameCount: this.perfMonitor?.frameCount || 0
+      zoom: this.viewportManager.getZoom(),
+      viewport: this.viewportManager.getPos(),
+      selectedObjects: this.selectedElements.getItems(),
     };
   }
-  
-  // 销毁方法
-  destroy(): void {
-    try {
-      // 1. 清理事件监听器
-      this.unbindEvents();
 
-      // 2. 清理管理器
-      if (this.viewportManager) {
-        this.viewportManager = undefined as any;
-      }
-      if (this.zoomManager) {
-        this.zoomManager = undefined as any;
-      }
-      if (this.sceneGraph) {
-        this.sceneGraph = undefined as any;
-      }
-      if (this.toolManager) {
-        this.toolManager = undefined as any;
-      }
-      if (this.commandManager) {
-        this.commandManager = undefined as any;
-      }
-
-      // 3. DOM清理 - 多级安全策略
-      if (this.canvasElement) {
-        try {
-          // 第一级：检查父子关系并移除
-          const parent = this.canvasElement.parentNode || this.canvasElement.parentElement;
-          if (parent) {
-            // 验证是否真的是子节点
-            const children = Array.from(parent.childNodes);
-            if (children.includes(this.canvasElement)) {
-              parent.removeChild(this.canvasElement);
-            }
-          }
-        } catch (removeError) {
-          try {
-            // 第二级：使用remove方法
-            if (typeof this.canvasElement.remove === 'function') {
-              this.canvasElement.remove();
-            }
-          } catch (finalError) {
-            console.warn('Failed to remove canvas element:', finalError);
-            // 第三级：强制清理引用
-            if (this.containerElement && this.containerElement.contains(this.canvasElement)) {
-              try {
-                this.containerElement.innerHTML = '';
-              } catch (innerHTMLError) {
-                console.warn('Failed to clear container innerHTML:', innerHTMLError);
-              }
-            }
-          }
-        }
-      }
-
-      // 4. 清理容器内容（安全方式）
-      if (this.containerElement) {
-        try {
-          // 逐个移除子节点
-          while (this.containerElement.firstChild) {
-            const child = this.containerElement.firstChild;
-            if (child.parentNode === this.containerElement) {
-              this.containerElement.removeChild(child);
-            } else {
-              // 如果父子关系不匹配，直接跳出循环避免死循环
-              break;
-            }
-          }
-        } catch (clearError) {
-          console.warn('Failed to clear container children:', clearError);
-          try {
-            this.containerElement.innerHTML = '';
-          } catch (innerHTMLError) {
-            console.warn('Failed to clear container innerHTML:', innerHTMLError);
-          }
-        }
-      }
-
-      // 5. 清理引用
-      this.canvasElement = null as any;
-      this.ctx = null as any;
-      this.containerElement = null as any;
-
-      console.log('SuikaEditor destroyed successfully');
-    } catch (error) {
-      console.error('Error during SuikaEditor destruction:', error);
+  /**
+   * 设置编辑器状态
+   */
+  setState(state: any) {
+    if (state.zoom !== undefined) {
+      const center = this.viewportManager.getPageSize();
+      this.viewportManager.setZoom(state.zoom, {
+        x: center.width / 2,
+        y: center.height / 2,
+      });
+    }
+    if (state.viewport !== undefined) {
+      this.viewportManager.translate(state.viewport.x, state.viewport.y);
     }
   }
 
-  private unbindEvents(): void {
-    try {
-      // 清理ResizeObserver
-      if (this.resizeObserver) {
-        this.resizeObserver.disconnect();
-        this.resizeObserver = null;
-      }
-
-      // 移除画布事件监听器
-      if (this.canvasElement && this.boundHandlers) {
-        this.canvasElement.removeEventListener('mousedown', this.boundHandlers.mouseDown);
-        this.canvasElement.removeEventListener('mousemove', this.boundHandlers.mouseMove);
-        this.canvasElement.removeEventListener('mouseup', this.boundHandlers.mouseUp);
-        this.canvasElement.removeEventListener('wheel', this.boundHandlers.wheel);
-      }
-      
-      // 清理绑定的处理器引用
-      this.boundHandlers = null;
-    } catch (error) {
-      console.warn('Error unbinding events:', error);
-    }
+  /**
+   * 获取性能信息
+   */
+  getPerformanceInfo() {
+    return {
+      fps: 60, // 简化实现
+      frameCount: 0,
+    };
   }
 
-  
-  // 事件管理
-  on<T extends keyof ISuikaEditorEvents>(eventName: T, listener: ISuikaEditorEvents[T]): void {
+  /**
+   * 事件监听
+   */
+  on<T extends keyof Events>(eventName: T, listener: Events[T]) {
     this.emitter.on(eventName, listener);
   }
-  
-  off<T extends keyof ISuikaEditorEvents>(eventName: T, listener: ISuikaEditorEvents[T]): void {
+
+  /**
+   * 移除事件监听
+   */
+  off<T extends keyof Events>(eventName: T, listener: Events[T]) {
     this.emitter.off(eventName, listener);
   }
-  
-  // 获取编辑器状态
-  getState(): any {
+
+  /**
+   * 创建简化的文档对象
+   */
+  private createSimpleDocument() {
     return {
-      zoom: this.zoomManager.getZoom(),
-      viewport: this.viewportManager.getViewport(),
-      selectedObjects: this.toolManager.getSelectedObjects(),
-      sceneObjects: this.sceneGraph.getObjects()
+      getCurrentCanvas: () => ({
+        forEachVisibleChildNode: (_callback: (graphics: any) => void) => {
+          // 简化实现，暂时返回空
+        },
+        getChildren: () => [],
+      }),
     };
   }
-  
-  // 设置编辑器状态
-  setState(state: any): void {
-    if (state.zoom !== undefined) {
-      this.zoomManager.setZoom(state.zoom);
-    }
-    
-    if (state.viewport !== undefined) {
-      this.viewportManager.setViewport(state.viewport);
-    }
-    
-    this.render();
+
+  /**
+   * 创建简化的场景图对象
+   */
+  private createSimpleSceneGraph() {
+    return {
+      render: (_ctx: CanvasRenderingContext2D) => {
+        // 简化的渲染实现
+      },
+      addObject: (_object: any) => {
+        // 简化的添加对象实现
+      },
+      removeObject: (_id: string) => {
+        // 简化的移除对象实现
+      },
+      getObject: (_id: string) => {
+        // 简化的获取对象实现
+        return null;
+      },
+      getObjects: () => {
+        // 简化的获取所有对象实现
+        return [];
+      },
+    };
+  }
+
+  /**
+   * 创建简化的选中元素管理器
+   */
+  private createSimpleSelectedElements() {
+    return {
+      getItems: () => [],
+      getBoundingRect: () => null,
+    };
   }
 }
