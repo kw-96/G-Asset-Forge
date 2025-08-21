@@ -5,19 +5,13 @@
  */
 
 // Canvas相关组件
-export { default as CanvasContainer } from './CanvasContainer';
 export { default as ZoomPanContainer } from './ZoomPanContainer';
 // export { default as GridSettingsPanel } from './GridSettingsPanel';
-export { CanvasCoordinateProvider } from './CanvasCoordinateProvider';
-export { useCanvasCoordinate, useCanvasViewport } from './CanvasCoordinateContext';
-export { CanvasDisplayProvider, useCanvasDisplay } from './CanvasDisplayContext';
+// 移除冲突的坐标系统上下文，直接使用Suika核心
 
-// Suika核心组件
+// Suika核心组件适配器
 export { default as SuikaGridAdapter } from './SuikaGridAdapter';
-export { SuikaGrid } from './SuikaGrid';
 export { default as SuikaRulerAdapter } from './SuikaRulerAdapter';
-export { SuikaRuler } from './SuikaRuler';
 export { default as SuikaRefLineAdapter } from './SuikaRefLineAdapter';
-export { SuikaViewportManager } from './SuikaViewportManager';
 export * from './SuikaCanvasStyles';
-export * from './utils';
+// export * from './utils';

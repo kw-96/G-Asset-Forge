@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 // useCanvasStore已不再需要，网格由CanvasGrid组件处理
-import { useCanvasCoordinate } from '../common/CanvasCoordinateContext';
+// 移除冲突的坐标系统上下文，直接使用Suika核心
 // CanvasContainer已由外层ZoomPanContainer提供，无需重复嵌套
 
 // 画布工作区容器 - 无限画布实现
@@ -81,8 +81,7 @@ interface CanvasWorkspaceProps {
 
 // 画布工作区组件
 export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ externalObjects }) => {
-  // gridSize已由CanvasGrid组件处理，无需在此处使用
-  const { zoom, screenToWorld, snapToGrid, canStartDrag, setDragMode } = useCanvasCoordinate();
+  // 暂时移除坐标系统功能，直接使用简单的状态管理
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [objects, setObjects] = useState<CanvasObject[]>([]);
   
@@ -121,7 +120,7 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ externalObject
     setObjects(prev => prev.filter(obj => obj.id !== id));
   }, []);
 
-  // 处理画布点击 - 添加新对象
+  // 处理画布点击 - 添加新对象（暂时简化）
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (e.target !== e.currentTarget) return; // 只在画布空白区域点击时添加对象
     
@@ -129,23 +128,17 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ externalObject
     const screenX = e.clientX - rect.left;
     const screenY = e.clientY - rect.top;
     
-    // 转换为世界坐标
-    const worldPos = screenToWorld(screenX, screenY);
-    
-    // 如果启用网格吸附，则吸附到网格
-    const finalPos = snapToGrid(worldPos.x, worldPos.y);
-    
     const newObject: CanvasObject = {
       id: `object-${Date.now()}`,
-      x: finalPos.x,
-      y: finalPos.y,
+      x: screenX,
+      y: screenY,
       width: 100,
       height: 100,
       type: 'rectangle'
     };
     
     addObject(newObject);
-  }, [addObject, screenToWorld, snapToGrid]);
+  }, [addObject]);
 
   // 处理对象选择
   const handleObjectClick = useCallback((e: React.MouseEvent, objectId: string) => {
@@ -153,15 +146,9 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ externalObject
     setSelectedObjectId(objectId);
   }, []);
 
-  // 处理对象拖拽开始
+  // 处理对象拖拽开始（暂时简化）
   const handleObjectMouseDown = useCallback((e: React.MouseEvent, objectId: string) => {
     e.stopPropagation();
-    
-    // 检查是否可以开始对象拖拽
-    if (!canStartDrag('object-drag')) return;
-    
-    // 设置拖拽模式
-    setDragMode('object-drag');
     
     isMouseDown.current = true;
     startPos.current = { x: e.clientX, y: e.clientY };
@@ -176,42 +163,33 @@ export const CanvasWorkspace: React.FC<CanvasWorkspaceProps> = ({ externalObject
     
     document.addEventListener('mousemove', handleObjectMouseMove);
     document.addEventListener('mouseup', handleObjectMouseUp);
-  }, [objects, canStartDrag, setDragMode]);
+  }, [objects]);
 
-  // 处理对象拖拽移动
+  // 处理对象拖拽移动（暂时简化）
   const handleObjectMouseMove = useCallback((e: MouseEvent) => {
     if (!isMouseDown.current || !selectedObject.current) return;
     
     const deltaX = e.clientX - startPos.current.x;
     const deltaY = e.clientY - startPos.current.y;
     
-    // 转换为世界坐标的偏移
-    const worldDeltaX = deltaX / zoom;
-    const worldDeltaY = deltaY / zoom;
-    
-    const newX = selectedObject.current.startPos.x + worldDeltaX;
-    const newY = selectedObject.current.startPos.y + worldDeltaY;
-    
-    // 如果启用网格吸附，则吸附到网格
-    const snappedPos = snapToGrid(newX, newY);
+    const newX = selectedObject.current.startPos.x + deltaX;
+    const newY = selectedObject.current.startPos.y + deltaY;
     
     updateObject(selectedObject.current.id, {
-      x: snappedPos.x,
-      y: snappedPos.y
+      x: newX,
+      y: newY
     });
-  }, [zoom, snapToGrid, updateObject]);
+  }, [updateObject]);
 
-  // 处理对象拖拽结束
+  // 处理对象拖拽结束（暂时简化）
   const handleObjectMouseUp = useCallback(() => {
     if (isMouseDown.current) {
       isMouseDown.current = false;
-      // 重置拖拽模式
-      setDragMode('none');
       selectedObject.current = null;
       document.removeEventListener('mousemove', handleObjectMouseMove);
       document.removeEventListener('mouseup', handleObjectMouseUp);
     }
-  }, [setDragMode]);
+  }, []);
 
   // 处理键盘快捷键
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

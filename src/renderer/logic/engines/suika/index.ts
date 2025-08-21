@@ -8,7 +8,7 @@
 export { SuikaCanvasEngine } from './suika-canvas-engine';
 
 // 核心组件 (从Suika项目直接复用)
-export { SuikaEditor, ViewportManager, Ruler, RefLine, Setting, type SettingValue } from './core';
+export { SuikaEditor } from './core/editor';
 
 // 通用工具库
 export * from './common';

@@ -1,17 +1,30 @@
-/**
- * Suika编辑器核心 - 主编辑器类，管理所有子系统
- * @description 提供编辑器的核心功能，包括画布管理、视口控制、工具管理等
- * @author Suika团队
- */
-
 import { EventEmitter, genUuid } from '../common';
 import { mergeBoxes } from '../geo';
-import { Setting, type SettingValue } from './setting';
-import { ViewportManager } from './viewport-manager';
-import { Ruler } from './ruler';
-import { RefLine } from './ref-line';
 
-export interface SuikaEditorOptions {
+import { CanvasDragger } from './canvas_dragger';
+import { ClipboardManager } from './clipboard';
+import { CommandManager } from './commands/command-manager';
+import { ControlHandleManager } from './control_handle_manager';
+import { CursorManger, type ICursor } from './cursor_manager';
+import { type GraphicsAttrs, SuikaCanvas } from './graphics';
+import { SuikaDocument } from './graphics/document';
+import { HostEventManager, MouseEventManager } from './host_event_manager';
+import { ImgManager } from './Img_manager';
+import { KeyBindingManager } from './key_binding_manager';
+import { PathEditor } from './path_editor';
+import { PerfMonitor } from './perf_monitor';
+import { RefLine } from './ref_line';
+import { Ruler } from './ruler';
+import { SceneGraph } from './scene/scene_graph';
+import { SelectedBox } from './selected_box';
+import { SelectedElements } from './selected_elements';
+import { Setting, type SettingValue } from './setting';
+import { TextEditor } from './text/text_editor';
+import { ToolManager } from './tools';
+import { type IChanges, type IEditorPaperData } from './type';
+import { ViewportManager } from './viewport-manager';
+
+interface IEditorOptions {
   containerElement: HTMLDivElement;
   width: number;
   height: number;
@@ -23,14 +36,18 @@ export interface SuikaEditorOptions {
 
 interface Events {
   destroy(): void;
-  render(): void;
-  selectionChange(): void;
 }
 
-/**
- * Suika编辑器主类
- */
 export class SuikaEditor {
+  getState() {
+    throw new Error('Method not implemented.');
+  }
+  setState(_editorState: any) {
+    throw new Error('Method not implemented.');
+  }
+  getPerformanceInfo(): { fps: number; frameCount: number; } {
+    throw new Error('Method not implemented.');
+  }
   containerElement: HTMLDivElement;
   canvasElement: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -40,21 +57,35 @@ export class SuikaEditor {
 
   private emitter = new EventEmitter<Events>();
 
-  // 核心系统
+  doc: SuikaDocument;
+  sceneGraph: SceneGraph;
+  controlHandleManager: ControlHandleManager;
+
   setting: Setting;
+
   viewportManager: ViewportManager;
+
+  canvasDragger: CanvasDragger;
+  toolManager: ToolManager;
+  commandManager: CommandManager;
+  imgManager: ImgManager;
+
+  cursorManager: CursorManger;
+  mouseEventManager: MouseEventManager;
+  keybindingManager: KeyBindingManager;
+  hostEventManager: HostEventManager;
+  clipboard: ClipboardManager;
+
+  selectedElements: SelectedElements;
+  selectedBox: SelectedBox;
   ruler: Ruler;
   refLine: RefLine;
+  textEditor: TextEditor;
+  pathEditor: PathEditor;
 
-  // 简化的文档和场景图
-  doc: any;
-  sceneGraph: any;
-  selectedElements: any;
+  perfMonitor: PerfMonitor;
 
-  // 性能监控
-  perfMonitor: any;
-
-  constructor(options: SuikaEditorOptions) {
+  constructor(options: IEditorOptions) {
     this.containerElement = options.containerElement;
     this.canvasElement = document.createElement('canvas');
     this.containerElement.appendChild(this.canvasElement);
@@ -68,63 +99,132 @@ export class SuikaEditor {
       this.setting.set('offsetY', options.offsetY);
     }
 
+    this.mouseEventManager = new MouseEventManager(this);
+    this.keybindingManager = new KeyBindingManager(this);
+    this.keybindingManager.bindEvent();
+
+    this.sceneGraph = new SceneGraph(this);
+
+    this.cursorManager = new CursorManger(this);
     this.viewportManager = new ViewportManager(this);
+
+    this.commandManager = new CommandManager(this);
+    this.imgManager = new ImgManager();
+
+    this.selectedElements = new SelectedElements(this);
+    this.selectedBox = new SelectedBox(this);
     this.ruler = new Ruler(this);
     this.refLine = new RefLine(this);
 
-    // 简化的文档和场景图实现
-    this.doc = this.createSimpleDocument();
-    this.sceneGraph = this.createSimpleSceneGraph();
-    this.selectedElements = this.createSimpleSelectedElements();
+    this.controlHandleManager = new ControlHandleManager(this);
+    this.controlHandleManager.bindEvents();
+
+    this.textEditor = new TextEditor(this);
+    this.pathEditor = new PathEditor(this);
+
+    this.hostEventManager = new HostEventManager(this);
+    this.hostEventManager.bindHotkeys();
+
+    this.canvasDragger = new CanvasDragger(this as any);
+    this.toolManager = new ToolManager(this);
+
+    this.clipboard = new ClipboardManager(this);
+    this.clipboard.bindEvents();
+
+    this.imgManager.on('added', () => {
+      this.render();
+    });
 
     this.paperId = genUuid();
+
+    this.doc = new SuikaDocument({
+      id: '0-0',
+      objectName: 'Document',
+      width: 0,
+      height: 0,
+    });
+    this.doc.setEditor(this);
+
+    const canvas = new SuikaCanvas(
+      {
+        objectName: 'Page 1',
+      },
+      {
+        doc: this.doc,
+      },
+    );
+    this.sceneGraph.addItems([this.doc, canvas]);
+    this.doc.insertChild(canvas);
 
     this.viewportManager.setViewportSize({
       width: options.width,
       height: options.height,
     });
 
-    // 性能监控（简化实现）
-    this.perfMonitor = {
-      start: () => {},
-      destroy: () => {},
-    };
+    this.doc.setCurrentCanvas(canvas.attrs.id);
 
+    this.perfMonitor = new PerfMonitor();
     if (options.showPerfMonitor) {
       this.perfMonitor.start(this.containerElement);
     }
 
-    // 异步渲染
+    /**
+     * setViewport 其实会修改 canvas 的宽高，浏览器的 DOM 更新是异步的，
+     * 所以下面的 render 要异步执行
+     */
     Promise.resolve().then(() => {
       this.render();
     });
   }
 
-  /**
-   * 销毁编辑器
-   */
+  setContents(data: IEditorPaperData) {
+    this.sceneGraph.load(data.data);
+    this.commandManager.clearRecords();
+    this.paperId = data.paperId ?? genUuid();
+
+    const firstCanvas = this.doc.getChildren()[0];
+    this.doc.setCurrentCanvas(firstCanvas!.attrs.id);
+
+    if (!this.doc.getChildren().length) {
+      const canvas = new SuikaCanvas(
+        {
+          objectName: 'Page 1',
+        },
+        {
+          doc: this.doc,
+        },
+      );
+      this.sceneGraph.addItems([canvas]);
+      this.doc.insertChild(canvas);
+      this.doc.setCurrentCanvas(canvas.attrs.id);
+    }
+
+    this.viewportManager.zoomToFit(1);
+  }
+
   destroy() {
     this.containerElement.removeChild(this.canvasElement);
+    this.textEditor.destroy();
+    this.keybindingManager.destroy();
+    this.hostEventManager.destroy();
+    this.clipboard.destroy();
+    this.canvasDragger.destroy();
+    this.toolManager.unbindEvent();
+    this.toolManager.destroy();
     this.perfMonitor.destroy();
+    this.controlHandleManager.unbindEvents();
     this.emitter.emit('destroy');
   }
-
-  /**
-   * 设置光标
-   */
-  setCursor(cursor: any) {
-    this.containerElement.style.cursor = cursor.type || 'default';
+  setCursor(cursor: ICursor) {
+    this.cursorManager.setCursor(cursor);
   }
-
-  /**
-   * 获取光标
-   */
   getCursor() {
-    return { type: this.containerElement.style.cursor || 'default' };
+    return this.cursorManager.getCursor();
   }
-
   /**
-   * 视口坐标转场景坐标
+   * viewport coords to scene coords
+   *
+   * reference: https://mp.weixin.qq.com/s/uvVXZKIMn1bjVZvUSyYZXA
    */
   toScenePt(x: number, y: number, round = false) {
     const viewMatrix = this.viewportManager.getViewMatrix();
@@ -135,80 +235,34 @@ export class SuikaEditor {
     }
     return scenePt;
   }
-
-  /**
-   * 场景坐标转视口坐标
-   */
   toViewportPt(x: number, y: number) {
     const viewMatrix = this.viewportManager.getViewMatrix();
     return viewMatrix.apply({ x, y });
   }
-
-  /**
-   * 场景尺寸转视口尺寸
-   */
   toSceneSize(size: number) {
     const zoom = this.viewportManager.getZoom();
     return size / zoom;
   }
-
-  /**
-   * 视口尺寸转场景尺寸
-   */
   toViewportSize(size: number) {
     const zoom = this.viewportManager.getZoom();
     return size * zoom;
   }
-
-  /**
-   * 获取光标视口坐标
-   */
+  /** get cursor viewport xy */
   getCursorXY(event: { clientX: number; clientY: number }) {
     return {
       x: event.clientX - this.setting.get('offsetX'),
       y: event.clientY - this.setting.get('offsetY'),
     };
   }
-
-  /**
-   * 获取光标场景坐标
-   */
+  /** get cursor scene xy */
   getSceneCursorXY(event: { clientX: number; clientY: number }, round = false) {
     const { x, y } = this.getCursorXY(event);
     return this.toScenePt(x, y, round);
   }
-
-  /**
-   * 渲染画布
-   */
   render() {
-    const ctx = this.ctx;
-    const { width, height } = this.viewportManager.getPageSize();
-    
-    // 清除画布
-    ctx.clearRect(0, 0, width, height);
-    
-    // 绘制背景
-    ctx.fillStyle = this.setting.get('canvasBgColor');
-    ctx.fillRect(0, 0, width, height);
-
-    // 绘制场景图（简化实现）
-    this.sceneGraph.render(ctx);
-
-    // 绘制标尺
-    if (this.setting.get('enableRuler') && this.ruler.visible) {
-      this.ruler.draw();
-    }
-
-    // 绘制参考线
-    this.refLine.drawRefLine(ctx);
-
-    this.emitter.emit('render');
+    this.sceneGraph.render();
   }
 
-  /**
-   * 获取画布子元素边界框
-   */
   getCanvasChildrenBbox() {
     const canvasGraphics = this.doc.getCurrentCanvas();
     if (!canvasGraphics) {
@@ -216,108 +270,42 @@ export class SuikaEditor {
     }
     const children = canvasGraphics
       .getChildren()
-      .filter((item: any) => item.isVisible());
+      .filter((item) => item.isVisible());
     if (children.length === 0) return null;
-    return mergeBoxes(children.map((item: any) => item.getBbox()));
+    return mergeBoxes(children.map((item) => item.getBbox()));
   }
 
-  /**
-   * 获取编辑器状态
-   */
-  getState() {
-    return {
-      zoom: this.viewportManager.getZoom(),
-      viewport: this.viewportManager.getPos(),
-      selectedObjects: this.selectedElements.getItems(),
-    };
-  }
-
-  /**
-   * 设置编辑器状态
-   */
-  setState(state: any) {
-    if (state.zoom !== undefined) {
-      const center = this.viewportManager.getPageSize();
-      this.viewportManager.setZoom(state.zoom, {
-        x: center.width / 2,
-        y: center.height / 2,
-      });
+  applyChanges(changes: IChanges) {
+    const addedGraphicsArr: GraphicsAttrs[] = [];
+    for (const [, attrs] of changes.added) {
+      addedGraphicsArr.push(attrs);
     }
-    if (state.viewport !== undefined) {
-      this.viewportManager.translate(state.viewport.x, state.viewport.y);
+    this.sceneGraph.load(addedGraphicsArr, true);
+
+    for (const [id, partialAttrs] of changes.update) {
+      const graphics = this.doc.getGraphicsById(id);
+      if (!graphics) {
+        console.warn(`graphics ${id} is not exist`);
+        continue;
+      }
+      graphics.updateAttrs(partialAttrs);
+    }
+
+    for (const id of changes.deleted) {
+      const graphics = this.doc.getGraphicsById(id);
+      if (!graphics) {
+        console.warn(`graphics ${id} is not exist`);
+        continue;
+      }
+      graphics.setDeleted(true);
+      graphics.removeFromParent();
     }
   }
 
-  /**
-   * 获取性能信息
-   */
-  getPerformanceInfo() {
-    return {
-      fps: 60, // 简化实现
-      frameCount: 0,
-    };
-  }
-
-  /**
-   * 事件监听
-   */
   on<T extends keyof Events>(eventName: T, listener: Events[T]) {
     this.emitter.on(eventName, listener);
   }
-
-  /**
-   * 移除事件监听
-   */
   off<T extends keyof Events>(eventName: T, listener: Events[T]) {
     this.emitter.off(eventName, listener);
-  }
-
-  /**
-   * 创建简化的文档对象
-   */
-  private createSimpleDocument() {
-    return {
-      getCurrentCanvas: () => ({
-        forEachVisibleChildNode: (_callback: (graphics: any) => void) => {
-          // 简化实现，暂时返回空
-        },
-        getChildren: () => [],
-      }),
-    };
-  }
-
-  /**
-   * 创建简化的场景图对象
-   */
-  private createSimpleSceneGraph() {
-    return {
-      render: (_ctx: CanvasRenderingContext2D) => {
-        // 简化的渲染实现
-      },
-      addObject: (_object: any) => {
-        // 简化的添加对象实现
-      },
-      removeObject: (_id: string) => {
-        // 简化的移除对象实现
-      },
-      getObject: (_id: string) => {
-        // 简化的获取对象实现
-        return null;
-      },
-      getObjects: () => {
-        // 简化的获取所有对象实现
-        return [];
-      },
-    };
-  }
-
-  /**
-   * 创建简化的选中元素管理器
-   */
-  private createSimpleSelectedElements() {
-    return {
-      getItems: () => [],
-      getBoundingRect: () => null,
-    };
   }
 }

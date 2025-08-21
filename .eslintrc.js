@@ -214,6 +214,7 @@ module.exports = {
     'webpack.*.js',
     'electron-builder.json',
     '.eslintrc.js',
-    'tsconfig.json'
+    'tsconfig.json',
+    'suika/**/*'
   ],
 };

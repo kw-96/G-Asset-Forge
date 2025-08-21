@@ -1,18 +1,13 @@
 /**
- * 缩放平移容器组件 - 使用统一坐标系统
+ * 缩放平移容器组件 - 直接使用Suika核心
  * - 提供缩放、平移功能
- * - 使用统一的坐标系统进行所有计算
+ * - 直接使用Suika核心的ViewportManager
  * - 支持鼠标滚轮缩放、拖拽平移、快捷键等交互
  */
 
-import React, { useRef, useCallback, ReactNode, useEffect } from 'react';
+import React, { useRef, useCallback, ReactNode, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { CanvasCoordinateProvider } from '../common/CanvasCoordinateProvider';
-import { useCanvasCoordinate } from '../common/CanvasCoordinateContext';
-import { CanvasDisplayProvider, useCanvasDisplay } from '../common/CanvasDisplayContext';
-import { SuikaGridAdapter } from './SuikaGridAdapter';
-import { SuikaRulerAdapter } from './SuikaRulerAdapter';
-import { SuikaRefLineAdapter } from './SuikaRefLineAdapter';
+import { SuikaEditor } from '../../../logic/engines/suika/core/editor';
 
 // 根容器 - 需要与画布尺寸匹配
 const Root = styled.div<{ $canvasWidth?: number; $canvasHeight?: number }>`
@@ -65,122 +60,78 @@ const InteractionLayer = styled.div`
 `;
 
 // 缩放平移交互组件
-const ZoomPanInteraction: React.FC<{ enableShortcuts?: boolean }> = ({ enableShortcuts = true }) => {
-  const { zoom, pan, setZoom, setPan, canStartDrag, setDragMode } = useCanvasCoordinate();
+const ZoomPanInteraction: React.FC<{ 
+  enableShortcuts?: boolean; 
+  editor?: SuikaEditor;
+}> = ({ enableShortcuts = true, editor }) => {
   const isMouseDown = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
   const startPan = useRef({ x: 0, y: 0 });
   const interactionRef = useRef<HTMLDivElement>(null);
+  
+  // 直接使用Suika核心的状态
+  // const zoom = editor?.viewportManager?.getZoom() || 1;
+  const pan = editor?.viewportManager?.getPos() || { x: 0, y: 0 };
 
-  // 处理滚轮缩放（混合策略：动态算法 + 实用调整）
+  // 处理滚轮缩放 - 直接使用Suika核心
   const handleWheel = useCallback((e: WheelEvent) => {
+    if (!editor?.viewportManager) return;
+    
     e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     
-    // 改进的缩放算法：解决无法达到8x的问题
-    const getZoomStep = (deltaY: number, currentZoom: number) => {
-      // 调试信息：记录缩放过程
-      if (process.env['NODE_ENV'] === 'development') {
-        // console.log(`🔍 缩放调试 - 当前: ${currentZoom.toFixed(2)}x, deltaY: ${deltaY}, 目标: 8.0x`);
-      }
-      
-      // 简化且更有效的缩放步长算法
-      let zoomStep: number;
-      
-      // 根据当前缩放级别动态调整步长，确保能够达到8x
-      if (currentZoom < 2) {
-        zoomStep = 0.4; // 低缩放时使用较大步长快速接近
-      } else if (currentZoom < 4) {
-        zoomStep = 0.3; // 中等缩放时使用中等步长
-      } else if (currentZoom < 8) {
-        zoomStep = 0.25; // 接近8x时使用较大步长确保能达到
-      } else if (currentZoom < 16) {
-        zoomStep = 0.2; // 高缩放时使用精确控制
-      } else {
-        zoomStep = 0.15; // 超高缩放时使用小步长
-      }
-      
-      // 根据滚轮速度微调（保持Suika的响应性）
-      const speedFactor = Math.min(Math.abs(deltaY) / 100, 1.5);
-      zoomStep *= speedFactor;
-      
-      // 确保最小步长，避免无法缩放
-      zoomStep = Math.max(zoomStep, 0.1);
-      
-      if (process.env['NODE_ENV'] === 'development') {
-        // console.log(`🎯 计算步长: ${zoomStep.toFixed(3)}, 速度因子: ${speedFactor.toFixed(2)}`);
-      }
-      
-      return zoomStep;
-    };
-    
-    const zoomStep = getZoomStep(e.deltaY, zoom);
-    const newZoom = e.deltaY > 0 
-      ? Math.max(0.1, zoom / (1 + zoomStep))  // 缩小
-      : Math.min(32, zoom * (1 + zoomStep));  // 放大
-    
-    // 调试信息：记录缩放结果
-    if (process.env['NODE_ENV'] === 'development') {
-      // console.log(`📈 缩放结果: ${zoom.toFixed(2)}x → ${newZoom.toFixed(2)}x ${newZoom >= 8 ? '✅ 网格可显示' : '❌ 网格隐藏'}`);
-      
-      // 特殊检查：是否达到8x
-      if (zoom < 8 && newZoom >= 8) {
-        // console.log('🎉 已达到8x缩放级别！网格应该显示了！');
-      }
+    // 使用Suika核心的缩放方法
+    if (e.deltaY > 0) {
+      editor.viewportManager.zoomOut({ 
+        center: { x: mouseX, y: mouseY },
+        deltaY: e.deltaY 
+      });
+    } else {
+      editor.viewportManager.zoomIn({ 
+        center: { x: mouseX, y: mouseY },
+        deltaY: e.deltaY 
+      });
     }
-    
-    // 计算新的平移位置，保持鼠标位置不变
-    const scaleFactor = newZoom / zoom;
-    const newPanX = mouseX - (mouseX - pan.x) * scaleFactor;
-    const newPanY = mouseY - (mouseY - pan.y) * scaleFactor;
-    
-    setZoom(newZoom);
-    setPan({ x: newPanX, y: newPanY });
-  }, [zoom, pan, setZoom, setPan]);
+  }, [editor]);
 
   // 处理鼠标按下 - 开始画布平移
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // 检查是否可以开始画布平移拖拽
-    if (!canStartDrag('canvas-pan')) return;
+    if (!editor?.viewportManager) return;
     
     e.preventDefault();
     isMouseDown.current = true;
     startPos.current = { x: e.clientX, y: e.clientY };
     startPan.current = { x: pan.x, y: pan.y };
     
-    // 设置拖拽模式
-    setDragMode('canvas-pan');
-    
     const target = e.currentTarget as HTMLElement;
     target.style.cursor = 'grabbing';
-  }, [pan, canStartDrag, setDragMode]);
+  }, [pan, editor]);
   
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isMouseDown.current) return;
+    if (!isMouseDown.current || !editor?.viewportManager) return;
     
     const deltaX = e.clientX - startPos.current.x;
     const deltaY = e.clientY - startPos.current.y;
     
-    setPan({
-      x: startPan.current.x + deltaX,
-      y: startPan.current.y + deltaY
-    });
-  }, [setPan]);
+    // 使用Suika核心的平移方法
+    editor.viewportManager.translate(deltaX, deltaY);
+    
+    // 更新起始位置，避免累积误差
+    startPos.current = { x: e.clientX, y: e.clientY };
+  }, [editor]);
   
   const handleMouseUp = useCallback(() => {
     if (isMouseDown.current) {
       isMouseDown.current = false;
-      // 重置拖拽模式
-      setDragMode('none');
       
       const element = document.activeElement;
       if (element && element instanceof HTMLElement) {
         element.style.cursor = 'grab';
       }
     }
-  }, [setDragMode]);
+  }, []);
   
   // 添加滚轮事件监听器 - 设置passive: false以支持preventDefault
   useEffect(() => {
@@ -207,9 +158,9 @@ const ZoomPanInteraction: React.FC<{ enableShortcuts?: boolean }> = ({ enableSho
     }
   }, [isMouseDown.current, handleMouseMove, handleMouseUp]);
   
-  // 快捷键支持
+  // 快捷键支持 - 使用Suika核心
   useEffect(() => {
-    if (!enableShortcuts) return;
+    if (!enableShortcuts || !editor?.viewportManager) return;
     
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -217,23 +168,24 @@ const ZoomPanInteraction: React.FC<{ enableShortcuts?: boolean }> = ({ enableSho
           case '=':
           case '+':
             e.preventDefault();
-            // 参考Suika的默认缩放步长
-            setZoom(Math.max(0.1, Math.min(32, zoom * (1 + 0.2325))));
+            editor.viewportManager.zoomIn();
             break;
           case '-':
             e.preventDefault();
-            // 参考Suika的默认缩放步长
-            setZoom(Math.max(0.1, Math.min(32, zoom / (1 + 0.2325))));
+            editor.viewportManager.zoomOut();
             break;
           case '0':
             e.preventDefault();
-            setZoom(1);
-            setPan({ x: 0, y: 0 }); // 无限画布：支持任意pan值
+            editor.viewportManager.resetViewport();
             break;
           case '8':
             e.preventDefault();
             // 快捷键：直接跳转到8x缩放（网格显示级别）
-            setZoom(8);
+            const center = editor.viewportManager.getPageSize();
+            editor.viewportManager.setZoom(8, {
+              x: center.width / 2,
+              y: center.height / 2
+            });
             break;
         }
       }
@@ -241,7 +193,7 @@ const ZoomPanInteraction: React.FC<{ enableShortcuts?: boolean }> = ({ enableSho
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zoom, setZoom, setPan, enableShortcuts]);
+  }, [enableShortcuts, editor]);
   
   return (
     <InteractionLayer
@@ -254,12 +206,7 @@ const ZoomPanInteraction: React.FC<{ enableShortcuts?: boolean }> = ({ enableSho
 // 主组件接口
 export interface ZoomPanContainerProps {
   children: ReactNode;
-  initialZoom?: number;
-  initialPan?: { x: number; y: number };
-  initialGridSize?: number;
-  initialShowGrid?: boolean;
-  initialShowRuler?: boolean;
-  initialShowGuides?: boolean;
+  editor?: SuikaEditor; // Suika编辑器实例
   canvasWidth?: number; // 画布宽度
   canvasHeight?: number; // 画布高度
   className?: string;
@@ -272,12 +219,7 @@ export interface ZoomPanContainerProps {
 // 主缩放平移容器组件
 export const ZoomPanContainer: React.FC<ZoomPanContainerProps> = ({
   children,
-  initialZoom = 1,
-  initialPan = { x: 0, y: 0 },
-  initialGridSize = 1,
-  initialShowGrid = true,
-  initialShowRuler = true,
-  initialShowGuides = true,
+  editor,
   canvasWidth,
   canvasHeight,
   className,
@@ -287,39 +229,25 @@ export const ZoomPanContainer: React.FC<ZoomPanContainerProps> = ({
   selectedObjects = []
 }) => {
   return (
-    <CanvasDisplayProvider
-      initialState={{
-        showGrid: initialShowGrid,
-        showRuler: initialShowRuler,
-        showGuides: initialShowGuides
-      }}
+    <ZoomPanContent 
+      editor={editor as SuikaEditor}
+      className={className || ''} 
+      overlay={overlay} 
+      enableShortcuts={enableShortcuts}
+      mode={mode}
+      selectedObjects={selectedObjects}
+      {...(canvasWidth !== undefined && { canvasWidth })}
+      {...(canvasHeight !== undefined && { canvasHeight })}
     >
-      <CanvasCoordinateProvider
-        initialZoom={initialZoom}
-        initialPan={initialPan}
-        initialGridSize={initialGridSize}
-        initialShowGrid={initialShowGrid}
-        initialShowRuler={initialShowRuler}
-      >
-        <ZoomPanContent 
-          className={className || ''} 
-          overlay={overlay} 
-          enableShortcuts={enableShortcuts}
-          mode={mode}
-          selectedObjects={selectedObjects}
-          {...(canvasWidth !== undefined && { canvasWidth })}
-          {...(canvasHeight !== undefined && { canvasHeight })}
-        >
-          {children}
-        </ZoomPanContent>
-      </CanvasCoordinateProvider>
-    </CanvasDisplayProvider>
+      {children}
+    </ZoomPanContent>
   );
 };
 
 // 内容组件
 const ZoomPanContent: React.FC<{ 
   children: ReactNode; 
+  editor?: SuikaEditor;
   className?: string; 
   overlay?: ReactNode; 
   enableShortcuts?: boolean;
@@ -329,6 +257,7 @@ const ZoomPanContent: React.FC<{
   selectedObjects?: any[];
 }> = ({ 
   children, 
+  editor,
   className, 
   overlay,
   enableShortcuts,
@@ -337,19 +266,46 @@ const ZoomPanContent: React.FC<{
   mode = 'design',
   selectedObjects = []
 }) => {
-  const { zoom, pan, setViewportSize } = useCanvasCoordinate();
-  const { displayState } = useCanvasDisplay();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [, forceUpdate] = useState({});
   
-  // 监听容器尺寸变化
+  // 直接使用Suika核心的状态
+  const zoom = editor?.viewportManager?.getZoom() || 1;
+  const pan = editor?.viewportManager?.getPos() || { x: 0, y: 0 };
+  
+  // 避免未使用变量警告
+  void selectedObjects;
+  
+  // 监听Suika编辑器的状态变化
+  useEffect(() => {
+    if (!editor?.viewportManager) return;
+    
+    const handleViewMatrixChange = () => {
+      forceUpdate({});
+    };
+    
+    const handleZoomChange = () => {
+      forceUpdate({});
+    };
+    
+    editor.viewportManager.on('viewMatrixChange', handleViewMatrixChange);
+    editor.viewportManager.on('zoomChange', handleZoomChange);
+    
+    return () => {
+      editor.viewportManager.off('viewMatrixChange', handleViewMatrixChange);
+      editor.viewportManager.off('zoomChange', handleZoomChange);
+    };
+  }, [editor]);
+  
+  // 监听容器尺寸变化并更新Suika编辑器
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !editor?.viewportManager) return;
     
     // 初始化尺寸
     const updateSize = () => {
       const rect = container.getBoundingClientRect();
-      setViewportSize(rect.width, rect.height);
+      editor.viewportManager.setViewportSize({ width: rect.width, height: rect.height });
     };
     
     updateSize();
@@ -358,7 +314,7 @@ const ZoomPanContent: React.FC<{
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        setViewportSize(width, height);
+        editor.viewportManager.setViewportSize({ width, height });
       }
     });
     
@@ -368,7 +324,7 @@ const ZoomPanContent: React.FC<{
       resizeObserver.unobserve(container);
       resizeObserver.disconnect();
     };
-  }, [setViewportSize]);
+  }, [editor]);
   
   // 构建props对象，只有当值存在时才添加
   const rootProps = {
@@ -381,32 +337,18 @@ const ZoomPanContent: React.FC<{
   const containerClassName = [
     className || '',
     'suika-container',
-    displayState.showGrid ? 'grid-visible' : 'grid-hidden',
-    displayState.showRuler ? 'ruler-visible' : 'ruler-hidden',
-    displayState.showGuides ? 'guides-visible' : 'guides-hidden',
+    editor?.setting?.get('enablePixelGrid') ? 'grid-visible' : 'grid-hidden',
+    editor?.setting?.get('enableRuler') ? 'ruler-visible' : 'ruler-hidden',
     mode === 'design' ? 'design-mode' : 'h5-mode'
   ].filter(Boolean).join(' ');
 
   return (
     <Root {...rootProps} className={containerClassName}>
-      {/* 网格渲染 - 仅在设计模式下显示 */}
-      {mode === 'design' && displayState.showGrid && <SuikaGridAdapter minZoomThreshold={8} />}
-      
-      {/* 标尺系统 - 在设计模式和H5模式中都显示 */}
-      <SuikaRulerAdapter visible={displayState.showRuler} mode={mode} />
-      
-      {/* 参考线系统 - 在设计模式和H5模式中都显示 */}
-      <SuikaRefLineAdapter 
-        visible={displayState.showGuides} 
-        mode={mode} 
-        selectedObjects={selectedObjects}
-      />
-      
       <Inner $x={pan.x} $y={pan.y} $zoom={zoom}>
         {children}
       </Inner>
       {overlay && <OverlayContainer>{overlay}</OverlayContainer>}
-      <ZoomPanInteraction enableShortcuts={enableShortcuts || true} />
+      <ZoomPanInteraction enableShortcuts={enableShortcuts || true} editor={editor as SuikaEditor} />
     </Root>
   );
 };

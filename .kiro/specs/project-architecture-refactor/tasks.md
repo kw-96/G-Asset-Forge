@@ -346,6 +346,57 @@
   - 标尺系统在设计模式和H5模式中都要正确显示
   - 辅助线系统需要在设计模式和H5模式中正确显示，且保证正确的交互
 
+- [x] 14. 检查功能重复文件并提出建议，将分析生成md文档
+
+  - 检查ui/business目录下的文件，是否存在与logic目录下重复功能的文件
+  - 检查完所有相关代码后进行分析，并提出清理建议
+  - 生成md文档，记录分析内容和清理建议
+
+  - [x] 15. 检查功能重复文件并提出建议，将分析生成md文档
+
+  - 检查 ui/business/common 目录和 ui/business/Canvas 目录下的文件，是否存在与logic目录下重复功能的文件
+  - 检查完所有相关代码后进行分析，并提出清理建议
+  - 生成md文档，记录分析内容和清理建议
+
+  - [x] 16. 检查功能重复文件并提出建议，将分析生成md文档
+
+  - 检查 ui/business/common 目录和 ui/business/Canvas 目录下的文件，是否存在与logic/engines/suika目录下重复功能的文件
+  - 检查完所有相关代码后进行分析，并提出清理建议
+  - 生成md文档，记录分析内容和清理建议
+
+  - [x] 17.统一调用Suika核心 'src/renderer/logic/engines/suika/'
+
+  - `src/renderer/ui/business/common/SuikaGridAdapter.tsx` (修改为调用Suika核心)
+  - `src/renderer/ui/business/common/SuikaRulerAdapter.tsx` (修改为调用Suika核心)
+  - `src/renderer/ui/business/common/ZoomPanContainer.tsx` (修改为调用Suika核心)
+  - `src/renderer/ui/business/common/SuikaRefLineAdapter.tsx` (修改为调用Suika核心)
+  - `src/renderer/ui/business/common/CanvasContainer.tsx` (功能合并到Canvas/SuikaCanvasComponent后，删除CanvasContainer)
+  - 所有UI层配置都映射到Suika核心的Setting系统
+  - 检查以上修改涉及到的相关文件，并更新
+  - 分析common目录内是否存在其他无用或重复功能代码和文件，列出清单，提出清理或修改建议，生成md文件
+
+  - [x] 18.修复网格、标尺、辅助线的界面显示问题
+
+  - 检查ZoomPanContainer.tsx是否正确挂载在MainLayout上，以及ZoomPanContainer实现的界面显示是否有问题，并修复
+  - 检查ZoomPanContainer.tsx中的缩放平移功能是否重复了suika核心的实现，并修复
+  - 检查是否有代码或文件影响suika核心功能的实现以及界面显示，并修复
+
+  - [x] 19.解决影响Suika核心实现冲突或重复功能问题
+
+  - 检查CanvasCoordinateContext.tsx文件是否与suika核心的实现重复或冲突了
+  - 检查CanvasCoordinateProvider.tsx文件是否与suika核心的实现重复或冲突了
+  - 检查CanvasDisplayContext.tsx文件是否与suika核心的实现重复或冲突了
+  - 检查ui/business/common目录下的utils.ts文件是否与suika核心的实现重复或冲突了
+  - 存在冲突或重复，以Suika核心为主，进行修复，必要时可清除对应文件
+  - 修复SuikaGridAdapter、SuikaRefLineAdapter、SuikaRulerAdapter中引用useCanvasGrid和useCanvasCoordinate导致suika核心实现冲突的问题
+
+  - [x] 20.评估一下项目完全使用Suika进行改造，适配GAF项目的功能，以及适配GAF项目的UI界面（包括复现H5模式的实现），生成文档
+
+
+
+
+
+
 ## 实施优先级
 
 ### 高优先级 (立即执行)

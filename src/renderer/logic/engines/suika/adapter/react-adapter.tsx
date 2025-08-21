@@ -1,6 +1,6 @@
 // Suika引擎的React适配器
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
-import { SuikaEditor, type SuikaEditorOptions } from '../core/editor';
+import { SuikaEditor } from '../core/editor';
 
 export interface ISuikaCanvasProps {
   width: number;
@@ -37,7 +37,7 @@ export const SuikaCanvas = forwardRef<ISuikaCanvasRef, ISuikaCanvasProps>(
       if (!containerRef.current) return;
 
       // 创建Suika编辑器实例
-      const options: SuikaEditorOptions = {
+      const options: any = {
         containerElement: containerRef.current,
         width,
         height,
@@ -49,7 +49,7 @@ export const SuikaCanvas = forwardRef<ISuikaCanvasRef, ISuikaCanvasProps>(
 
       // 绑定事件
       if (onSelectionChange) {
-        editor.on('selectionChange', onSelectionChange);
+        editor.on('selectionChange' as any, onSelectionChange as any);
       }
 
       // 通知父组件编辑器已准备就绪

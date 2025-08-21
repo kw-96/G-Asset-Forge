@@ -22,6 +22,11 @@ module.exports = {
     '<rootDir>/node_modules/',
     '<rootDir>/dist/',
     '<rootDir>/build/',
+    '<rootDir>/suika/**/*',
+  ],
+  
+  modulePathIgnorePatterns: [
+    '<rootDir>/suika/**/*',
   ],
   
   // 模块文件扩展名
@@ -52,6 +57,7 @@ module.exports = {
   // 转换忽略模式
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$))',
+    '<rootDir>/suika/**/*',
   ],
   
   // 设置文件
@@ -69,6 +75,7 @@ module.exports = {
     '!src/**/*.spec.{ts,tsx}',
     '!src/main/main.ts',
     '!src/renderer/index.tsx',
+    '!suika/**/*',
   ],
   
   // 覆盖率报告

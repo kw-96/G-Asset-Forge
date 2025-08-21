@@ -171,9 +171,8 @@ export class SuikaCanvasEngine implements CanvasEngine {
       throw new Error('Suika editor not initialized');
     }
 
-    const editorState = this.editor.getState();
-    const zoom = editorState.zoom || 1;
-    const viewport = editorState.viewport || { x: 0, y: 0 };
+    const zoom = this.editor.viewportManager.getZoom() || 1;
+    const viewport = this.editor.viewportManager.getPos() || { x: 0, y: 0 };
 
     return {
       id: 'canvas-1',
@@ -199,7 +198,7 @@ export class SuikaCanvasEngine implements CanvasEngine {
         targetFPS: 60
       },
       elements: Array.from(this.layers.values()).flatMap(layer => layer.elements),
-      selectedElementIds: (editorState.selectedObjects || []).map((obj: any) => obj.id),
+      selectedElementIds: (this.editor.selectedElements.getItems() || []).map((obj: any) => obj.id) || [],
       viewport: { x: viewport.x, y: viewport.y, zoom },
       history: {
         canUndo: false,
@@ -291,8 +290,8 @@ export class SuikaCanvasEngine implements CanvasEngine {
       throw new Error('Suika editor not initialized');
     }
 
-    const object = this.editor.sceneGraph.getObject(id);
-    if (object) {
+    const object = this.editor.sceneGraph.getObject(id) as any;
+    if (object && updates) {
       // 更新对象属性
       Object.assign(object, updates);
       this.editor.render();
@@ -587,7 +586,7 @@ export class SuikaCanvasEngine implements CanvasEngine {
     }
 
     // const viewport = this.editor.viewportManager.getViewport();
-    const allObjects = this.editor.sceneGraph.getObjects();
+    const allObjects = (this.editor.sceneGraph.getObjects() as any) || [];
 
     // 过滤出在视口内可见的对象
     return allObjects.filter((obj: any) => {
@@ -739,11 +738,11 @@ export class SuikaCanvasEngine implements CanvasEngine {
   private setupEventListeners(): void {
     if (!this.editor) return;
 
-    this.editor.on('render', () => {
+    (this.editor as any).on('render', () => {
       this.eventEmitter.emit('canvas:rendered', {});
     });
 
-    this.editor.on('selectionChange', () => {
+    (this.editor as any).on('selectionChange', () => {
       // 选择变化事件 - 由Suika核心系统处理
       this.eventEmitter.emit('selection:changed', { selectedObjects: [] });
     });

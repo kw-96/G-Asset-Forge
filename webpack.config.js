@@ -224,4 +224,24 @@ const commonConfig = {
   }
 };
 
-module.exports = { commonConfig, merge };
+module.exports = {
+  commonConfig, merge,
+  ignoreWarnings: [ /suika/ ],
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: [
+          /node_modules/,
+          /suika/,  // 排除 suika 目录
+          path.resolve(__dirname, 'suika')  // 绝对路径排除
+        ],
+        use: 'ts-loader'
+      }
+    ]
+  },
+  entry: {
+    main: './src/renderer/index.tsx',  // 只包含 src 目录
+    // 不要包含 suika 目录
+  }
+};

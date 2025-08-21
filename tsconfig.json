@@ -85,7 +85,13 @@
     "CLAUDE.md",
     "README.md",
     "temp-suika/",
-    "src/renderer/ui/theme/mixins.ts"
+    "src/renderer/ui/theme/mixins.ts",
+    "suika/**/*",
+    "suika/**/*",
+    "suika",
+    "node_modules",
+    "dist",
+    "build"
   ],
   "ts-node": {
     "esm": true,

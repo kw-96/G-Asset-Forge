@@ -1,9 +1,3 @@
-/**
- * Suika视口管理器 - 管理画布的视口变换、缩放和平移
- * @description 提供视口矩阵管理、缩放控制、平移控制和坐标转换功能
- * @author Suika团队
- */
-
 import { EventEmitter, getDevicePixelRatio } from '../common';
 import {
   boxToRect,
@@ -14,6 +8,9 @@ import {
   Matrix,
 } from '../geo';
 
+import { type SuikaEditor } from './editor';
+import { type SuikaGraphics } from './graphics';
+
 interface Events {
   xOrYChange(x: number | undefined, y: number): void;
   viewMatrixChange(viewMatrix: Matrix): void;
@@ -21,43 +18,16 @@ interface Events {
 }
 
 export class ViewportManager {
-  getViewportState(): {
-    bounds: any; panX: number; panY: number; zoom: number;
-} {
-    return {
-  panX: this.viewMatrix.tx,
-  panY: this.viewMatrix.ty,
-  zoom: this.getZoom(),
-  bounds: {
-    minX: 0,
-    minY: 0,
-    maxX: 0,
-    maxY: 0,
-  },
-};
-  }
-  getViewport(): { panX: number; panY: number; zoom: number } {
-    return {
-      panX: this.viewMatrix.tx,
-      panY: this.viewMatrix.ty,
-      zoom: this.getZoom(),
-    };
-  }
   private viewMatrix = new Matrix();
   private eventEmitter = new EventEmitter<Events>();
 
-  constructor(private editor: any) {}
+  constructor(private editor: SuikaEditor) {}
 
-  /**
-   * 获取视图矩阵副本
-   */
+  /* get view matrix clone */
   getViewMatrix() {
     return this.viewMatrix.clone();
   }
 
-  /**
-   * 设置视图矩阵
-   */
   setViewMatrix(viewMatrix: Matrix) {
     const prevX = this.viewMatrix.tx;
     const prevY = this.viewMatrix.ty;
@@ -73,15 +43,15 @@ export class ViewportManager {
     }
   }
 
-  /**
-   * 获取当前缩放级别
-   */
   getZoom() {
     return this.viewMatrix.a;
   }
 
   /**
-   * 放大
+   * zoom in
+   * @param center zoom center
+   * @param enableLevel zoom by level
+   * @param deltaY mouse wheel deltaY
    */
   zoomIn(opts?: { center?: IPoint; isLevelZoom?: boolean; deltaY?: number }) {
     const prevZoom = this.getZoom();
@@ -89,11 +59,11 @@ export class ViewportManager {
     let zoom: number;
     if (opts?.isLevelZoom) {
       const levels = this.editor.setting.get('zoomLevels');
-      const [, right] = this.getNearestVals(levels, prevZoom);
+      const [, right] = getNearestVals(levels, prevZoom);
       zoom = right;
     } else {
       const zoomStep = opts?.deltaY
-        ? this.deltaYToZoomStep(opts.deltaY)
+        ? deltaYToZoomStep(opts.deltaY)
         : this.editor.setting.get('zoomStep');
       zoom = Math.min(
         prevZoom * (1 + zoomStep),
@@ -106,18 +76,21 @@ export class ViewportManager {
   }
 
   /**
-   * 缩小
+   * zoom out
+   * @param center zoom center
+   * @param enableLevel zoom by level
+   * @param deltaY mouse wheel deltaY
    */
   zoomOut(opts?: { center?: IPoint; isLevelZoom?: boolean; deltaY?: number }) {
     const prevZoom = this.getZoom();
     let zoom: number;
     if (opts?.isLevelZoom) {
       const levels = this.editor.setting.get('zoomLevels');
-      const [left] = this.getNearestVals(levels, prevZoom);
+      const [left] = getNearestVals(levels, prevZoom);
       zoom = left;
     } else {
       const zoomStep = opts?.deltaY
-        ? this.deltaYToZoomStep(opts.deltaY)
+        ? deltaYToZoomStep(opts.deltaY)
         : this.editor.setting.get('zoomStep');
       zoom = Math.max(
         prevZoom / (1 + zoomStep),
@@ -128,9 +101,6 @@ export class ViewportManager {
     this.setZoom(zoom, center);
   }
 
-  /**
-   * 设置缩放级别
-   */
   setZoom(zoom: number, center: IPoint) {
     const deltaZoom = zoom / this.getZoom();
     const newViewMatrix = this.viewMatrix
@@ -143,9 +113,7 @@ export class ViewportManager {
     this.eventEmitter.emit('zoomChange', this.getZoom());
   }
 
-  /**
-   * 缩放以适应所有元素
-   */
+  /** zoom to fit all elements */
   zoomToFit(maxZoom?: number) {
     const canvasBbox = this.editor.getCanvasChildrenBbox();
     if (!canvasBbox) {
@@ -155,9 +123,6 @@ export class ViewportManager {
     this.zoomRectToFit(boxToRect(canvasBbox), maxZoom);
   }
 
-  /**
-   * 缩放以适应选中元素
-   */
   zoomToSelection() {
     const selectedBoundingRect = this.editor.selectedElements.getBoundingRect();
     if (!selectedBoundingRect) {
@@ -167,9 +132,6 @@ export class ViewportManager {
     }
   }
 
-  /**
-   * 缩放以适应指定矩形
-   */
   private zoomRectToFit(targetRect: IRect, maxZoom?: number) {
     const padding = this.editor.setting.get('zoomToFixPadding');
     const rulerWidth = this.editor.setting.get('enableRuler')
@@ -209,7 +171,8 @@ export class ViewportManager {
   }
 
   /**
-   * 重置视口到默认状态
+   * make origin in viewport center
+   * and set zoom 100%
    */
   resetViewport() {
     const center = this.getViewportCenter();
@@ -217,9 +180,6 @@ export class ViewportManager {
     this.setViewMatrix(newViewMatrix);
   }
 
-  /**
-   * 获取视口中心点
-   */
   private getViewportCenter() {
     const { width, height } = this.getPageSize();
     return {
@@ -228,9 +188,11 @@ export class ViewportManager {
     };
   }
 
-  /**
-   * 获取视口位置
-   */
+  zoomToGraphics(graphics: SuikaGraphics) {
+    const rect = boxToRect(graphics.getBbox());
+    this.zoomRectToFit(rect);
+  }
+
   getPos() {
     return {
       x: this.viewMatrix.tx,
@@ -238,9 +200,6 @@ export class ViewportManager {
     };
   }
 
-  /**
-   * 获取页面尺寸
-   */
   getPageSize() {
     return {
       width: parseFloat(this.editor.canvasElement.style.width),
@@ -248,9 +207,6 @@ export class ViewportManager {
     };
   }
 
-  /**
-   * 设置视口尺寸
-   */
   setViewportSize({ width, height }: ISize) {
     const dpr = getDevicePixelRatio();
 
@@ -260,10 +216,6 @@ export class ViewportManager {
     this.editor.canvasElement.height = height * dpr;
     this.editor.canvasElement.style.height = height + 'px';
   }
-
-  /**
-   * 获取场景中心点
-   */
   getSceneCenter() {
     const size = this.getPageSize();
     return this.viewMatrix.applyInverse({
@@ -271,29 +223,19 @@ export class ViewportManager {
       y: size.height / 2,
     });
   }
-
-  /**
-   * 平移视口
-   */
   translate(dx: number, dy: number) {
     const newViewMatrix = this.viewMatrix.clone().translate(dx, dy);
     this.setViewMatrix(newViewMatrix);
   }
 
-  /**
-   * 设置缩放并更新视口
-   */
   setZoomAndUpdateViewport(zoom: number) {
     const size = this.getPageSize();
-    this.setZoom(zoom, {
+    this.editor.viewportManager.setZoom(zoom, {
       x: size.width / 2,
       y: size.height / 2,
     });
   }
 
-  /**
-   * 获取场景边界框
-   */
   getSceneBbox(): IBox {
     const { width, height } = this.getPageSize();
     const { x: minX, y: minY } = this.viewMatrix.applyInverse({ x: 0, y: 0 });
@@ -304,47 +246,38 @@ export class ViewportManager {
     return { minX, minY, maxX, maxY };
   }
 
-  /**
-   * 监听事件
-   */
   on<K extends keyof Events>(eventName: K, handler: Events[K]) {
     this.eventEmitter.on(eventName, handler);
   }
-
-  /**
-   * 移除事件监听
-   */
   off<K extends keyof Events>(eventName: K, handler: Events[K]) {
     this.eventEmitter.off(eventName, handler);
   }
-
-  /**
-   * 二分查找最近的值
-   */
-  private getNearestVals<T>(arr: T[], target: T): [T, T] {
-    let left = 0;
-    let right = arr.length - 1;
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      if (arr[mid] === target) {
-        right = mid - 1;
-        left = mid + 1;
-        break;
-      } else if (arr[mid]! < target) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-    if (right < 0) right = 0;
-    if (left >= arr.length) left = arr.length - 1;
-    return [arr[right]!, arr[left]!];
-  }
-
-  /**
-   * 将deltaY转换为缩放步长
-   */
-  private deltaYToZoomStep(deltaY: number) {
-    return Math.max(0.05, 0.12937973 * Math.log(Math.abs(deltaY)) - 0.33227472);
-  }
 }
+
+/**
+ * binary search to find
+ * the left and right index of the target value
+ */
+const getNearestVals = <T>(arr: T[], target: T): [T, T] => {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    if (arr[mid] === target) {
+      right = mid - 1;
+      left = mid + 1;
+      break;
+    } else if (arr[mid]! < target) {
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+  if (right < 0) right = 0;
+  if (left >= arr.length) left = arr.length - 1;
+  return [arr[right]!, arr[left]!];
+};
+
+const deltaYToZoomStep = (deltaY: number) => {
+  return Math.max(0.05, 0.12937973 * Math.log(Math.abs(deltaY)) - 0.33227472);
+};

@@ -12,7 +12,7 @@ import type {
 } from '../../../../interfaces/types/canvas';
 // import { EventEmitter } from '../../utils/EventEmitter.ts';
 // import { HistoryManager } from '../../managers/history/history-manager.ts';
-import { ToolManager } from '../../engines/suika/core/tool-manager';
+import { ToolManager } from '../../engines/suika/core/tools/tool_manager';
 // 暂时移除工具类型导入，因为路径不存在
 // import type { ITool, ToolType, IToolConfig, IToolProperties } from '../tools/tool-types';
 import { SuikaCanvasEngine } from '../../engines/suika/suika-canvas-engine';
@@ -183,7 +183,7 @@ export class CanvasManager extends TypedEventEmitter<CanvasManagerEvents> {
   }
 
   getActiveTool(): any | null {
-    return this.toolManager?.getActiveTool() || null;
+    return this.toolManager?.getActiveToolName() || null;
   }
 
   getActiveToolType(): string | null {
@@ -211,37 +211,19 @@ export class CanvasManager extends TypedEventEmitter<CanvasManagerEvents> {
   }
 
   // 事件处理方法
-  handleMouseDown(event: MouseEvent): void {
-    if (!this.toolManager) return;
-    // 需要从事件中提取坐标
-    const rect = (event.target as HTMLElement)?.getBoundingClientRect();
-    if (rect) {
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      this.toolManager.handleMouseDown(x, y, event);
-    }
+  handleMouseDown(_event: MouseEvent): void {
+    // ToolManager已经通过事件系统处理鼠标事件，这里不需要额外处理
+    // 如果需要处理，应该通过editor的事件系统
   }
 
-  handleMouseMove(event: MouseEvent): void {
-    if (!this.toolManager) return;
-    // 需要从事件中提取坐标
-    const rect = (event.target as HTMLElement)?.getBoundingClientRect();
-    if (rect) {
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      this.toolManager.handleMouseMove(x, y, event);
-    }
+  handleMouseMove(_event: MouseEvent): void {
+    // ToolManager已经通过事件系统处理鼠标事件，这里不需要额外处理
+    // 如果需要处理，应该通过editor的事件系统
   }
 
-  handleMouseUp(event: MouseEvent): void {
-    if (!this.toolManager) return;
-    // 需要从事件中提取坐标
-    const rect = (event.target as HTMLElement)?.getBoundingClientRect();
-    if (rect) {
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      this.toolManager.handleMouseUp(x, y, event);
-    }
+  handleMouseUp(_event: MouseEvent): void {
+    // ToolManager已经通过事件系统处理鼠标事件，这里不需要额外处理
+    // 如果需要处理，应该通过editor的事件系统
   }
 
   handleKeyDown(_event: KeyboardEvent): void {

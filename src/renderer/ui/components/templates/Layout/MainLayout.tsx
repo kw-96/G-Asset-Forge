@@ -16,7 +16,7 @@ import { FigmaToolbar } from '../../../business/Layout/FigmaToolbar';
 import { H5EditorCanvas, type H5EditorCanvasRef } from '../../../../logic/engines/h5-editor/adapter/react-adapter';  
 import { H5LayersPanel } from '../../../../logic/engines/h5-editor/components/H5LayersPanel';
 import { H5PropertiesPanel } from '../../../../logic/engines/h5-editor/components/H5PropertiesPanel';
-import { CanvasWorkspace } from '../../../business/Canvas/CanvasWorkspace';
+import { SuikaCanvasComponent } from '../../../business/Canvas/SuikaCanvasComponent';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { useLayoutConfig } from '../../../../logic/contexts/LayoutContext';
 import { AssetLibraryPanel } from '../../../business/AssetLibrary/AssetLibraryPanel';
@@ -459,32 +459,32 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
     }
   ]);
 
-  // 将图层数据转换为画布对象
-  const canvasObjects = useMemo(() => {
-    const flattenLayers = (layers: any[]): any[] => {
-      const result: any[] = [];
-      layers.forEach(layer => {
-        result.push(layer);
-        if (layer.children) {
-          result.push(...flattenLayers(layer.children));
-        }
-      });
-      return result;
-    };
+  // 注释掉未使用的canvasObjects，因为现在使用SuikaCanvasComponent
+  // const canvasObjects = useMemo(() => {
+  //   const flattenLayers = (layers: any[]): any[] => {
+  //     const result: any[] = [];
+  //     layers.forEach(layer => {
+  //       result.push(layer);
+  //       if (layer.children) {
+  //         result.push(...flattenLayers(layer.children));
+  //       }
+  //     });
+  //     return result;
+  //   };
 
-    const flatLayers = flattenLayers(layers);
-    return flatLayers.map((layer, index) => ({
-      id: layer.id,
-      type: layer.type === 'shape' ? 'shape' as const :
-        layer.type === 'text' ? 'text' as const : 'template' as const,
-      worldX: 100 + index * 220, // 错开显示
-      worldY: 100 + index * 120,
-      width: 200,
-      height: 100,
-      content: layer.name,
-      selected: selectedObject?.id === layer.id
-    }));
-  }, [layers, selectedObject]);
+  //   const flatLayers = flattenLayers(layers);
+  //   return flatLayers.map((layer, index) => ({
+  //     id: layer.id,
+  //     type: layer.type === 'shape' ? 'shape' as const :
+  //       layer.type === 'text' ? 'text' as const : 'template' as const,
+  //     worldX: 100 + index * 220, // 错开显示
+  //     worldY: 100 + index * 120,
+  //     width: 200,
+  //     height: 100,
+  //     content: layer.name,
+  //     selected: selectedObject?.id === layer.id
+  //   }));
+  // }, [layers, selectedObject]);
 
   // 面板调整大小
   // 将全局布局配置映射为本组件使用的派生值
@@ -779,11 +779,11 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
               className="h5-zoom-container" 
               enableShortcuts 
               overlay={null}
-              // canvasWidth={375}
-              // canvasHeight={667}
-              initialShowGrid={false}
-              initialShowRuler={true}
-              initialShowGuides={true}
+              canvasWidth={375}
+              canvasHeight={667}
+              // initialShowGrid={false}
+              // initialShowRuler={true}
+              // initialShowGuides={true}
               mode="h5"
               selectedObjects={h5Selected ? [h5Selected] : []}
             >
@@ -805,22 +805,19 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
               />
             </ZoomPanContainer>
           ) : (
-            // 设计模式：无限画布实现
-            <ZoomPanContainer 
-              className="design-zoom-container" 
-              enableShortcuts 
-              overlay={null}
-              initialGridSize={1}
-              initialShowGrid={true}
-              initialShowRuler={true}
-              initialShowGuides={true}
+            // 设计模式：使用Suika画布组件
+            <SuikaCanvasComponent
+              width={windowSize.width}
+              height={windowSize.height - 48} // 减去顶部工具栏高度
+              showRuler={true}
+              showGrid={true}
+              enableSnap={true}
               mode="design"
               selectedObjects={selectedObject ? [selectedObject] : []}
-            >
-              <CanvasWorkspace
-                externalObjects={canvasObjects}
-              />
-            </ZoomPanContainer>
+              onReady={(editor) => {
+                console.log('Suika编辑器已准备就绪:', editor);
+              }}
+            />
           )}
 
           {/* 设计模式下不再渲染居中的模式/库按钮，避免与顶部工具栏重复 */}

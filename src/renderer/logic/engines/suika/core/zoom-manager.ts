@@ -58,10 +58,10 @@ export class ZoomManager {
 
       // 计算新的视口位置
       const zoomRatio = newZoom / this.currentZoom;
-      const viewport = this.editor.viewportManager.getViewport();
+      const viewport = this.editor.viewportManager.getPos();
       
-      const newViewportX = zoomCenterX - (zoomCenterX - viewport.panX) * zoomRatio;
-      const newViewportY = zoomCenterY - (zoomCenterY - viewport.panY) * zoomRatio;
+      const newViewportX = zoomCenterX - (zoomCenterX - viewport.x) * zoomRatio;
+      const newViewportY = zoomCenterY - (zoomCenterY - viewport.y) * zoomRatio;
 
       // 同时更新视口和缩放
       this.editor.viewportManager.setZoom(newZoom, { x: newViewportX, y: newViewportY });
@@ -112,7 +112,7 @@ export class ZoomManager {
 
   // 缩放到适应内容
   zoomToContent(): void {
-    const bounds = this.editor.sceneGraph.getAllBounds();
+    const bounds = this.editor.getCanvasChildrenBbox();
     if (!bounds) return;
 
     const container = this.editor.containerElement;
@@ -121,8 +121,8 @@ export class ZoomManager {
 
     // 添加边距
     const padding = 50;
-    const contentWidth = bounds.width + padding * 2;
-    const contentHeight = bounds.height + padding * 2;
+    const contentWidth = (bounds.maxX - bounds.minX) + padding * 2;
+    const contentHeight = (bounds.maxY - bounds.minY) + padding * 2;
 
     // 计算缩放比例
     const scaleX = containerWidth / contentWidth;
@@ -157,19 +157,19 @@ export class ZoomManager {
 
   // 坐标转换：视口坐标到场景坐标
   viewportToScene(x: number, y: number): { x: number; y: number } {
-    const viewport = this.editor.viewportManager.getViewport();
+    const viewport = this.editor.viewportManager.getPos();
     return {
-      x: (x - viewport.panX) / this.currentZoom,
-      y: (y - viewport.panY) / this.currentZoom
+      x: (x - viewport.x) / this.currentZoom,
+      y: (y - viewport.y) / this.currentZoom
     };
   }
 
   // 坐标转换：场景坐标到视口坐标
   sceneToViewport(x: number, y: number): { x: number; y: number } {
-    const viewport = this.editor.viewportManager.getViewport();
+    const viewport = this.editor.viewportManager.getPos();
     return {
-      x: x * this.currentZoom + viewport.panX,
-      y: y * this.currentZoom + viewport.panY
+      x: x * this.currentZoom + viewport.x,
+      y: y * this.currentZoom + viewport.y
     };
   }
 
