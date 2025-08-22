@@ -6,7 +6,7 @@
 // 稳定的组件
 export { 
   StableDropdown, 
-  StableDropdownItem, 
+  // StableDropdownItem, 
   StableDropdownSeparator 
 } from '../molecules/Dropdown/Dropdown';
 export type { 
@@ -51,7 +51,7 @@ export type {
 
 // 重新导出稳定组件作为别名（推荐使用）
 export { StableDropdown as SafeDropdown } from '../molecules/Dropdown/Dropdown';
-export { StableDropdownItem as SafeDropdownItem } from '../molecules/Dropdown/Dropdown';
+// export { StableDropdownItem as SafeDropdownItem } from '../molecules/Dropdown/Dropdown';
 export { StableDropdownSeparator as SafeDropdownSeparator } from '../molecules/Dropdown/Dropdown';
 export { StableSwitch as SafeSwitch } from '../atoms/Switch/Switch';
 export { StableSlider as SafeSlider } from '../atoms/Slider/Slider';

@@ -3,5 +3,5 @@
  */
 
 export * from '../InitializationManager';
-export * from '../UIEnhancementManager';
+// UIEnhancementManager removed - UI enhancement features are now integrated directly
 export * from '../FigmaBatchUpdateManager';

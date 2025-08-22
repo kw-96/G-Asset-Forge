@@ -7,8 +7,6 @@ import React, { forwardRef, useMemo } from 'react';
 import { IconButton, type IconButtonVariant, type IconButtonSize } from '../../components/atoms/IconButton/IconButton';
 import { FigmaInteractive } from '../../components/organisms/Figma/FigmaInteractive';
 import { Tooltip as FigmaTooltip } from '../../components/atoms/Tooltip/Tooltip';
-import { useUIIntegration } from '../UIIntegration/UIIntegrationProvider';
-import { UIFeature } from '../UIIntegration/UIIntegrationProvider';
 
 // 增强IconButton属性接口
 export interface EnhancedIconButtonProps {
@@ -83,23 +81,19 @@ export const EnhancedIconButton = forwardRef<HTMLButtonElement, EnhancedIconButt
   
   ...rest
 }, ref) => {
-  const { isFeatureEnabled, manager } = useUIIntegration();
-  
-  // 检查功能是否启用
+  // 简化功能检查 - 直接使用传入的props
   const interactionsEnabled = useMemo(() => 
-    enableFigmaInteractions && isFeatureEnabled(UIFeature.INTERACTIVE_COMPONENTS),
-    [enableFigmaInteractions, isFeatureEnabled]
+    enableFigmaInteractions,
+    [enableFigmaInteractions]
   );
   
   const tooltipsEnabled = useMemo(() => 
-    enableTooltip && isFeatureEnabled(UIFeature.TOOLTIPS),
-    [enableTooltip, isFeatureEnabled]
+    enableTooltip,
+    [enableTooltip]
   );
 
-  const accessibilityEnabled = useMemo(() => 
-    isFeatureEnabled(UIFeature.ACCESSIBILITY),
-    [isFeatureEnabled]
-  );
+  // 无障碍功能始终启用
+  const accessibilityEnabled = true;
 
   // 生成工具提示内容
   const finalTooltipContent = useMemo(() => {
@@ -121,20 +115,8 @@ export const EnhancedIconButton = forwardRef<HTMLButtonElement, EnhancedIconButt
     
     return performanceOptimized 
       ? (event: React.MouseEvent<HTMLButtonElement>) => {
-          // 性能监控
-          if (trackInteraction && isFeatureEnabled(UIFeature.PERFORMANCE_MONITORING)) {
-            const endMeasurement = manager.measureInteractionDelay?.('icon-button-click') || (() => {});
-            
-            // 执行点击处理
-            onClick(event);
-            
-            // 结束性能测量
-            requestAnimationFrame(() => {
-              endMeasurement();
-            });
-          } else {
-            onClick(event);
-          }
+          // 执行点击处理
+          onClick(event);
           
           // 触觉反馈（如果支持）
           if (enableHapticFeedback && 'vibrate' in navigator) {
@@ -142,7 +124,7 @@ export const EnhancedIconButton = forwardRef<HTMLButtonElement, EnhancedIconButt
           }
         }
       : onClick;
-  }, [onClick, performanceOptimized, trackInteraction, isFeatureEnabled, manager, enableHapticFeedback]);
+  }, [onClick, performanceOptimized, trackInteraction, enableHapticFeedback]);
 
   // 键盘事件处理
   const handleKeyDown = useMemo(() => {

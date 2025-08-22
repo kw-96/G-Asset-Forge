@@ -108,7 +108,7 @@ export class ToolPerformanceMonitor {
     });
 
     // 同时使用统一性能监控器
-    UnifiedPerformanceMonitor.markStart(`tool-${toolType}-${operationType}`, startTime);
+    UnifiedPerformanceMonitor.markStart(`tool-${toolType}-${operationType}`);
 
     console.debug('[tool-performance] 开始监控操作', {
       operationId,
@@ -160,7 +160,7 @@ export class ToolPerformanceMonitor {
     this.activeOperations.delete(operationId);
 
     // 结束统一性能监控器标记
-    UnifiedPerformanceMonitor.markEnd(`tool-${toolType}-${operationType}`, operation.startTime);
+    UnifiedPerformanceMonitor.markEnd(`tool-${toolType}-${operationType}`);
 
     console.debug('[tool-performance] 结束监控操作', {
       operationId,
@@ -191,7 +191,7 @@ export class ToolPerformanceMonitor {
     this.checkThresholds(metric);
 
     // 同时记录到统一性能监控器
-    UnifiedPerformanceMonitor.recordMetric(`tool-${toolType}-${operationType}`, duration);
+    UnifiedPerformanceMonitor.recordMetric(`tool-${toolType}-${operationType}`);
   }
 
   /**

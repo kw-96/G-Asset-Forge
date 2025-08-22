@@ -9,8 +9,8 @@
 // 应用级别组件
 export { AppContainer } from './App';
 
-// 画布相关组件
-export { CanvasWorkspace } from './Canvas/CanvasWorkspace';
+// 画布相关组件 - CanvasWorkspace已废弃，使用SuikaCanvasComponent
+// export { CanvasWorkspace } from './Canvas/CanvasWorkspace'; // 已删除
 
 // 素材库相关组件
 export { AssetLibraryPanel } from './AssetLibrary';

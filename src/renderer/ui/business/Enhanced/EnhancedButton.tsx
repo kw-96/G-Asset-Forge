@@ -7,8 +7,6 @@ import React, { forwardRef, useMemo } from 'react';
 import { Button, type ButtonVariant, type ButtonSize } from '../../components/atoms/Button/Button';
 import { FigmaInteractive } from '../../components/organisms/Figma/FigmaInteractive';
 import { Tooltip as FigmaTooltip } from '../../components/atoms/Tooltip/Tooltip';
-import { useUIIntegration } from '../UIIntegration/UIIntegrationProvider';
-import { UIFeature } from '../UIIntegration/UIIntegrationProvider';
 
 // 增强Button属性接口
 export interface EnhancedButtonProps {
@@ -71,17 +69,15 @@ export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>
   
   ...rest
 }, ref) => {
-  const { isFeatureEnabled, manager } = useUIIntegration();
-  
-  // 检查功能是否启用
+  // 简化功能检查 - 直接使用传入的props
   const interactionsEnabled = useMemo(() => 
-    enableFigmaInteractions && isFeatureEnabled(UIFeature.INTERACTIVE_COMPONENTS),
-    [enableFigmaInteractions, isFeatureEnabled]
+    enableFigmaInteractions,
+    [enableFigmaInteractions]
   );
   
   const tooltipsEnabled = useMemo(() => 
-    enableTooltip && tooltipContent && isFeatureEnabled(UIFeature.TOOLTIPS),
-    [enableTooltip, tooltipContent, isFeatureEnabled]
+    enableTooltip && tooltipContent,
+    [enableTooltip, tooltipContent]
   );
 
   // 性能优化的点击处理
@@ -90,20 +86,8 @@ export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>
     
     return performanceOptimized 
       ? (event: React.MouseEvent<HTMLButtonElement>) => {
-          // 性能监控
-          if (trackInteraction && isFeatureEnabled(UIFeature.PERFORMANCE_MONITORING)) {
-            const endMeasurement = manager.measureInteractionDelay?.('button-click') || (() => {});
-            
-            // 执行点击处理
-            onClick(event);
-            
-            // 结束性能测量
-            requestAnimationFrame(() => {
-              endMeasurement();
-            });
-          } else {
-            onClick(event);
-          }
+          // 执行点击处理
+          onClick(event);
           
           // 触觉反馈（如果支持）
           if (enableHapticFeedback && 'vibrate' in navigator) {
@@ -111,7 +95,7 @@ export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>
           }
         }
       : onClick;
-  }, [onClick, performanceOptimized, trackInteraction, isFeatureEnabled, manager, enableHapticFeedback]);
+  }, [onClick, performanceOptimized, trackInteraction, enableHapticFeedback]);
 
   // 基础Button组件
   const baseButtonProps: any = {

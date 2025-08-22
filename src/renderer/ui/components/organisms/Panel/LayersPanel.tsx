@@ -1,4 +1,4 @@
-/**
+/** 已移除，使用H5LayersPanel替代
  * Figma风格的图层面板
  * 显示画布中所有对象的层级结构
  */
@@ -12,7 +12,7 @@ import { TemplateLibraryPanel } from '../../../business/TemplateLibrary/Template
 import { ProjectLibraryPanel } from '../../../business/ProjectLibrary/ProjectLibraryPanel';
 import { Modal } from '../../templates/Dialog/Modal';
 import { EnhancedIconButton } from '../../../business/Enhanced/EnhancedIconButton';
-import { useUIIntegration, UIFeature } from '../../../business/UIIntegration/UIIntegrationProvider';
+// Removed UIIntegration dependency - tooltips are now always enabled
 
 interface LayerItem {
   id: string;
@@ -233,7 +233,8 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
 }) => {
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
-  const { isFeatureEnabled } = useUIIntegration();
+  // Tooltips are now always enabled
+  const tooltipsEnabled = true;
   const [isAssetsOpen, setIsAssetsOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [isProjectsOpen, setIsProjectsOpen] = useState(false);
@@ -351,7 +352,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
             icon={<SvgIcon name="icon.24.file.design" size={24} title="设计模式" />}
             onClick={() => onSwitchMode && onSwitchMode('design')}
             enableFigmaInteractions={true}
-            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            enableTooltip={tooltipsEnabled}
             tooltipContent="设计模式"
             tooltipPlacement="bottom"
             interactionVariant="tool"
@@ -362,7 +363,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
             icon={<SvgIcon name="icon.24.file.H5" size={24} title="H5模式" />}
             onClick={() => onSwitchMode && onSwitchMode('h5')}
             enableFigmaInteractions={true}
-            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            enableTooltip={tooltipsEnabled}
             tooltipContent="H5模式"
             tooltipPlacement="bottom"
             interactionVariant="tool"
@@ -373,7 +374,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
             icon={<SvgIcon name="icon.24.file.design.mods" size={24} title="模板库" />}
             onClick={() => onOpenTemplateLibrary ? onOpenTemplateLibrary() : setIsTemplatesOpen(true)}
             enableFigmaInteractions={true}
-            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            enableTooltip={tooltipsEnabled}
             tooltipContent="模板库"
             tooltipPlacement="bottom"
             interactionVariant="tool"
@@ -384,7 +385,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
             icon={<SvgIcon name="icon.24.file.design.assets" size={24} title="素材库" />}
             onClick={() => onOpenAssetLibrary ? onOpenAssetLibrary() : setIsAssetsOpen(true)}
             enableFigmaInteractions={true}
-            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            enableTooltip={tooltipsEnabled}
             tooltipContent="素材库"
             tooltipPlacement="bottom"
             interactionVariant="tool"
@@ -395,7 +396,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
             icon={<SvgIcon name="icon.24.file.design.library" size={24} title="项目库" />}
             onClick={() => onOpenProjectLibrary ? onOpenProjectLibrary() : setIsProjectsOpen(true)}
             enableFigmaInteractions={true}
-            enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+            enableTooltip={tooltipsEnabled}
             tooltipContent="项目库"
             tooltipPlacement="bottom"
             interactionVariant="tool"

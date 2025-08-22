@@ -1,7 +1,7 @@
 // H5编辑器模式面板组件 - 展示H5编辑器的完整功能
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 // RulerGuides已删除，使用Suika核心系统
-import { ZoomPanContainer } from '../../../../ui/business/common/ZoomPanContainer';
+// ZoomPanContainer已删除，使用Suika核心系统
 import { H5EditorCanvas, type H5EditorCanvasRef } from '../adapter/react-adapter';
 import { type H5Page } from '../core/h5-editor';
 import { type H5Project } from '../core/h5-editor-manager';
@@ -476,13 +476,16 @@ export const H5EditorModePanel: React.FC<IH5EditorModePanelProps> = ({
         )}
       </div>
 
-      {/* H5编辑器画布 */}
-      <ZoomPanContainer 
+      {/* H5编辑器画布 - 使用简单容器替代ZoomPanContainer */}
+      <div 
         className="h5-mode-zoom" 
-        enableShortcuts
-        initialGridSize={1}
-        initialShowGrid={true}
-        initialShowRuler={true}
+        style={{
+          width: '100%',
+          height: '100%',
+          background: '#f5f5f5',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
       >
         <H5EditorCanvas
           ref={editorRef}
@@ -504,7 +507,7 @@ export const H5EditorModePanel: React.FC<IH5EditorModePanelProps> = ({
           style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '8px' }}
         />
         {/* RulerGuides已删除，使用Suika核心系统 */}
-      </ZoomPanContainer>
+      </div>
 
       {/* 状态信息 */}
       <div style={{ 

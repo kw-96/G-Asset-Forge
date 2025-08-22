@@ -114,7 +114,6 @@ export class SelectTool {
    * 选择元素
    */
   selectElement(elementId: string, addToSelection = false): void {
-    const startTime = performance.now();
 
     if (!addToSelection || this.settings.selectionMode === SelectionMode.SINGLE) {
       this.selectedElements.clear();
@@ -128,7 +127,7 @@ export class SelectTool {
       totalSelected: this.selectedElements.size,
     });
 
-    UnifiedPerformanceMonitor.recordMetric('select-element', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('select-element');
   }
 
   /**
@@ -171,8 +170,6 @@ export class SelectTool {
   updateBoxSelection(x: number, y: number): void {
     if (!this.isBoxSelecting || !this.selectionBox) return;
 
-    const startTime = performance.now();
-
     const startX = this.selectionBox.x;
     const startY = this.selectionBox.y;
 
@@ -186,7 +183,7 @@ export class SelectTool {
     // 检查哪些元素在选择框内
     this.updateBoxSelectionElements();
 
-    UnifiedPerformanceMonitor.recordMetric('box-selection-update', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('box-selection-update');
   }
 
   /**
@@ -209,8 +206,7 @@ export class SelectTool {
   startTransform(x: number, y: number, handleType: TransformHandleType): void {
     if (this.selectedElements.size === 0) return;
 
-    const startTime = performance.now();
-    UnifiedPerformanceMonitor.markStart('transform-start', startTime);
+    UnifiedPerformanceMonitor.markStart('transform-start');
 
     const selectedElementsArray = this.getSelectedElements();
     const bounds = this.calculateSelectionBounds(selectedElementsArray);
@@ -229,7 +225,7 @@ export class SelectTool {
       selectedCount: this.selectedElements.size,
     });
 
-    UnifiedPerformanceMonitor.markEnd('transform-start', startTime);
+    UnifiedPerformanceMonitor.markEnd('transform-start');
   }
 
   /**
@@ -240,14 +236,12 @@ export class SelectTool {
       return [];
     }
 
-    const startTime = performance.now();
-
     const deltaX = x - this.transformState.startPoint.x;
     const deltaY = y - this.transformState.startPoint.y;
 
     const transformedElements = this.applyTransform(deltaX, deltaY);
 
-    UnifiedPerformanceMonitor.recordMetric('transform-continue', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('transform-continue');
     return transformedElements;
   }
 
@@ -284,8 +278,6 @@ export class SelectTool {
     const selectedElements = this.getSelectedElements();
     if (selectedElements.length === 0) return [];
 
-    const startTime = performance.now();
-
     const movedElements = selectedElements.map(element => ({
       ...element,
       transform: {
@@ -295,7 +287,7 @@ export class SelectTool {
       },
     }));
 
-    UnifiedPerformanceMonitor.recordMetric('move-elements', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('move-elements');
     return movedElements;
   }
 

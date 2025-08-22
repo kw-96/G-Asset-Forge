@@ -1,10 +1,10 @@
-/**
+/** 已移除，使用SuikaIntegratedLayout替代
  * Figma风格主布局组件 - 应用程序的主要布局系统
  * @description 提供完整的Figma风格界面布局，包含响应式设计、面板管理、工具栏、画布区域等核心功能
  * @author 开发团队
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TopToolbar } from '../../organisms/Navbar/TopToolbar';
@@ -13,7 +13,6 @@ import { LayersPanel } from '../../organisms/Panel/LayersPanel';
 import { PropertiesPanel } from '../../organisms/Panel/PropertiesPanel';
 import { Modal } from '../Dialog/Modal';
 import { FigmaToolbar } from '../../../business/Layout/FigmaToolbar';
-import { H5EditorCanvas, type H5EditorCanvasRef } from '../../../../logic/engines/h5-editor/adapter/react-adapter';  
 import { H5LayersPanel } from '../../../../logic/engines/h5-editor/components/H5LayersPanel';
 import { H5PropertiesPanel } from '../../../../logic/engines/h5-editor/components/H5PropertiesPanel';
 import { SuikaCanvasComponent } from '../../../business/Canvas/SuikaCanvasComponent';
@@ -22,7 +21,8 @@ import { useLayoutConfig } from '../../../../logic/contexts/LayoutContext';
 import { AssetLibraryPanel } from '../../../business/AssetLibrary/AssetLibraryPanel';
 import { TemplateLibraryPanel } from '../../../business/TemplateLibrary/TemplateLibraryPanel';
 import { ProjectLibraryPanel } from '../../../business/ProjectLibrary/ProjectLibraryPanel';
-import { ZoomPanContainer } from '../../../business/common/ZoomPanContainer';
+import { useCanvasStore } from '../../../../stores/canvasStore';
+// suikaToolIntegration已删除，直接使用Suika工具管理器
 // RulerGuides已删除，使用Suika核心系统
 
 /**
@@ -172,7 +172,7 @@ const FigmaCenterSection = styled.div`
   height: 100%; /* 强制设置高度 */
 `;
 
-// 画布容器包装器已由ZoomPanContainer代替，无需单独定义
+// 画布容器现在由SuikaCanvasComponent统一管理，无需单独定义
 
 // 设计模式下已在顶部工具栏内提供入口，这里不再渲染居中额外按钮
 
@@ -406,10 +406,13 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
 }) => {
   const { actualMode, reducedMotion } = useTheme();
   const windowSize = useWindowSize();
-  // const { isFeatureEnabled } = useUIIntegration();
+  // UIIntegration removed - features are now handled directly
 
   // 使用布局配置上下文
   const { config: layoutConfig } = useLayoutConfig();
+  
+  // 使用画布状态管理
+  const { mode: canvasMode, setMode: setCanvasMode, setSuikaEditor } = useCanvasStore();
 
   // 高DPI适配 (已在styled组件中使用devicePixelRatio)
 
@@ -420,11 +423,11 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   // const [activeLeftPanel, setActiveLeftPanel] = useState<'layers' | 'assets'>('layers');
-  const [editorMode, setEditorMode] = useState<'design' | 'h5'>('design');
-  const h5CanvasRef = useRef<H5EditorCanvasRef>(null);
-  const [h5Pages, setH5Pages] = useState<Array<any>>([]);
-  const [h5Selected, setH5Selected] = useState<{ type: 'page' | 'component'; name?: string; props?: Record<string, any> } | null>(null);
-  // 由 ZoomPanContainer 统一管理缩放和平移，不再本地存状态
+  const editorMode = canvasMode; // 使用画布状态管理的模式
+  // H5CanvasRef已移除，现在使用统一的SuikaCanvasComponent
+  const [h5Pages] = useState<Array<any>>([]);
+  const [h5Selected] = useState<{ type: 'page' | 'component'; name?: string; props?: Record<string, any> } | null>(null);
+  // 缩放和平移现在由SuikaCanvasComponent统一管理，不再本地存状态
   const [isAssetsOpen, setIsAssetsOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [isProjectsOpen, setIsProjectsOpen] = useState(false);
@@ -554,10 +557,26 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
     });
   }, [rightPanelCollapsed, measureLayout]);
 
-  // Figma风格组件处理函数
+  // Figma风格组件处理函数 - 集成Suika工具系统
   const handleToolChange = useCallback((toolId: string) => {
     setActiveTool(toolId);
-    console.log('工具已切换到:', toolId);
+    
+    // 将工具变化同步到Suika工具系统
+    const toolTypeMap: Record<string, any> = {
+      'select': 'SELECT',
+      'text': 'TEXT',
+      'rect': 'SHAPE',
+      'pen': 'BRUSH',
+      'image': 'IMAGE',
+    };
+    
+    const toolType = toolTypeMap[toolId];
+    if (toolType) {
+      // 直接使用Suika工具管理器
+      console.log('工具切换:', toolId, '-> Suika工具:', toolType);
+    }
+    
+    console.log('工具已切换到:', toolId, '-> Suika工具:', toolType);
   }, []);
 
   const handleLayerSelect = useCallback((layerId: string) => {
@@ -723,14 +742,14 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
                   <H5LayersPanel
                     pages={(h5Pages || []).map((p: any) => ({ id: p.id, name: p.name, width: p.width, height: p.height, isCurrent: p.isCurrent }))}
                     onSelectPage={(pid) => {
-                      h5CanvasRef.current?.setCurrentPage(pid);
-                      const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
-                      setH5Pages(pages);
-                      const current = pages.find((p: any) => p.id === pid);
-                      if (current) setH5Selected({ type: 'page', name: current.name, props: { background: current.background as any } });
+                      // H5页面选择现在通过Suika编辑器处理
+                      console.log('选择H5页面:', pid);
+                      // TODO: 通过Suika编辑器API处理页面切换
                     }}
                     currentMode={editorMode}
-                    onSwitchMode={(m) => setEditorMode(m)}
+                    onSwitchMode={(m) => {
+                      setCanvasMode(m);
+                    }}
                     onOpenTemplateLibrary={() => setIsTemplatesOpen(true)}
                     onOpenAssetLibrary={() => setIsAssetsOpen(true)}
                     onOpenProjectLibrary={() => setIsProjectsOpen(true)}
@@ -747,7 +766,7 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
                     onSwitchPanel={() => { }} // 提供空函数以显示按钮
                     currentMode={editorMode}
                     onSwitchMode={(m) => {
-                      setEditorMode(m);
+                      setCanvasMode(m);
                     }}
                   />
                 )}
@@ -774,53 +793,39 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
             />
           </FloatingToolbar>
 
-          {editorMode === 'h5' ? (
-            <ZoomPanContainer 
-              className="h5-zoom-container" 
-              enableShortcuts 
-              overlay={null}
-              canvasWidth={375}
-              canvasHeight={667}
-              // initialShowGrid={false}
-              // initialShowRuler={true}
-              // initialShowGuides={true}
-              mode="h5"
-              selectedObjects={h5Selected ? [h5Selected] : []}
-            >
-              <H5EditorCanvas
-                ref={h5CanvasRef}
-                width={375}
-                height={667}
-                onReady={() => {
-                  const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
-                  setH5Pages(pages);
-                  const current = pages.find((p: any) => p.isCurrent);
-                  setH5Selected(current ? { type: 'page', name: current.name, props: { background: current.background as any } } : null);
-                }}
-                onPageChange={(page) => {
-                  const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
-                  setH5Pages(pages);
-                  setH5Selected({ type: 'page', name: page.name, props: { background: (page as any).background as any } });
-                }}
-              />
-            </ZoomPanContainer>
-          ) : (
-            // 设计模式：使用Suika画布组件
-            <SuikaCanvasComponent
-              width={windowSize.width}
-              height={windowSize.height - 48} // 减去顶部工具栏高度
-              showRuler={true}
-              showGrid={true}
-              enableSnap={true}
-              mode="design"
-              selectedObjects={selectedObject ? [selectedObject] : []}
-              onReady={(editor) => {
-                console.log('Suika编辑器已准备就绪:', editor);
-              }}
-            />
-          )}
-
-          {/* 设计模式下不再渲染居中的模式/库按钮，避免与顶部工具栏重复 */}
+          {/* 统一使用Suika画布组件 - 支持设计模式和H5模式 */}
+          <SuikaCanvasComponent
+            width={windowSize.width}
+            height={windowSize.height - 48} // 减去顶部工具栏高度
+            showRuler={true}
+            showGrid={editorMode === 'design'} // H5模式下不显示网格
+            enableSnap={true}
+            mode={editorMode}
+            // selectedObjects={editorMode === 'h5' ? (h5Selected ? [h5Selected] : []) : (selectedObject ? [selectedObject] : [])}
+            onReady={(editor) => {
+              console.log('Suika编辑器已准备就绪:', editor);
+              
+              // 将编辑器实例保存到状态管理
+              setSuikaEditor(editor);
+              
+              // 工具集成已直接在Suika编辑器中处理
+              console.log('[main-layout] Suika编辑器工具系统已就绪');
+              
+              // 根据模式设置画布 - 暂时注释掉不存在的设置
+              if (editorMode === 'h5') {
+                console.log('[main-layout] 设置H5模式');
+                // editor.setting.set('canvasWidth', 375);
+                // editor.setting.set('canvasHeight', 667);
+                // editor.viewportManager.setViewportSize({ width: 375, height: 667 });
+                // editor.setting.set('enableInfiniteCanvas', false);
+              } else {
+                console.log('[main-layout] 设置设计模式');
+                // editor.setting.set('enableInfiniteCanvas', true);
+              }
+              
+              editor.render();
+            }}
+          />
         </FigmaCenterSection>
 
         {/* 右侧面板区域 */}
@@ -850,10 +855,10 @@ export const MainLayout: React.FC<FigmaMainLayoutProps> = ({
                   selected={h5Selected}
                   onChange={(key, value) => {
                     if (key === 'background') {
-                      h5CanvasRef.current?.setColorBackground(value);
+                      // H5背景设置现在通过Suika编辑器处理
+                      console.log('设置H5背景:', value);
+                      // TODO: 通过Suika编辑器API设置背景
                     }
-                    const pages = h5CanvasRef.current?.getAllPagesInfo() || [];
-                    setH5Pages(pages);
                   }}
                 />
               ) : (

@@ -99,7 +99,7 @@ const ErrorCard = styled.div`
   text-align: center;
 `;
 
-const ErrorIcon = styled.div<{ severity: ErrorSeverity }>`
+const ErrorIcon = styled.div<{ $severity: ErrorSeverity }>`
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -108,8 +108,8 @@ const ErrorIcon = styled.div<{ severity: ErrorSeverity }>`
   align-items: center;
   justify-content: center;
   font-size: 40px;
-  background: ${({ severity }) => {
-    switch (severity) {
+  background: ${({ $severity }) => {
+    switch ($severity) {
       case ErrorSeverity.CRITICAL: return '#ff4757';
       case ErrorSeverity.HIGH: return '#ff6b6b';
       case ErrorSeverity.MEDIUM: return '#ffa502';
@@ -142,7 +142,7 @@ const ButtonGroup = styled.div`
   flex-wrap: wrap;
 `;
 
-const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
+const Button = styled.button<{ $variant?: 'primary' | 'secondary' | 'danger' }>`
   padding: 12px 24px;
   border-radius: 6px;
   border: none;
@@ -151,8 +151,8 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   cursor: pointer;
   transition: all 0.2s ease;
   
-  ${({ variant = 'primary' }) => {
-    switch (variant) {
+  ${({ $variant = 'primary' }) => {
+    switch ($variant) {
       case 'primary':
         return `
           background: #3742fa;
@@ -631,7 +631,7 @@ export class EnhancedErrorBoundary extends Component<
     return (
       <ErrorContainer>
         <ErrorCard>
-          <ErrorIcon severity={errorInfo.severity}>
+          <ErrorIcon $severity={errorInfo.severity}>
             {this.getErrorIcon(errorInfo.type)}
           </ErrorIcon>
           
@@ -665,7 +665,7 @@ export class EnhancedErrorBoundary extends Component<
           <ButtonGroup>
             {recoveryPlan?.recommendedStrategy && (
               <Button
-                variant="primary"
+                $variant="primary"
                 onClick={() => this.handleRecovery()}
                 disabled={isRecovering}
               >
@@ -674,7 +674,7 @@ export class EnhancedErrorBoundary extends Component<
             )}
             
             <Button
-              variant="secondary"
+              $variant="secondary"
               onClick={() => window.location.reload()}
             >
               重新加载
@@ -682,7 +682,7 @@ export class EnhancedErrorBoundary extends Component<
             
             {this.props.showDebugInfo && (
               <Button
-                variant="secondary"
+                $variant="secondary"
                 onClick={this.generateErrorReport}
               >
                 下载错误报告

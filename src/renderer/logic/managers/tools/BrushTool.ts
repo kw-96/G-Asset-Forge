@@ -60,8 +60,7 @@ export class BrushTool {
    * 开始绘制
    */
   startDrawing(x: number, y: number, pressure = 1): void {
-    const startTime = performance.now();
-    UnifiedPerformanceMonitor.markStart('brush-drawing', startTime); 
+    UnifiedPerformanceMonitor.markStart('brush-drawing'); 
 
     this.isDrawing = true;
     this.strokeStartTime = Date.now();
@@ -90,8 +89,6 @@ export class BrushTool {
   continueDrawing(x: number, y: number, pressure = 1): void {
     if (!this.isDrawing || !this.currentStroke || !this.lastPoint) return;
 
-    const startTime = performance.now();
-    
     // 计算距离，避免过于密集的点
     const distance = Math.sqrt(
       Math.pow(x - this.lastPoint.x, 2) + Math.pow(y - this.lastPoint.y, 2)
@@ -118,7 +115,7 @@ export class BrushTool {
     // 更新笔画持续时间
     this.currentStroke.duration = Date.now() - this.strokeStartTime;
 
-    UnifiedPerformanceMonitor.recordMetric('brush-point-added', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('brush-point-added');
   }
 
   /**
@@ -127,8 +124,7 @@ export class BrushTool {
   finishDrawing(): BrushStroke | null {
     if (!this.currentStroke) return null;
 
-    const startTime = performance.now();
-    UnifiedPerformanceMonitor.markStart('brush-finish', startTime);
+    UnifiedPerformanceMonitor.markStart('brush-finish');
 
     // 更新最终持续时间
     this.currentStroke.duration = Date.now() - this.strokeStartTime;
@@ -148,7 +144,7 @@ export class BrushTool {
       duration: stroke.duration,
     });
 
-    UnifiedPerformanceMonitor.markEnd('brush-finish', startTime);
+    UnifiedPerformanceMonitor.markEnd('brush-finish');
     return stroke;
   }
 
@@ -196,8 +192,6 @@ export class BrushTool {
    * 将笔画转换为画布元素
    */
   strokeToCanvasElement(stroke: BrushStroke): CanvasElement {
-    const startTime = performance.now();
-
     // 计算边界框
     const xs = stroke.points.map(p => p.x);
     const ys = stroke.points.map(p => p.y);
@@ -247,7 +241,7 @@ export class BrushTool {
       },
     };
 
-    UnifiedPerformanceMonitor.recordMetric('brush-to-element', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('brush-to-element');
     return element;
   }
 
@@ -255,18 +249,17 @@ export class BrushTool {
    * 生成SVG路径
    */
   generateSVGPath(stroke: BrushStroke): string {
-    const startTime = performance.now();
-    UnifiedPerformanceMonitor.markStart('brush-svg-generation', startTime);
+    UnifiedPerformanceMonitor.markStart('brush-svg-generation');
 
     if (!stroke || !stroke.points || stroke.points.length < 2) {
-      UnifiedPerformanceMonitor.markEnd('brush-svg-generation', startTime);
+      UnifiedPerformanceMonitor.markEnd('brush-svg-generation');
       return '';
     }
 
     const points = stroke.points;
     const firstPoint = points[0];
     if (!firstPoint) {
-      UnifiedPerformanceMonitor.markEnd('brush-svg-generation', startTime);
+      UnifiedPerformanceMonitor.markEnd('brush-svg-generation');
       return '';
     }
 
@@ -295,7 +288,7 @@ export class BrushTool {
       }
     }
 
-    UnifiedPerformanceMonitor.markEnd('brush-svg-generation', startTime);
+    UnifiedPerformanceMonitor.markEnd('brush-svg-generation');
     return path;
   }
 

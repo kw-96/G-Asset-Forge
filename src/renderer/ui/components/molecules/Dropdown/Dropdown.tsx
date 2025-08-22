@@ -107,34 +107,34 @@ const StableDropdownContent = styled(DropdownMenu.Content)`
   }
 `;
 
-const StableDropdownItemStyled = styled(DropdownMenu.Item)<{ $destructive?: boolean }>`
-  display: flex;
-  align-items: center;
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  font-size: ${({ theme }) => theme.typography.fontSize.sm};
-  font-family: ${({ theme }) => theme.typography.fontFamily.primary};
-  color: ${({ theme, $destructive }) => 
-    $destructive ? theme.colors.error : theme.colors.text.primary};
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
-  cursor: pointer;
-  user-select: none;
-  outline: none;
+// const StableDropdownItemStyled = styled(DropdownMenu.Item)<{ $destructive?: boolean }>`
+//   display: flex;
+//   align-items: center;
+//   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+//   font-size: ${({ theme }) => theme.typography.fontSize.sm};
+//   font-family: ${({ theme }) => theme.typography.fontFamily.primary};
+//   color: ${({ theme, $destructive }) => 
+//     $destructive ? theme.colors.error : theme.colors.text.primary};
+//   border-radius: ${({ theme }) => theme.borderRadius.sm};
+//   cursor: pointer;
+//   user-select: none;
+//   outline: none;
   
-  &:hover,
-  &[data-highlighted] {
-    background: ${({ theme, $destructive }) => 
-      $destructive ? `${theme.colors.error}10` : theme.colors.surface};
-  }
+//   &:hover,
+//   &[data-highlighted] {
+//     background: ${({ theme, $destructive }) => 
+//       $destructive ? `${theme.colors.error}10` : theme.colors.surface};
+//   }
   
-  &[data-disabled] {
-    color: ${({ theme }) => theme.colors.text.disabled};
-    cursor: not-allowed;
+//   &[data-disabled] {
+//     color: ${({ theme }) => theme.colors.text.disabled};
+//     cursor: not-allowed;
     
-    &:hover {
-      background: transparent;
-    }
-  }
-`;
+//     &:hover {
+//       background: transparent;
+//     }
+//   }
+// `;
 
 const StableDropdownSeparatorStyled = styled(DropdownMenu.Separator)`
   height: 1px;
@@ -176,7 +176,7 @@ const useDropdownPerformanceMonitor = (componentName: string) => {
     if (renderCountRef.current > 100) {
       renderCountRef.current = 0;
     }
-  });
+  }, [componentName]); // 添加依赖数组，只在componentName变化时执行
   
   return renderCountRef.current;
 };
@@ -262,56 +262,56 @@ export const StableDropdown: React.FC<StableDropdownProps> = React.memo(({
 StableDropdown.displayName = 'StableDropdown';
 
 // 稳定的DropdownItem组件
-export const StableDropdownItem: React.FC<StableDropdownItemProps> = React.memo(({
-  id,
-  label,
-  group,
-  shortcut,
-  children,
-  onSelect,
-  disabled = false,
-  destructive = false,
-  className,
-}) => {
+// export const StableDropdownItem: React.FC<StableDropdownItemProps> = React.memo(({
+//   // id,
+//   // label,
+//   // group,
+//   // shortcut,
+//   // children,
+//   onSelect,
+//   // disabled = false,
+//   // destructive = false,
+//   // className,
+// }) => {
   // 性能监控
-  useDropdownPerformanceMonitor('StableDropdownItem');
+  // useDropdownPerformanceMonitor('StableDropdownItem');
   
   // 稳定化选择回调
-  const stableOnSelect = useCallback((event: Event) => {
-    if (onSelect && typeof onSelect === 'function') {
-      try {
-        onSelect(event);
-      } catch (error) {
-        reactLoopFixToolkit.debugLogger.error(
-          'dropdown-item',
-          'DropdownItem选择回调执行失败',
-          { error: error instanceof Error ? error.message : String(error) },
-          'StableDropdownItem'
-        );
-      }
-    }
-  }, [onSelect]);
+  // const stableOnSelect = useCallback((event: Event) => {
+  //   if (onSelect && typeof onSelect === 'function') {
+  //     try {
+  //       onSelect(event);
+  //     } catch (error) {
+  //       reactLoopFixToolkit.debugLogger.error(
+  //         'dropdown-item',
+  //         'DropdownItem选择回调执行失败',
+  //         { error: error instanceof Error ? error.message : String(error) },
+  //         'StableDropdownItem'
+  //       );
+  //     }
+  //   }
+  // }, [onSelect]);
   
   // 稳定化children
-  const stableChildren = useMemo(() => children, [children]);
+  // const stableChildren = useMemo(() => children, [children]);
   
-  return (
-    <StableDropdownItemStyled
-      onSelect={stableOnSelect}
-      disabled={disabled}
-      $destructive={destructive}
-      className={className}
-    >
-      {label && <span>{label}</span>}
+  // return (
+    // <StableDropdownItemStyled
+      // onSelect={stableOnSelect}
+      // disabled={disabled}
+      // $destructive={destructive}
+      // className={className}
+    // >
+      {/* {label && <span>{label}</span>}
       {group && <span>{group}</span>}
       {shortcut && <span>{shortcut}</span>}
       {id && <span>{id}</span>}
-      {stableChildren}
-    </StableDropdownItemStyled>
-  );
-});
+      {stableChildren} */}
+    // </StableDropdownItemStyled>
+  // );
+// });
 
-StableDropdownItem.displayName = 'StableDropdownItem';
+// StableDropdownItem.displayName = 'StableDropdownItem';
 
 // 稳定的DropdownSeparator组件
 export const StableDropdownSeparator: React.FC<{ className?: string }> = React.memo(({ 

@@ -5,15 +5,11 @@
 
 import React from 'react';
 import styled from 'styled-components';
-import { Badge } from '../../atoms/Badge/Badge';
-import { IconButton } from '../../atoms/IconButton/IconButton';
 import { Progress } from '../../atoms/Progress/Progress';
-import { SvgIcon } from '../../atoms/Icon/SvgIcon';
 
 const StatusBarContainer = styled.div`
   height: 24px;
   background: ${({ theme }) => theme.colors.surface};
-  border-top: 1px solid ${({ theme }) => theme.colors.border.default};
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -93,30 +89,11 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     <StatusBarContainer>
       {/* 左侧：操作状态和提示 */}
       <StatusSection>
-        <StatusItem>
-          <Badge variant="success" size="sm">就绪</Badge>
-          <span>选择工具开始创作</span>
-        </StatusItem>
-
-        <Divider />
-
-        <StatusItem>
-          <span>画布: 800×600</span>
-        </StatusItem>
 
         <StatusItem>
           <span>缩放: 100%</span>
         </StatusItem>
 
-        <Divider />
-
-        <StatusItem>
-          <span>图层: 3</span>
-        </StatusItem>
-
-        <StatusItem>
-          <span>选中: 1</span>
-        </StatusItem>
       </StatusSection>
 
       {/* 右侧：性能监控和系统信息 */}
@@ -150,26 +127,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
         <Divider />
 
-        {/* 快捷键提示 */}
-        <StatusItem>
-          <span>Ctrl+Z 撤销 | Ctrl+Y 重做 | V 选择</span>
-        </StatusItem>
-
-        <Divider />
-
         {/* 网络状态 */}
         <StatusItem>
           <PerformanceIndicator $level="good" />
           <span>在线</span>
         </StatusItem>
 
-        {/* 主题切换 */}
-        <IconButton
-          variant="ghost"
-          size="xs"
-          icon={<SvgIcon name="icon.16.tint" size={12} title="主题" />}
-          onClick={() => console.log('切换主题')}
-        />
       </StatusSection>
     </StatusBarContainer>
   );

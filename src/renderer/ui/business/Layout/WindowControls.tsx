@@ -1,3 +1,8 @@
+/**
+ * 窗口控制组件
+ * 提供窗口最小化、最大化、关闭等操作
+ */
+
 import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { SvgIcon } from '../../components/atoms/Icon/SvgIcon';

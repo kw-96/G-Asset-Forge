@@ -100,14 +100,56 @@ const DEFAULT_THRESHOLDS: PerformanceThresholds = {
  * 统一性能监控器类
  */
 export class UnifiedPerformanceMonitor {
-  static markStart(_arg0: string, _startTime: number) {
-    throw new Error('Method not implemented.');
+  /**
+   * 标记操作开始
+   * @param operationName 操作名称
+   */
+  static markStart(operationName: string): void {
+    try {
+      if (performance && performance.mark) {
+        performance.mark(`${operationName}-start`);
+      }
+    } catch (error) {
+      console.warn(`性能标记失败: ${operationName}`, error);
+    }
   }
-  static recordMetric(_arg0: string, _arg1: number) {
-    throw new Error('Method not implemented.');
+
+  /**
+   * 记录性能指标
+   * @param metricName 指标名称
+   */
+  static recordMetric(metricName: string): void {
+    try {
+      if (performance && performance.mark) {
+        // 记录自定义指标
+        const entry = performance.getEntriesByName(metricName);
+        if (entry.length > 0) {
+          performance.clearMarks(metricName);
+        }
+        performance.mark(`${metricName}-${Date.now()}`);
+      }
+    } catch (error) {
+      console.warn(`性能指标记录失败: ${metricName}`, error);
+    }
   }
-  static markEnd(_arg0: string, _startTime: number) {
-    throw new Error('Method not implemented.');
+
+  /**
+   * 标记操作结束
+   * @param operationName 操作名称
+   */
+  static markEnd(operationName: string): void {
+    try {
+      if (performance && performance.mark && performance.measure) {
+        performance.mark(`${operationName}-end`);
+        performance.measure(
+          operationName,
+          `${operationName}-start`,
+          `${operationName}-end`
+        );
+      }
+    } catch (error) {
+      console.warn(`性能标记结束失败: ${operationName}`, error);
+    }
   }
   private static instance: UnifiedPerformanceMonitor;
   

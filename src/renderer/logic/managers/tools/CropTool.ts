@@ -94,8 +94,7 @@ export class CropTool {
    * 开始裁剪模式
    */
   startCrop(element: CanvasElement): void {
-    const startTime = performance.now();
-    UnifiedPerformanceMonitor.markStart('crop-start', startTime);
+    UnifiedPerformanceMonitor.markStart('crop-start');
 
     this.targetElement = element;
     this.isActive = true;
@@ -115,7 +114,7 @@ export class CropTool {
       elementSize: { width: element.transform.width, height: element.transform.height },
     });
 
-    UnifiedPerformanceMonitor.markEnd('crop-start', startTime);
+    UnifiedPerformanceMonitor.markEnd('crop-start');
   }
 
   /**
@@ -139,8 +138,6 @@ export class CropTool {
     if (!this.isDragging || !this.dragStartPoint || !this.originalCropArea || !this.targetElement) {
       return;
     }
-
-    const startTime = performance.now();
 
     const deltaX = x - this.dragStartPoint.x;
     const deltaY = y - this.dragStartPoint.y;
@@ -192,7 +189,7 @@ export class CropTool {
     // 应用约束和验证
     this.updateCropArea(newArea);
 
-    UnifiedPerformanceMonitor.recordMetric('crop-drag-update', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('crop-drag-update');
   }
 
   /**
@@ -214,8 +211,6 @@ export class CropTool {
    */
   updateCropArea(area: Partial<CropArea>): void {
     if (!this.cropArea || !this.targetElement) return;
-
-    const startTime = performance.now();
 
     let newArea = { ...this.cropArea, ...area };
 
@@ -261,7 +256,7 @@ export class CropTool {
 
     this.cropArea = newArea;
 
-    UnifiedPerformanceMonitor.recordMetric('crop-area-update', performance.now() - startTime);
+    UnifiedPerformanceMonitor.recordMetric('crop-area-update');
   }
 
   /**
@@ -292,8 +287,7 @@ export class CropTool {
   applyCrop(): CanvasElement | null {
     if (!this.targetElement || !this.cropArea) return null;
 
-    const startTime = performance.now();
-    UnifiedPerformanceMonitor.markStart('crop-apply', startTime);
+    UnifiedPerformanceMonitor.markStart('crop-apply');
 
     // 添加到历史记录
     this.addToHistory();
@@ -325,7 +319,7 @@ export class CropTool {
     });
 
     this.cancelCrop();
-    UnifiedPerformanceMonitor.markEnd('crop-apply', startTime);
+    UnifiedPerformanceMonitor.markEnd('crop-apply');
     return croppedElement;
   }
 

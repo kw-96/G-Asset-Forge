@@ -1,13 +1,18 @@
 /**
- * 画布业务组件导出 - 画布相关的业务组件
- * @description 导出画布工作区、工具栏、性能监控等画布相关组件
+ * 画布业务组件导出 - 基于Suika引擎的统一画布系统
+ * @description 导出基于Suika引擎的画布组件和相关工具
  * @author 开发团队
  */
 
-// 画布核心组件
-export { CanvasWorkspace } from './CanvasWorkspace';
+// 主要画布组件 - 基于Suika引擎
+export { SuikaCanvasComponent } from './SuikaCanvasComponent';
+export { SuikaCanvasComponent as UnifiedCanvas } from './SuikaCanvasComponent'; // 别名
+
+// 兼容性组件已移除，请直接使用SuikaCanvasComponent
+
+// 画布工具栏和UI组件
 export { default as FloatingToolbar } from './FloatingToolbar';
-export { default as CanvasPerformanceOverlay } from './CanvasPerformanceOverlay';
+// export { default as CanvasPerformanceOverlay } from './CanvasPerformanceOverlay';
 export { default as CanvasMinimap } from './CanvasMinimap';
 export { default as CanvasToolbar } from './CanvasToolbar';
 
@@ -15,10 +20,8 @@ export { default as CanvasToolbar } from './CanvasToolbar';
 export { default as CanvasInitializationChecker } from './CanvasInitializationChecker';
 export { default as InfiniteCanvasGuide } from './InfiniteCanvasGuide';
 
-// 画布通用组件
-export { ZoomPanContainer } from '../common/ZoomPanContainer';
-// RulerGuides和ZoomPanContext已删除，使用Suika核心系统
+// 缩放平移容器已废弃，现在由SuikaCanvasComponent统一处理
+// export { ZoomPanContainer } from '../common/ZoomPanContainer'; // 已废弃
 
-// 新的Suika画布组件
-export { SuikaCanvasComponent } from './SuikaCanvasComponent';
-// export { SuikaCanvasDemo } from './SuikaCanvasDemo';
+// 重新导出类型定义
+export type { SuikaEditor } from '../../../logic/engines/suika';

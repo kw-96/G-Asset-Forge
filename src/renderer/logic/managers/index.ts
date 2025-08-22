@@ -9,6 +9,9 @@ import { viewportManager, ViewportManager } from './canvas/ViewportManager';
 import { toolManager, ToolManager } from './tools';
 import { assetManager, AssetManager } from './assets/AssetManager';
 import { projectManager, ProjectManager } from './project/ProjectManager';
+import { pageManager, PageManager } from './page/PageManager';
+import { layerManager, LayerManager } from './layer/LayerManager';
+import { propertyManager, PropertyManager } from './property/PropertyManager';
 
 // 画布管理器
 export { CanvasManager, canvasManager } from './canvas/CanvasManager';
@@ -46,6 +49,25 @@ export type {
   ProjectValidationResult
 } from './project/ProjectManager';
 
+// 页面管理器
+export { PageManager, pageManager } from './page/PageManager';
+export type { Page, PageManagerEvents } from './page/PageManager';
+
+// 图层管理器
+export { LayerManager, layerManager } from './layer/LayerManager';
+export type { Layer, LayerManagerEvents } from './layer/LayerManager';
+
+// 属性管理器
+export { PropertyManager, propertyManager } from './property/PropertyManager';
+export type { 
+  ObjectProperties, 
+  Transform, 
+  Fill, 
+  Stroke, 
+  TextStyle, 
+  PropertyManagerEvents 
+} from './property/PropertyManager';
+
 /**
  * 管理器集合接口
  * @description 提供所有管理器实例的统一访问
@@ -56,6 +78,9 @@ export interface Managers {
   tool: ToolManager;
   asset: AssetManager;
   project: ProjectManager;
+  page: PageManager;
+  layer: LayerManager;
+  property: PropertyManager;
 }
 
 /**
@@ -68,6 +93,9 @@ export const getManagers = (): Managers => ({
   tool: toolManager,
   asset: assetManager,
   project: projectManager,
+  page: pageManager,
+  layer: layerManager,
+  property: propertyManager,
 });
 
 /**

@@ -6,7 +6,6 @@ import React from 'react';
 import styled from 'styled-components';
 import { SvgIcon } from '../../../../ui/components/atoms/Icon/SvgIcon';
 import { EnhancedIconButton } from '../../../../ui/business/Enhanced/EnhancedIconButton';
-import { useUIIntegration, UIFeature } from '../../../../ui/business/UIIntegration/UIIntegrationProvider';
 
 export interface IH5PageItem {
   id: string;
@@ -101,7 +100,7 @@ export const H5LayersPanel: React.FC<H5LayersPanelProps> = ({
   onOpenAssetLibrary,
   onOpenProjectLibrary,
 }) => {
-  const { isFeatureEnabled } = useUIIntegration();
+  
   return (
     <PanelContainer>
       <TopToolsBar>
@@ -109,7 +108,7 @@ export const H5LayersPanel: React.FC<H5LayersPanelProps> = ({
           icon={<SvgIcon name="icon.24.file.design" size={24} title="设计模式" />}
           onClick={() => onSwitchMode && onSwitchMode('design')}
           enableFigmaInteractions={true}
-          enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+          enableTooltip={true}
           tooltipContent="设计模式"
           tooltipPlacement="bottom"
           interactionVariant="tool"
@@ -120,7 +119,7 @@ export const H5LayersPanel: React.FC<H5LayersPanelProps> = ({
           icon={<SvgIcon name="icon.24.file.H5" size={24} title="H5模式" />}
           onClick={() => onSwitchMode && onSwitchMode('h5')}
           enableFigmaInteractions={true}
-          enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+          enableTooltip={true}
           tooltipContent="H5模式"
           tooltipPlacement="bottom"
           interactionVariant="tool"
@@ -131,7 +130,7 @@ export const H5LayersPanel: React.FC<H5LayersPanelProps> = ({
           icon={<SvgIcon name="icon.24.file.design.mods" size={24} title="模板库" />}
           onClick={() => onOpenTemplateLibrary && onOpenTemplateLibrary()}
           enableFigmaInteractions={true}
-          enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+          enableTooltip={true}
           tooltipContent="模板库"
           tooltipPlacement="bottom"
           interactionVariant="tool"
@@ -142,7 +141,7 @@ export const H5LayersPanel: React.FC<H5LayersPanelProps> = ({
           icon={<SvgIcon name="icon.24.file.design.assets" size={24} title="素材库" />}
           onClick={() => onOpenAssetLibrary && onOpenAssetLibrary()}
           enableFigmaInteractions={true}
-          enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+          enableTooltip={true}
           tooltipContent="素材库"
           tooltipPlacement="bottom"
           interactionVariant="tool"
@@ -153,7 +152,7 @@ export const H5LayersPanel: React.FC<H5LayersPanelProps> = ({
           icon={<SvgIcon name="icon.24.file.design.library" size={24} title="项目库" />}
           onClick={() => onOpenProjectLibrary && onOpenProjectLibrary()}
           enableFigmaInteractions={true}
-          enableTooltip={isFeatureEnabled(UIFeature.TOOLTIPS)}
+          enableTooltip={true}
           tooltipContent="项目库"
           tooltipPlacement="bottom"
           interactionVariant="tool"

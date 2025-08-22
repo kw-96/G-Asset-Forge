@@ -7,7 +7,6 @@
 Layout/
 ├── MainLayout.tsx                # 主布局容器
 ├── TopToolbar.tsx               # 顶部工具栏
-<!-- LeftToolPanel.tsx 已合并到 FigmaLayersPanel 顶部工具条，文件已移除 -->
 ├── LayersPanel.tsx              # 图层面板
 ├── RightPropertiesPanel.tsx     # 右侧属性面板
 ├── StatusBar.tsx                # 状态栏

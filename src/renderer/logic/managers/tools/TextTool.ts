@@ -117,8 +117,7 @@ export class TextTool {
      * 创建文本元素
      */
     createTextElement(x: number, y: number, content = '输入文本'): CanvasElement {
-        const startTime = performance.now();
-        UnifiedPerformanceMonitor.markStart('text-create', startTime);
+        UnifiedPerformanceMonitor.markStart('text-create');
 
         const metrics = this.measureText(content);
         const elementId = `text_${Date.now()}`;
@@ -159,7 +158,7 @@ export class TextTool {
             size: { width: textElement.transform.width, height: textElement.transform.height },
         });
 
-        UnifiedPerformanceMonitor.markEnd('text-create', startTime);
+        UnifiedPerformanceMonitor.markEnd('text-create');
         return textElement;
     }
 
@@ -167,7 +166,6 @@ export class TextTool {
      * 开始编辑文本
      */
     startEditing(elementId: string, content: string): void {
-        const startTime = performance.now();
 
         this.editState = {
             isEditing: true,
@@ -183,7 +181,7 @@ export class TextTool {
             contentLength: content.length,
         });
 
-        UnifiedPerformanceMonitor.recordMetric('text-edit-start', performance.now() - startTime);
+        UnifiedPerformanceMonitor.recordMetric('text-edit-start');
     }
 
     /**
@@ -192,14 +190,12 @@ export class TextTool {
     updateContent(content: string): void {
         if (!this.editState.isEditing) return;
 
-        const startTime = performance.now();
-
         this.editState.content = content;
         this.editState.cursorPosition = Math.min(this.editState.cursorPosition, content.length);
         this.editState.selectionStart = Math.min(this.editState.selectionStart, content.length);
         this.editState.selectionEnd = Math.min(this.editState.selectionEnd, content.length);
 
-        UnifiedPerformanceMonitor.recordMetric('text-content-update', performance.now() - startTime);
+        UnifiedPerformanceMonitor.recordMetric('text-content-update');
     }
 
     /**
@@ -207,8 +203,6 @@ export class TextTool {
      */
     insertText(text: string): void {
         if (!this.editState.isEditing) return;
-
-        const startTime = performance.now();
 
         const { content, cursorPosition } = this.editState;
         const newContent = content.slice(0, cursorPosition) + text + content.slice(cursorPosition);
@@ -218,7 +212,7 @@ export class TextTool {
         this.editState.selectionStart = this.editState.cursorPosition;
         this.editState.selectionEnd = this.editState.cursorPosition;
 
-        UnifiedPerformanceMonitor.recordMetric('text-insert', performance.now() - startTime);
+        UnifiedPerformanceMonitor.recordMetric('text-insert');
     }
 
     /**
@@ -226,8 +220,6 @@ export class TextTool {
      */
     deleteText(direction: 'backward' | 'forward' = 'backward'): void {
         if (!this.editState.isEditing) return;
-
-        const startTime = performance.now();
 
         const { content, cursorPosition, selectionStart, selectionEnd } = this.editState;
 
@@ -253,7 +245,7 @@ export class TextTool {
             }
         }
 
-        UnifiedPerformanceMonitor.recordMetric('text-delete', performance.now() - startTime);
+        UnifiedPerformanceMonitor.recordMetric('text-delete');
     }
 
     /**
@@ -296,13 +288,12 @@ export class TextTool {
     finishEditing(): CanvasElement | null {
         if (!this.editState.isEditing || !this.editState.elementId) return null;
 
-        const startTime = performance.now();
-        UnifiedPerformanceMonitor.markStart('text-finish-editing', startTime);
+        UnifiedPerformanceMonitor.markStart('text-finish-editing');
 
         const content = this.editState.content.trim();
         if (content.length === 0) {
             this.cancelEditing();
-            UnifiedPerformanceMonitor.markEnd('text-finish-editing', startTime);
+            UnifiedPerformanceMonitor.markEnd('text-finish-editing');
             return null;
         }
 
@@ -346,7 +337,7 @@ export class TextTool {
             size: { width: updatedElement.transform.width, height: updatedElement.transform.height },
         });
 
-        UnifiedPerformanceMonitor.markEnd('text-finish-editing', startTime);
+        UnifiedPerformanceMonitor.markEnd('text-finish-editing');
         return updatedElement;
     }
 
@@ -378,8 +369,6 @@ export class TextTool {
             };
         }
 
-        const startTime = performance.now();
-
         // 设置字体样式
         this.context.font = this.getFontString();
         this.context.textAlign = 'left';
@@ -408,7 +397,7 @@ export class TextTool {
             actualBoundingBoxDescent: this.settings.fontSize * 0.2,
         };
 
-        UnifiedPerformanceMonitor.recordMetric('text-measure', performance.now() - startTime);
+        UnifiedPerformanceMonitor.recordMetric('text-measure');
         return result;
     }
 

@@ -8,25 +8,19 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import styled from 'styled-components';
 import { ThemeProvider } from '../../theme/ThemeProvider';
 import { GlobalStyles } from '../../styles/GlobalStyles';
-import { MainLayout } from '../../components/templates/Layout/MainLayout';
+// 直接使用统一的Suika集成布局
+import { SuikaIntegratedLayout } from '../Layout/SuikaIntegratedLayout';
 import { canvasEvents } from '../../../logic/utils/events/canvasEvents';
 import { WelcomeScreen } from '../Welcome/WelcomeScreen';
 import { useAppStore } from '../../../stores/appStore';
 import { useAppInitialization } from '../../../hooks/useAppInitialization';
 import { useRenderCounter } from '../../../hooks/useRenderCounter';
 // 已移除ReactLoopFix依赖
-import {
-  UIIntegrationProvider,
-  UIEnhancementErrorBoundary,
-  // UIIntegrationTest,
-  UIFeature,
-  type UIIntegrationConfig,
-  // type UIIntegrationState
-} from '../UIIntegration';
+// UIIntegration removed - UI enhancement features are now integrated directly
 // 已移除临时调试工具的导入
 import { LayoutProvider } from '../../../logic/contexts/LayoutContext';
 import { NotificationProvider } from '../../components/organisms/Figma/FigmaNotification';
-import { PerformancePanel } from '../performance/PerformancePanel';
+// import { PerformancePanel } from '../performance/PerformancePanel';
 
 /**
  * 窗口控制Hook - 管理应用窗口的大小和模式切换
@@ -194,27 +188,9 @@ export const AppContainer: React.FC = () => {
   // 本地状态管理
   const [showWelcome, setShowWelcome] = useState(true);
   const [hasSetWelcomeMode, setHasSetWelcomeMode] = useState(false);
-  const [showPerformancePanel, setShowPerformancePanel] = useState(false);
+  // const [showPerformancePanel, setShowPerformancePanel] = useState(false);
 
-  // UI增强功能配置
-  const uiIntegrationConfig = useMemo<UIIntegrationConfig>(() => ({
-    enablePerformanceMonitoring: true,
-    enableAccessibility: true,
-    enableCustomLayout: true,
-    enableBatchUpdates: true,
-    enableNotifications: true,
-    autoOptimizePerformance: true,
-    enableAnimations: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    enableVirtualization: true,
-    enableInteractiveComponents: true,
-    enableTooltips: true,
-    enableTransitions: true,
-    performanceMode: 'auto',
-    debugMode: process.env['NODE_ENV'] === 'development'
-  }), []);
-
-  // UI增强功能状态
-  // const [uiIntegrationState, setUIIntegrationState] = useState<UIIntegrationState | null>(null);
+  // UI enhancement features are now integrated directly into components
 
   // 窗口控制
   const { setWelcomeMode, restoreNormalMode } = useWindowControl();
@@ -279,29 +255,7 @@ export const AppContainer: React.FC = () => {
   //   );
   // }, []);
 
-  // UI增强功能错误处理
-  const handleUIIntegrationError = useCallback((error: Error, errorInfo?: React.ErrorInfo, feature?: UIFeature) => {
-    console.error(
-      '[app-container] UI增强功能错误',
-      {
-        error: error.message,
-        feature,
-        stack: error.stack,
-        componentStack: errorInfo?.componentStack
-      },
-      'AppContainer'
-    );
-
-    // 在开发模式下显示更详细的错误信息
-    if (process.env['NODE_ENV'] === 'development') {
-      console.error('UI增强功能错误详情:', {
-        error,
-        errorInfo,
-        feature,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, []);
+  // UI enhancement error handling removed - using standard React error boundaries
 
   // // UI增强功能恢复处理
   // const handleUIIntegrationRecover = useCallback((feature?: UIFeature) => {
@@ -386,7 +340,8 @@ export const AppContainer: React.FC = () => {
         return <WelcomeScreen onComplete={handleWelcomeComplete} />;
 
       case 'main':
-        return <MainLayout />;
+        // 直接使用统一的Suika集成布局
+        return <SuikaIntegratedLayout title="G-Asset Forge" />;
 
       default:
         return (
@@ -415,34 +370,12 @@ export const AppContainer: React.FC = () => {
     <ThemeProvider>
       <GlobalStyles />
       <NotificationProvider>
-        <UIEnhancementErrorBoundary
-          onError={handleUIIntegrationError}
-          // onRecover={handleUIIntegrationRecover}
-          maxRetries={3}
-          enableAutoRecovery={true}
-        >
-          <UIIntegrationProvider
-            config={uiIntegrationConfig}
-            // onStateChange={handleUIIntegrationStateChange}
-            onError={handleUIIntegrationError}
-          >
-            <LayoutProvider>
-              <AppWrapper data-testid="app-container">
-                {renderContent()}
-
-                {/* 性能监控面板 - 仅在主界面显示 */}
-                {renderState === 'main' && (
-                  <PerformancePanel
-                    isVisible={showPerformancePanel}
-                    onToggle={() => setShowPerformancePanel(!showPerformancePanel)}
-                  />
-                )}
-
-                {/* 隐藏右上角UI增强调试信息 */}
-              </AppWrapper>
-            </LayoutProvider>
-          </UIIntegrationProvider>
-        </UIEnhancementErrorBoundary>
+        <LayoutProvider>
+          <AppWrapper data-testid="app-container">
+            {renderContent()}
+            {/* 性能监控面板已移除 */}
+          </AppWrapper>
+        </LayoutProvider>
       </NotificationProvider>
     </ThemeProvider>
   );

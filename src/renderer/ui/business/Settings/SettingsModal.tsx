@@ -15,8 +15,7 @@ import {
   ExtendedLayoutConfig
 } from '../Layout';
 import { useTheme } from '../../theme/ThemeProvider';
-import { useUIIntegration } from '../UIIntegration/UIIntegrationProvider';
-import { UIFeature } from '../UIIntegration/UIIntegrationProvider';
+// UIIntegration removed - UI features are now handled directly
 import { EnhancedButton } from '../Enhanced/EnhancedButton';
 import { EnhancedIconButton } from '../Enhanced/EnhancedIconButton';
 import { useLayoutConfig } from '../../../logic/contexts/LayoutContext';
@@ -260,7 +259,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   initialPage = 'general'
 }) => {
   const { actualMode, toggleTheme, reducedMotion, setReducedMotion } = useTheme();
-  const { isFeatureEnabled, toggleFeature, getPerformanceMetrics } = useUIIntegration();
+  // UI features are now handled directly - simplified settings
   const { config: layoutConfig, updateConfig: updateLayoutConfig, resetConfig: resetLayoutConfig } = useLayoutConfig();
   
   const [currentPage, setCurrentPage] = useState<SettingsPage>(initialPage);
@@ -346,50 +345,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </SettingItem>
       </SettingsSection>
 
-      <SettingsSection>
-        <SectionTitle>UI增强功能</SectionTitle>
-        <SettingItem>
-          <SettingLabel>
-            <SettingTitle>交互组件</SettingTitle>
-            <SettingDescription>启用Figma风格的交互效果</SettingDescription>
-          </SettingLabel>
-          <SettingControl>
-            <Toggle
-              $active={isFeatureEnabled(UIFeature.INTERACTIVE_COMPONENTS)}
-              onClick={() => toggleFeature(UIFeature.INTERACTIVE_COMPONENTS)}
-              aria-label="切换交互组件"
-            />
-          </SettingControl>
-        </SettingItem>
-        
-        <SettingItem>
-          <SettingLabel>
-            <SettingTitle>工具提示</SettingTitle>
-            <SettingDescription>显示详细的工具提示信息</SettingDescription>
-          </SettingLabel>
-          <SettingControl>
-            <Toggle
-              $active={isFeatureEnabled(UIFeature.TOOLTIPS)}
-              onClick={() => toggleFeature(UIFeature.TOOLTIPS)}
-              aria-label="切换工具提示"
-            />
-          </SettingControl>
-        </SettingItem>
-        
-        <SettingItem>
-          <SettingLabel>
-            <SettingTitle>过渡动画</SettingTitle>
-            <SettingDescription>启用平滑的过渡动画效果</SettingDescription>
-          </SettingLabel>
-          <SettingControl>
-            <Toggle
-              $active={isFeatureEnabled(UIFeature.TRANSITIONS)}
-              onClick={() => toggleFeature(UIFeature.TRANSITIONS)}
-              aria-label="切换过渡动画"
-            />
-          </SettingControl>
-        </SettingItem>
-      </SettingsSection>
+      {/* UI增强功能部分已移除 - 功能现在直接集成到组件中 */}
     </div>
   );
 
@@ -494,77 +450,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 
-  // 渲染性能设置页面
+  // 渲染性能设置页面 - 简化版本，移除了UI增强功能控制
   const renderPerformanceSettings = () => {
-    const metrics = getPerformanceMetrics();
-    
     return (
       <div>
         <SettingsSection>
-          <SectionTitle>性能监控</SectionTitle>
+          <SectionTitle>性能设置</SectionTitle>
           <SettingItem>
             <SettingLabel>
-              <SettingTitle>启用性能监控</SettingTitle>
-              <SettingDescription>实时监控FPS、内存使用等指标</SettingDescription>
-            </SettingLabel>
-            <SettingControl>
-              <Toggle
-                $active={isFeatureEnabled(UIFeature.PERFORMANCE_MONITORING)}
-                onClick={() => toggleFeature(UIFeature.PERFORMANCE_MONITORING)}
-                aria-label="切换性能监控"
-              />
-            </SettingControl>
-          </SettingItem>
-          
-          <SettingItem>
-            <SettingLabel>
-              <SettingTitle>虚拟化列表</SettingTitle>
-              <SettingDescription>对长列表使用虚拟化以提升性能</SettingDescription>
-            </SettingLabel>
-            <SettingControl>
-              <Toggle
-                $active={isFeatureEnabled(UIFeature.VIRTUALIZATION)}
-                onClick={() => toggleFeature(UIFeature.VIRTUALIZATION)}
-                aria-label="切换虚拟化列表"
-              />
-            </SettingControl>
-          </SettingItem>
-          
-          <SettingItem>
-            <SettingLabel>
-              <SettingTitle>批量更新</SettingTitle>
-              <SettingDescription>批量处理UI更新以提升性能</SettingDescription>
-            </SettingLabel>
-            <SettingControl>
-              <Toggle
-                $active={isFeatureEnabled(UIFeature.BATCH_UPDATES)}
-                onClick={() => toggleFeature(UIFeature.BATCH_UPDATES)}
-                aria-label="切换批量更新"
-              />
-            </SettingControl>
-          </SettingItem>
-        </SettingsSection>
-
-        <SettingsSection>
-          <SectionTitle>当前性能指标</SectionTitle>
-          <SettingItem>
-            <SettingLabel>
-              <SettingTitle>帧率 (FPS)</SettingTitle>
-              <SettingDescription>{metrics.fps} fps</SettingDescription>
-            </SettingLabel>
-          </SettingItem>
-          
-          <SettingItem>
-            <SettingLabel>
-              <SettingTitle>内存使用</SettingTitle>
-              <SettingDescription>{metrics.memoryUsage} MB</SettingDescription>
-            </SettingLabel>
-          </SettingItem>
-          
-          <SettingItem>
-            <SettingLabel>
-              <SettingTitle>渲染时间</SettingTitle>
-              <SettingDescription>{metrics.renderTime.toFixed(2)} ms</SettingDescription>
+              <SettingTitle>性能优化</SettingTitle>
+              <SettingDescription>性能优化功能已集成到应用中，无需手动配置</SettingDescription>
             </SettingLabel>
           </SettingItem>
         </SettingsSection>
@@ -579,16 +474,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <SectionTitle>无障碍功能</SectionTitle>
         <SettingItem>
           <SettingLabel>
-            <SettingTitle>启用无障碍支持</SettingTitle>
-            <SettingDescription>启用键盘导航和屏幕阅读器支持</SettingDescription>
+            <SettingTitle>无障碍支持</SettingTitle>
+            <SettingDescription>无障碍功能已默认启用，包括键盘导航和屏幕阅读器支持</SettingDescription>
           </SettingLabel>
-          <SettingControl>
-            <Toggle
-              $active={isFeatureEnabled(UIFeature.ACCESSIBILITY)}
-              onClick={() => toggleFeature(UIFeature.ACCESSIBILITY)}
-              aria-label="切换无障碍支持"
-            />
-          </SettingControl>
         </SettingItem>
         
         <SettingItem>
