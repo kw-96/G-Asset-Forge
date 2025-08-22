@@ -5,7 +5,7 @@
 
 import { useCallback, useRef } from 'react';
 import { useAppStore } from '../stores/appStore';
-import { reactLoopFixToolkit } from '../logic/utils/ReactLoopFix';
+
 
 export interface UseBatchUpdateOptions {
   debounceMs?: number;
@@ -35,12 +35,7 @@ export function useBatchUpdate(options: UseBatchUpdateOptions = {}) {
     const updateCount = Object.keys(updates).length;
     
     if (enableLogging) {
-      reactLoopFixToolkit.debugLogger.debug(
-        'batch-update',
-        '执行批量更新',
-        { updateCount, updates },
-        'useBatchUpdate'
-      );
+      console.log('执行批量更新:', { updateCount, updates });
     }
 
     // 清空待更新队列
@@ -64,23 +59,13 @@ export function useBatchUpdate(options: UseBatchUpdateOptions = {}) {
     updateCountRef.current++;
 
     if (enableLogging) {
-      reactLoopFixToolkit.debugLogger.debug(
-        'batch-update',
-        `添加更新到批次: ${key}`,
-        { value, queueSize: updateCountRef.current },
-        'useBatchUpdate'
-      );
+      console.log(`添加更新到批次: ${key}`, { value, queueSize: updateCountRef.current });
     }
 
     // 如果达到最大批次大小，立即执行
     if (updateCountRef.current >= maxBatchSize) {
       if (enableLogging) {
-        reactLoopFixToolkit.debugLogger.info(
-          'batch-update',
-          '达到最大批次大小，立即执行更新',
-          { maxBatchSize, currentSize: updateCountRef.current },
-          'useBatchUpdate'
-        );
+        console.log('达到最大批次大小，立即执行更新:', { maxBatchSize, currentSize: updateCountRef.current });
       }
       flushUpdates();
       return;
@@ -105,12 +90,7 @@ export function useBatchUpdate(options: UseBatchUpdateOptions = {}) {
     updateCountRef.current += Object.keys(updates).length;
 
     if (enableLogging) {
-      reactLoopFixToolkit.debugLogger.debug(
-        'batch-update',
-        '批量添加多个更新',
-        { updateKeys: Object.keys(updates), queueSize: updateCountRef.current },
-        'useBatchUpdate'
-      );
+      console.log('批量添加多个更新:', { updateKeys: Object.keys(updates), queueSize: updateCountRef.current });
     }
 
     // 如果达到最大批次大小，立即执行
@@ -132,12 +112,7 @@ export function useBatchUpdate(options: UseBatchUpdateOptions = {}) {
   // 立即执行所有待更新的更新
   const flushImmediately = useCallback(() => {
     if (enableLogging) {
-      reactLoopFixToolkit.debugLogger.info(
-        'batch-update',
-        '立即执行所有待更新的更新',
-        { queueSize: updateCountRef.current },
-        'useBatchUpdate'
-      );
+      console.log('立即执行所有待更新的更新:', { queueSize: updateCountRef.current });
     }
     flushUpdates();
   }, [enableLogging, flushUpdates]);
@@ -155,12 +130,7 @@ export function useBatchUpdate(options: UseBatchUpdateOptions = {}) {
     }
 
     if (enableLogging) {
-      reactLoopFixToolkit.debugLogger.info(
-        'batch-update',
-        '清除批量更新队列',
-        { clearedCount },
-        'useBatchUpdate'
-      );
+      console.log('清除批量更新队列:', { clearedCount });
     }
   }, [enableLogging]);
 

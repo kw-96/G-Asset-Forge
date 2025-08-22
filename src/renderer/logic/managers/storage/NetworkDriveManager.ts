@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 // 网络驱动器管理器
-import { EventEmitter } from '../../engines/h5-editor/utils/event-emitter';
+import { EventEmitter } from '../../engines/suika/utils/event-emitter';
 import path from 'path-browserify';
 
 export interface INetworkDriveConfig {

@@ -231,7 +231,7 @@ export interface CanvasAPI {
    */
   switchEngine(
     canvasId: string,
-    engineType: 'suika' | 'h5-editor'
+    engineType: 'suika' // 已移除H5-editor引擎，仅保留Suika引擎
   ): Promise<APIResponse<CanvasState>>;
 }
 

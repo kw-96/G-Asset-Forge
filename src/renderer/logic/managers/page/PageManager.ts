@@ -297,7 +297,6 @@ export class PageManager extends EventEmitter {
 
         this.emit('pageRenamed', pageId, newName);
 
-        console.log(`[PageManager] 重命名页面: ${pageId} -> ${newName}`);
         return true;
       }
     } catch (error) {
@@ -325,13 +324,11 @@ export class PageManager extends EventEmitter {
     }
 
     if (page.isActive) {
-      console.log(`[PageManager] 页面已激活: ${pageId}`);
       return true;
     }
 
     try {
       switchCanvasRecord(this.suikaEditor, pageId);
-      console.log(`[PageManager] 切换到页面: ${page.name} (${pageId})`);
       return true;
     } catch (error) {
       console.error('[PageManager] 切换页面失败:', error);

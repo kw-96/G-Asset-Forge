@@ -25,7 +25,7 @@ export { EngineFactory } from './core/EngineFactory';
 
 // 引擎适配器
 export { SuikaEngineAdapter } from './adapters/SuikaEngineAdapter';
-export { H5EditorEngineAdapter } from './adapters/H5EditorEngineAdapter';
+// export { H5EditorEngineAdapter } from './adapters/H5EditorEngineAdapter'; // 已移除H5-editor引擎
 
 // 导入实例（用于内部使用）
 import type { EngineConfig, EngineType, EngineSwitchOptions, EnginePerformanceStats, EngineComparison, CanvasEngine } from './core/EngineInterface';

@@ -47,7 +47,7 @@ export const CanvasConfigSchema: ValidationSchema = {
       field: 'engineType',
       required: true,
       type: 'string',
-      enum: ['suika', 'h5-editor'],
+              enum: ['suika'], // 已移除H5-editor引擎，仅保留Suika引擎
     },
   ],
   strict: true,

@@ -10,7 +10,7 @@ import type {
   EngineConfig 
 } from './EngineInterface';
 import { SuikaEngineAdapter } from '../adapters/SuikaEngineAdapter';
-import { H5EditorEngineAdapter } from '../adapters/H5EditorEngineAdapter';
+// import { H5EditorEngineAdapter } from '../adapters/H5EditorEngineAdapter'; // 已移除H5-editor引擎
 
 /**
  * 引擎信息接口
@@ -230,14 +230,14 @@ export class EngineFactory implements EngineFactory {
           workers: true,
         };
       
-      case 'h5-editor':
-        return {
-          webgl: false,
-          canvas2d: true,
-          webgpu: false,
-          offscreenCanvas: false,
-          workers: false,
-        };
+      // case 'h5-editor': // 已移除H5-editor引擎
+      //   return {
+      //     webgl: false,
+      //     canvas2d: true,
+      //     webgpu: false,
+      //     offscreenCanvas: false,
+      //     workers: false,
+      //   };
       
       default:
         return {
@@ -267,11 +267,11 @@ export class EngineFactory implements EngineFactory {
       }
     }
     
-    if (requirements.features?.includes('export')) {
-      if (availableEngines.includes('h5-editor')) {
-        return 'h5-editor';
-      }
-    }
+    // if (requirements.features?.includes('export')) { // 已移除H5-editor引擎
+    //   if (availableEngines.includes('h5-editor')) {
+    //     return 'h5-editor';
+    //   }
+    // }
 
     // 返回默认引擎
     return this.defaultEngine;
@@ -359,27 +359,27 @@ export class EngineFactory implements EngineFactory {
       },
     }, SuikaEngineAdapter);
 
-    // 注册 H5-Editor 引擎
-    this.registerEngine('h5-editor', {
-      name: 'H5-Editor Canvas Engine',
-      version: '1.0.0',
-      description: '专业的H5编辑器引擎，支持复杂布局和导出',
-      capabilities: [
-        'layout-engine',
-        'professional-export',
-        'template-system',
-        'component-library',
-        'responsive-design',
-        'css-styling',
-        'html-export',
-        'pdf-export',
-        'print-optimization',
-      ],
-      factory: async () => {
-        const adapter = new H5EditorEngineAdapter();
-        return adapter as unknown as CanvasEngine;
-      },
-    }, H5EditorEngineAdapter);
+    // 注册 H5-Editor 引擎 - 已移除
+    // this.registerEngine('h5-editor', {
+    //   name: 'H5-Editor Canvas Engine',
+    //   version: '1.0.0',
+    //   description: '专业的H5编辑器引擎，支持复杂布局和导出',
+    //   capabilities: [
+    //     'layout-engine',
+    //     'professional-export',
+    //     'template-system',
+    //     'component-library',
+    //     'responsive-design',
+    //     'css-styling',
+    //     'html-export',
+    //     'pdf-export',
+    //     'print-optimization',
+    //   ],
+    //   factory: async () => {
+    //     const adapter = new H5EditorEngineAdapter();
+    //     return adapter as unknown as CanvasEngine;
+    //   },
+    // }, H5EditorEngineAdapter);
 
     console.info('[engine-factory] 内置引擎注册完成', {
       engines: this.getSupportedEngines(),

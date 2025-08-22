@@ -30,14 +30,6 @@ const SuikaEditorContainer = styled.div<{ $mode: 'design' | 'h5' }>`
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    .suika-editor-canvas {
-      position: relative;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      background: white;
-    }
   `}
 `;
 
@@ -215,16 +207,14 @@ export const SuikaIntegratedCanvas: React.FC<SuikaIntegratedCanvasProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    console.log('[suika-integrated-canvas] 初始化Suika编辑器', { mode, width, height });
-
     // 获取容器的准确位置信息
     const containerRect = containerRef.current.getBoundingClientRect();
     
     // 创建Suika编辑器配置
     const editorConfig = {
       containerElement: containerRef.current,
-      width: mode === 'h5' ? 375 : width,
-      height: mode === 'h5' ? 812 : height,
+      width: width,
+      height: height,
       // 使用准确的容器偏移量，确保鼠标坐标正确对应
       offsetX: containerRect.left,
       offsetY: containerRect.top,
@@ -356,8 +346,6 @@ export const SuikaIntegratedCanvas: React.FC<SuikaIntegratedCanvasProps> = ({
         onReady(editor);
       }
 
-      console.log('[suika-integrated-canvas] Suika编辑器初始化完成');
-
       // 清理函数
       return () => {
         clearInterval(performanceInterval);
@@ -383,7 +371,7 @@ export const SuikaIntegratedCanvas: React.FC<SuikaIntegratedCanvasProps> = ({
         // 动态更新画布偏移量，确保鼠标坐标始终正确
         editorRef.current.setting.set('offsetX', rect.left);
         editorRef.current.setting.set('offsetY', rect.top);
-        console.log('[suika-integrated-canvas] 更新画布偏移量:', { offsetX: rect.left, offsetY: rect.top });
+        // console.log('[suika-integrated-canvas] 更新画布偏移量:', { offsetX: rect.left, offsetY: rect.top });
       }
     };
 
@@ -412,16 +400,13 @@ export const SuikaIntegratedCanvas: React.FC<SuikaIntegratedCanvasProps> = ({
   // 处理容器尺寸变化
   useEffect(() => {
     if (editorRef.current && isReady) {
-      const newWidth = mode === 'h5' ? 375 : width;
-      const newHeight = mode === 'h5' ? 812 : height;
-      
       editorRef.current.viewportManager.setViewportSize({ 
-        width: newWidth, 
-        height: newHeight 
+        width: width, 
+        height: height 
       });
       editorRef.current.render();
     }
-  }, [width, height, isReady, mode]);
+  }, [width, height, isReady]);
 
   // 处理设置变化
   useEffect(() => {

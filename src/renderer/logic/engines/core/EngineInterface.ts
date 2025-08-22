@@ -9,7 +9,7 @@ import type { CanvasElement } from '../../../../interfaces/types/canvas';
 /**
  * 引擎类型枚举
  */
-export type EngineType = 'suika' | 'h5-editor' | 'custom';
+export type EngineType = 'suika' | 'custom'; // 已移除H5-editor引擎
 
 /**
  * 引擎状态枚举

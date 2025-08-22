@@ -6,8 +6,8 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import styled, { keyframes } from 'styled-components';
-import { EnhancedErrorBoundary } from '../../../business/ErrorBoundary/EnhancedErrorBoundary';
-import { reactLoopFixToolkit } from '../../../../logic/utils/ReactLoopFix';
+
+
 
 interface StableDropdownProps {
   trigger: React.ReactNode;
@@ -158,16 +158,11 @@ const useDropdownPerformanceMonitor = (componentName: string) => {
     
     // 检测异常渲染频率
     if (timeSinceLastRender < 16 && renderCountRef.current > 10) {
-      reactLoopFixToolkit.debugLogger.warn(
-        'dropdown-performance',
-        `${componentName}组件渲染频率异常`,
-        {
-          renderCount: renderCountRef.current,
-          timeSinceLastRender,
-          componentName,
-        },
-        'StableDropdown'
-      );
+      console.warn(`${componentName}组件渲染频率异常:`, {
+        renderCount: renderCountRef.current,
+        timeSinceLastRender,
+        componentName,
+      });
     }
     
     lastRenderTimeRef.current = now;
@@ -220,42 +215,30 @@ export const StableDropdown: React.FC<StableDropdownProps> = React.memo(({
   
   // 记录组件使用情况
   useEffect(() => {
-    reactLoopFixToolkit.debugLogger.info(
-      'dropdown-lifecycle',
-      'StableDropdown组件挂载',
-      { renderCount, disabled },
-      'StableDropdown'
-    );
+    console.log('StableDropdown组件挂载:', { renderCount, disabled });
     
     return () => {
-      reactLoopFixToolkit.debugLogger.info(
-        'dropdown-lifecycle',
-        'StableDropdown组件卸载',
-        { renderCount },
-        'StableDropdown'
-      );
+      console.log('StableDropdown组件卸载:', { renderCount });
     };
   }, []); // 空依赖数组，只在挂载和卸载时执行
   
   return (
-    <EnhancedErrorBoundary>
-      <DropdownWrapper className={className}>
-        <DropdownMenu.Root 
-          {...(open !== undefined && { open })}
-          onOpenChange={stableOnOpenChange}
-        >
-          <DropdownMenu.Trigger asChild disabled={disabled}>
-            {stableTrigger}
-          </DropdownMenu.Trigger>
-          
-          <DropdownMenu.Portal>
-            <StableDropdownContent {...stableProps}>
-              {stableChildren}
-            </StableDropdownContent>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
-      </DropdownWrapper>
-    </EnhancedErrorBoundary>
+    <DropdownWrapper className={className}>
+      <DropdownMenu.Root 
+        {...(open !== undefined && { open })}
+        onOpenChange={stableOnOpenChange}
+      >
+        <DropdownMenu.Trigger asChild disabled={disabled}>
+          {stableTrigger}
+        </DropdownMenu.Trigger>
+        
+        <DropdownMenu.Portal>
+          <StableDropdownContent {...stableProps}>
+            {stableChildren}
+          </StableDropdownContent>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    </DropdownWrapper>
   );
 });
 

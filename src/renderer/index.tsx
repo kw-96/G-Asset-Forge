@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 // import AppTest from 'ui/components/business/App/App-test.tsx';
-import { EnhancedErrorBoundary as ErrorBoundary } from './ui/business/ErrorBoundary/EnhancedErrorBoundary';
+
 import { ThemeProvider } from './ui/theme/ThemeProvider';
 import { GlobalStyles } from './ui/styles/GlobalStyles';
 
@@ -38,12 +38,10 @@ const root = createRoot(container);
 try {
   root.render(
     <React.StrictMode>
-      <ErrorBoundary>
-        <ThemeProvider>
-          <GlobalStyles />
-          <App onReady={hideLoadingScreen} />
-        </ThemeProvider>
-      </ErrorBoundary>
+      <ThemeProvider>
+        <GlobalStyles />
+        <App onReady={hideLoadingScreen} />
+      </ThemeProvider>
     </React.StrictMode>
   );
 } catch (error) {

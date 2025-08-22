@@ -6,8 +6,8 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import styled from 'styled-components';
-import { EnhancedErrorBoundary } from '../../../business/ErrorBoundary/EnhancedErrorBoundary';
-import { reactLoopFixToolkit } from '../../../../logic/utils/ReactLoopFix';
+
+
 
 interface StableSliderProps {
   value: number[];
@@ -123,16 +123,11 @@ const useSliderPerformanceMonitor = (componentName: string) => {
     
     // 检测异常渲染频率
     if (timeSinceLastRender < 16 && renderCountRef.current > 10) {
-      reactLoopFixToolkit.debugLogger.warn(
-        'slider-performance',
-        `${componentName}组件渲染频率异常`,
-        {
-          renderCount: renderCountRef.current,
-          timeSinceLastRender,
-          componentName,
-        },
-        'StableSlider'
-      );
+      console.warn(`${componentName}组件渲染频率异常:`, {
+        renderCount: renderCountRef.current,
+        timeSinceLastRender,
+        componentName,
+      });
     }
     
     lastRenderTimeRef.current = now;
@@ -163,15 +158,10 @@ const useValueChangeDebounce = (
         try {
           onValueChange(newValue);
         } catch (error) {
-          reactLoopFixToolkit.debugLogger.error(
-            'slider-callback',
-            'Slider值变更回调执行失败',
-            { 
-              error: error instanceof Error ? error.message : String(error),
-              newValue,
-            },
-            'StableSlider'
-          );
+                  console.error('Slider值变更回调执行失败:', { 
+          error: error instanceof Error ? error.message : String(error),
+          newValue,
+        });
         }
       }
     }, delay);
@@ -232,34 +222,32 @@ export const StableSlider: React.FC<StableSliderProps> = React.memo(({
   }, [value, disabled]);
   
   return (
-    <EnhancedErrorBoundary>
-      <SliderContainer className={className}>
-        {(stableLabel || showValue) && (
-          <SliderHeader>
-            {stableLabel && <SliderLabel>{stableLabel}</SliderLabel>}
-            {showValue && displayValue !== null && (
-              <SliderValue>{displayValue}</SliderValue>
-            )}
-          </SliderHeader>
-        )}
-        
-        <StableSliderRoot
-          value={value}
-          onValueChange={debouncedOnValueChange}
-          disabled={disabled}
-          {...(name && { name })}
-          $orientation={orientation}
-          {...stableProps}
-        >
-          <StableSliderTrack $orientation={orientation}>
-            <StableSliderRange />
-          </StableSliderTrack>
-          {value.map((_, index) => (
-            <StableSliderThumb key={index} />
-          ))}
-        </StableSliderRoot>
-      </SliderContainer>
-    </EnhancedErrorBoundary>
+    <SliderContainer className={className}>
+      {(stableLabel || showValue) && (
+        <SliderHeader>
+          {stableLabel && <SliderLabel>{stableLabel}</SliderLabel>}
+          {showValue && displayValue !== null && (
+            <SliderValue>{displayValue}</SliderValue>
+          )}
+        </SliderHeader>
+      )}
+      
+      <StableSliderRoot
+        value={value}
+        onValueChange={debouncedOnValueChange}
+        disabled={disabled}
+        {...(name && { name })}
+        $orientation={orientation}
+        {...stableProps}
+      >
+        <StableSliderTrack $orientation={orientation}>
+          <StableSliderRange />
+        </StableSliderTrack>
+        {value.map((_, index) => (
+          <StableSliderThumb key={index} />
+        ))}
+      </StableSliderRoot>
+    </SliderContainer>
   );
 });
 

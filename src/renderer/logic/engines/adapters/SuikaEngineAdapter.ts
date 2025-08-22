@@ -119,7 +119,6 @@ export class SuikaEngineAdapter implements CanvasEngine, EngineAdapter {
       // 合并配置
       this._config = { ...this._config, ...config };
 
-      console.info('[suika-adapter] 开始初始化Suika引擎');
 
       // 这里应该初始化实际的Suika引擎
       // 现在使用模拟实现

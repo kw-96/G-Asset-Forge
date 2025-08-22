@@ -361,6 +361,113 @@ const SuikaPropertyPanel = styled.div`
   }
 `;
 
+// 右键菜单样式 - 符合图示的深色主题
+const ContextMenu = styled.div<{ $visible: boolean; $x: number; $y: number }>`
+  position: fixed;
+  top: ${({ $y }) => $y}px;
+  left: ${({ $x }) => $x}px;
+  background: #2d2d2d;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
+  min-width: 160px;
+  z-index: 10000;
+  opacity: ${({ $visible }) => $visible ? 1 : 0};
+  pointer-events: ${({ $visible }) => $visible ? 'auto' : 'none'};
+  transition: opacity 0.2s ease;
+  
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    color: #ffffff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+      background: #404040;
+    }
+    
+    &:first-child {
+      border-radius: 6px 6px 0 0;
+    }
+    
+    &:last-child {
+      border-radius: 0 0 6px 6px;
+    }
+  }
+`;
+
+// 重命名输入框样式
+const RenameInput = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  min-width: 300px;
+  z-index: 10001;
+  
+  .rename-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 16px;
+  }
+  
+  .rename-input {
+    width: 100%;
+    height: 36px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0 12px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    
+    &:focus {
+      outline: none;
+      border-color: #1976d2;
+    }
+  }
+  
+  .rename-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      
+      &.cancel {
+        background: #f5f5f5;
+        color: #666;
+        
+        &:hover {
+          background: #e0e0e0;
+        }
+      }
+      
+      &.confirm {
+        background: #1976d2;
+        color: white;
+        
+        &:hover {
+          background: #1565c0;
+        }
+      }
+    }
+  }
+`;
+
 
 
 interface SuikaIntegratedLayoutProps {
@@ -393,6 +500,32 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
     memory: 85,
     fps: 60,
     cpu: 15,
+  });
+
+  // 右键菜单状态
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    pageId: string | null;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    pageId: null,
+  });
+
+  // 重命名输入框状态
+  const [renameDialog, setRenameDialog] = useState<{
+    visible: boolean;
+    pageId: string | null;
+    currentName: string;
+    newName: string;
+  }>({
+    visible: false,
+    pageId: null,
+    currentName: '',
+    newName: '',
   });
 
   // 使用Suika管理器Hook
@@ -435,6 +568,8 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
       suikaEditor.toolManager.off('switchTool', handleToolChange);
     };
   }, [suikaEditor]);
+
+
 
   // 性能监控 - 从Suika编辑器获取状态
   useEffect(() => {
@@ -511,6 +646,104 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
   const handlePageDelete = useCallback((pageId: string) => {
     managersActions.deletePage(pageId);
   }, [managersActions]);
+
+  const handlePageDuplicate = useCallback((pageId: string) => {
+    const page = pages.find(p => p.id === pageId);
+    if (page) {
+      // const pageCount = pages.length;
+      managersActions.createPage(`${page.name} 副本`, false);
+    }
+  }, [managersActions, pages]);
+
+  // 右键菜单处理函数
+  const handlePageContextMenu = useCallback((e: React.MouseEvent, pageId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      pageId,
+    });
+  }, []);
+
+  const handleContextMenuClose = useCallback(() => {
+    setContextMenu({
+      visible: false,
+      x: 0,
+      y: 0,
+      pageId: null,
+    });
+  }, []);
+
+  const handleContextMenuAction = useCallback((action: string, pageId: string) => {
+    switch (action) {
+      case 'rename':
+        const page = pages.find(p => p.id === pageId);
+        if (page) {
+          // 显示自定义重命名输入框
+          setRenameDialog({
+            visible: true,
+            pageId,
+            currentName: page.name,
+            newName: page.name,
+          });
+        }
+        break;
+      case 'duplicate':
+        handlePageDuplicate(pageId);
+        break;
+      case 'delete':
+        const pageToDelete = pages.find(p => p.id === pageId);
+        if (pageToDelete && pages.length > 1) {
+          if (confirm(`确定删除页面 "${pageToDelete.name}" 吗？`)) {
+            handlePageDelete(pageId);
+          }
+        }
+        break;
+    }
+    handleContextMenuClose();
+  }, [pages, handlePageDuplicate, handlePageDelete, handleContextMenuClose]);
+
+  // 重命名输入框处理函数
+  const handleRenameConfirm = useCallback(() => {
+    if (renameDialog.pageId && renameDialog.newName && renameDialog.newName !== renameDialog.currentName) {
+      handlePageRename(renameDialog.pageId, renameDialog.newName);
+    }
+    setRenameDialog({
+      visible: false,
+      pageId: null,
+      currentName: '',
+      newName: '',
+    });
+  }, [renameDialog, handlePageRename]);
+
+  const handleRenameCancel = useCallback(() => {
+    setRenameDialog({
+      visible: false,
+      pageId: null,
+      currentName: '',
+      newName: '',
+    });
+  }, []);
+
+  // 监听点击外部关闭右键菜单
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        handleContextMenuClose();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('contextmenu', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('contextmenu', handleClickOutside);
+    };
+  }, [contextMenu.visible, handleContextMenuClose]);
 
   // 处理图层操作
   const handleLayerSelect = useCallback((layerId: string, addToSelection: boolean = false) => {
@@ -614,66 +847,55 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
                 </GAFModeButtonsGrid>
               </GAFModeButtonsContainer>
 
-              {/* Suika页面面板 */}
-              <SuikaPagePanel>
-                <div className="page-title">
-                  页面
-                  <button 
-                    type="button" 
-                    onClick={handlePageAdd}
-                    style={{ 
-                      marginLeft: 'auto', 
-                      background: 'none', 
-                      border: 'none', 
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      color: '#666'
-                    }}
-                    title="添加页面"
-                  >
-                    +
-                  </button>
-                </div>
-                {pages.map((page) => (
-                  <div
-                    key={page.id}
-                    className={`page-item ${page.isActive ? 'active' : ''}`}
-                    onClick={() => handlePageSelect(page.id)}
-                  >
-                    <div className="page-icon" />
-                    <span>{page.name}</span>
-                    <div className="page-controls">
-                      <button 
-                        type="button" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newName = prompt('重命名页面:', page.name);
-                          if (newName && newName !== page.name) {
-                            handlePageRename(page.id, newName);
-                          }
-                        }}
-                        title="重命名"
-                      >
-                        ✏️
-                      </button>
-                      {pages.length > 1 && (
-                        <button 
-                          type="button" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`确定删除页面 "${page.name}" 吗？`)) {
-                              handlePageDelete(page.id);
-                            }
-                          }}
-                          title="删除"
-                        >
-                          🗑️
-                        </button>
-                      )}
-                    </div>
+              {/* Suika页面面板 - 仅在设计模式下显示 */}
+              {canvasMode === 'design' && (
+                <SuikaPagePanel>
+                  <div className="page-title">
+                    页面
+                    <button
+                      type="button" 
+                      onClick={handlePageAdd}
+                      style={{ 
+                        marginLeft: 'auto', 
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: '#666'
+                      }}
+                      title="添加页面"
+                    >
+                      <SvgIcon name="icon.24.plus" size={24} />
+                    </button>
                   </div>
-                ))}
-              </SuikaPagePanel>
+                  {pages.map((page) => (
+                     <div
+                       key={page.id}
+                       className={`page-item ${page.isActive ? 'active' : ''}`}
+                       onClick={() => handlePageSelect(page.id)}
+                       onContextMenu={(e) => handlePageContextMenu(e, page.id)}
+                     >
+                       <span>{page.name}</span>
+                       <div className="page-controls">
+                         {pages.length > 1 && (
+                           <button 
+                             type="button" 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (window.confirm(`确定删除页面 "${page.name}" 吗？`)) {
+                                 handlePageDelete(page.id);
+                               }
+                             }}
+                             title="删除"
+                           >
+                             <SvgIcon name="icon.24.close" size={16} />
+                           </button>
+                         )}
+                       </div>
+                     </div>
+                   ))}
+                </SuikaPagePanel>
+              )}
 
               {/* Suika图层面板 */}
               <SuikaLayerPanel>
@@ -823,221 +1045,381 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
               exit={{ width: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <SuikaPropertyPanel>
-                <div className="property-title">属性</div>
-                
-                {currentProperties.length > 0 && (
-                  <>
-                    {currentProperties.length === 1 ? (
-                      // 单个对象属性
-                      (() => {
-                        const props = currentProperties[0];
-                        if (!props) return null;
-                        return (
-                          <>
-                            <div className="property-section">
-                              <div className="section-title">基本信息</div>
-                              <div className="property-row">
-                                <div className="property-label">名称</div>
-                                <input 
-                                  className="property-input" 
-                                  type="text" 
-                                  defaultValue={props.name}
-                                  onBlur={(e) => handlePropertyChange(props.id, 'name', e.target.value)}
-                                />
-                              </div>
-                              <div className="property-row">
-                                <div className="property-label">类型</div>
-                                <input className="property-input" type="text" value={props.type} readOnly />
-                              </div>
-                            </div>
-
-                            <div className="property-section">
-                              <div className="section-title">位置和大小</div>
-                              <div className="property-row">
-                                <div className="property-label">X</div>
-                                <input 
-                                  className="property-input" 
-                                  type="number" 
-                                  defaultValue={Math.round(props.transform.x)}
-                                  onBlur={(e) => handlePropertyChange(props.id, 'x', parseFloat(e.target.value))}
-                                />
-                              </div>
-                              <div className="property-row">
-                                <div className="property-label">Y</div>
-                                <input 
-                                  className="property-input" 
-                                  type="number" 
-                                  defaultValue={Math.round(props.transform.y)}
-                                  onBlur={(e) => handlePropertyChange(props.id, 'y', parseFloat(e.target.value))}
-                                />
-                              </div>
-                              <div className="property-row">
-                                <div className="property-label">宽度</div>
-                                <input 
-                                  className="property-input" 
-                                  type="number" 
-                                  defaultValue={Math.round(props.transform.width)}
-                                  onBlur={(e) => handlePropertyChange(props.id, 'width', parseFloat(e.target.value))}
-                                />
-                              </div>
-                              <div className="property-row">
-                                <div className="property-label">高度</div>
-                                <input 
-                                  className="property-input" 
-                                  type="number" 
-                                  defaultValue={Math.round(props.transform.height)}
-                                  onBlur={(e) => handlePropertyChange(props.id, 'height', parseFloat(e.target.value))}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="property-section">
-                              <div className="section-title">外观</div>
-                              {props.fill && (
+              {canvasMode === 'h5' ? (
+                // H5模式专属属性面板
+                <SuikaPropertyPanel>
+                  <div className="property-title">H5 属性</div>
+                  
+                  {currentProperties.length > 0 ? (
+                    <>
+                      {currentProperties.length === 1 ? (
+                        // H5模式下的单个对象属性
+                        (() => {
+                          const props = currentProperties[0];
+                          if (!props) return null;
+                          return (
+                            <>
+                              <div className="property-section">
+                                <div className="section-title">基本信息</div>
                                 <div className="property-row">
-                                  <div className="property-label">填充</div>
+                                  <div className="property-label">名称</div>
                                   <input 
                                     className="property-input" 
-                                    type="color" 
-                                    defaultValue={props.fill.color || '#000000'}
-                                    onChange={(e) => handlePropertyChange(props.id, 'fill', { type: 'solid', color: e.target.value })}
+                                    type="text" 
+                                    defaultValue={props.name}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'name', e.target.value)}
                                   />
                                 </div>
-                              )}
-                              {props.stroke && (
-                                <>
-                                  <div className="property-row">
-                                    <div className="property-label">描边</div>
-                                    <input 
-                                      className="property-input" 
-                                      type="color" 
-                                      defaultValue={props.stroke.color}
-                                      onChange={(e) => handlePropertyChange(props.id, 'stroke', { ...props.stroke, color: e.target.value })}
-                                    />
-                                  </div>
-                                  <div className="property-row">
-                                    <div className="property-label">描边宽度</div>
-                                    <input 
-                                      className="property-input" 
-                                      type="number" 
-                                      defaultValue={props.stroke.width}
-                                      onBlur={(e) => handlePropertyChange(props.id, 'stroke', { ...props.stroke, width: parseFloat(e.target.value) })}
-                                    />
-                                  </div>
-                                </>
-                              )}
-                              <div className="property-row">
-                                <div className="property-label">不透明度</div>
-                                <input 
-                                  className="property-input" 
-                                  type="range" 
-                                  min="0" 
-                                  max="1" 
-                                  step="0.01"
-                                  defaultValue={props.opacity}
-                                  onChange={(e) => handlePropertyChange(props.id, 'opacity', parseFloat(e.target.value))}
-                                />
-                                <span style={{ fontSize: '11px', color: '#666', marginLeft: '8px' }}>
-                                  {Math.round(props.opacity * 100)}%
-                                </span>
-                              </div>
-                            </div>
-
-                            {props.content !== undefined && (
-                              <div className="property-section">
-                                <div className="section-title">文本</div>
                                 <div className="property-row">
-                                  <div className="property-label">内容</div>
-                                  <textarea 
-                                    className="property-input" 
-                                    defaultValue={props.content}
-                                    onBlur={(e) => managersActions.updateTextContent(props.id, e.target.value)}
-                                    style={{ height: '60px', resize: 'vertical' }}
-                                  />
+                                  <div className="property-label">类型</div>
+                                  <input className="property-input" type="text" value={props.type} readOnly />
                                 </div>
-                                {props.textStyle && (
-                                  <>
-                                    <div className="property-row">
-                                      <div className="property-label">字体大小</div>
-                                      <input 
-                                        className="property-input" 
-                                        type="number" 
-                                        defaultValue={props.textStyle.fontSize}
-                                        onBlur={(e) => managersActions.updateTextStyle(props.id, { fontSize: parseFloat(e.target.value) })}
-                                      />
-                                    </div>
-                                    <div className="property-row">
-                                      <div className="property-label">字体</div>
-                                      <select 
-                                        className="property-input" 
-                                        defaultValue={props.textStyle.fontFamily}
-                                        onChange={(e) => managersActions.updateTextStyle(props.id, { fontFamily: e.target.value })}
-                                      >
-                                        <option value="Arial">Arial</option>
-                                        <option value="Helvetica">Helvetica</option>
-                                        <option value="Times New Roman">Times New Roman</option>
-                                        <option value="Courier New">Courier New</option>
-                                        <option value="微软雅黑">微软雅黑</option>
-                                        <option value="宋体">宋体</option>
-                                      </select>
-                                    </div>
-                                  </>
-                                )}
                               </div>
-                            )}
 
-                            {props.cornerRadius !== undefined && (
                               <div className="property-section">
-                                <div className="section-title">形状</div>
+                                <div className="section-title">H5 布局</div>
                                 <div className="property-row">
-                                  <div className="property-label">圆角</div>
+                                  <div className="property-label">X</div>
                                   <input 
                                     className="property-input" 
                                     type="number" 
-                                    defaultValue={props.cornerRadius}
-                                    onBlur={(e) => managersActions.updateCornerRadius(props.id, parseFloat(e.target.value))}
+                                    defaultValue={Math.round(props.transform.x)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'x', parseFloat(e.target.value))}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">Y</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="number" 
+                                    defaultValue={Math.round(props.transform.y)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'y', parseFloat(e.target.value))}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">宽度</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="number" 
+                                    defaultValue={Math.round(props.transform.width)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'width', parseFloat(e.target.value))}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">高度</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="number" 
+                                    defaultValue={Math.round(props.transform.height)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'height', parseFloat(e.target.value))}
                                   />
                                 </div>
                               </div>
-                            )}
-                          </>
-                        );
-                      })()
-                    ) : (
-                      // 多个对象属性
-                      <div className="property-section">
-                        <div className="section-title">多选对象 ({currentProperties.length})</div>
-                        <div style={{ color: '#666', fontSize: '12px' }}>
-                          选中了 {currentProperties.length} 个对象
-                        </div>
-                        <div className="property-row">
-                          <div className="property-label">不透明度</div>
-                          <input 
-                            className="property-input" 
-                            type="range" 
-                            min="0" 
-                            max="1" 
-                            step="0.01"
-                            onChange={(e) => {
-                              const opacity = parseFloat(e.target.value);
-                              currentProperties.forEach(props => {
-                                handlePropertyChange(props.id, 'opacity', opacity);
-                              });
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
 
-                {currentProperties.length === 0 && (
-                  <div style={{ color: '#999', fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>
-                    选择一个对象以查看属性
-                  </div>
-                )}
-              </SuikaPropertyPanel>
+                              <div className="property-section">
+                                <div className="section-title">H5 样式</div>
+                                <div className="property-row">
+                                  <div className="property-label">透明度</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="range" 
+                                    min="0" 
+                                    max="100" 
+                                    defaultValue={Math.round((props.opacity || 1) * 100)}
+                                    onChange={(e) => handlePropertyChange(props.id, 'opacity', parseFloat(e.target.value) / 100)}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">混合模式</div>
+                                  <select 
+                                    className="property-input"
+                                    defaultValue={props.blendMode || 'normal'}
+                                    onChange={(e) => handlePropertyChange(props.id, 'blendMode', e.target.value)}
+                                  >
+                                    <option value="normal">正常</option>
+                                    <option value="multiply">正片叠底</option>
+                                    <option value="screen">滤色</option>
+                                    <option value="overlay">叠加</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="property-section">
+                                <div className="section-title">H5 交互</div>
+                                <div className="property-row">
+                                  <div className="property-label">可见性</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="checkbox" 
+                                    defaultChecked={props.visible}
+                                    onChange={(e) => handlePropertyChange(props.id, 'visible', e.target.checked)}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">锁定</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="checkbox" 
+                                    defaultChecked={props.locked}
+                                    onChange={(e) => handlePropertyChange(props.id, 'locked', e.target.checked)}
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()
+                      ) : (
+                        // H5模式下的多选属性
+                        <div className="property-section">
+                          <div className="section-title">多选对象 ({currentProperties.length})</div>
+                          <div style={{ color: '#666', fontSize: '12px', padding: '8px 0' }}>
+                            已选择 {currentProperties.length} 个对象
+                          </div>
+                          <div className="property-row">
+                            <div className="property-label">批量操作</div>
+                            <button 
+                              className="property-input" 
+                              style={{ cursor: 'pointer', background: '#f0f0f0' }}
+                              onClick={() => {
+                                // 批量设置透明度 - 使用简单的confirm替代prompt
+                                if (window.confirm('是否将所有选中对象的透明度设置为50%？')) {
+                                  const value = 0.5; // 固定设置为50%
+                                  currentProperties.forEach(prop => {
+                                    handlePropertyChange(prop.id, 'opacity', value);
+                                  });
+                                }
+                              }}
+                            >
+                              批量设置透明度
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ color: '#999', fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>
+                      选择对象以编辑H5属性
+                    </div>
+                  )}
+                </SuikaPropertyPanel>
+              ) : (
+                // 设计模式属性面板
+                <SuikaPropertyPanel>
+                  <div className="property-title">属性</div>
+                  
+                  {currentProperties.length > 0 && (
+                    <>
+                      {currentProperties.length === 1 ? (
+                        // 单个对象属性
+                        (() => {
+                          const props = currentProperties[0];
+                          if (!props) return null;
+                          return (
+                            <>
+                              <div className="property-section">
+                                <div className="section-title">基本信息</div>
+                                <div className="property-row">
+                                  <div className="property-label">名称</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="text" 
+                                    defaultValue={props.name}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'name', e.target.value)}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">类型</div>
+                                  <input className="property-input" type="text" value={props.type} readOnly />
+                                </div>
+                              </div>
+
+                              <div className="property-section">
+                                <div className="section-title">位置和大小</div>
+                                <div className="property-row">
+                                  <div className="property-label">X</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="number" 
+                                    defaultValue={Math.round(props.transform.x)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'x', parseFloat(e.target.value))}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">Y</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="number" 
+                                    defaultValue={Math.round(props.transform.y)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'y', parseFloat(e.target.value))}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">宽度</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="number" 
+                                    defaultValue={Math.round(props.transform.width)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'width', parseFloat(e.target.value))}
+                                  />
+                                </div>
+                                <div className="property-row">
+                                  <div className="property-label">高度</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="number" 
+                                    defaultValue={Math.round(props.transform.height)}
+                                    onBlur={(e) => handlePropertyChange(props.id, 'height', parseFloat(e.target.value))}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="property-section">
+                                <div className="section-title">外观</div>
+                                {props.fill && (
+                                  <div className="property-row">
+                                    <div className="property-label">填充</div>
+                                    <input 
+                                      className="property-input" 
+                                      type="color" 
+                                      defaultValue={props.fill.color || '#000000'}
+                                      onChange={(e) => handlePropertyChange(props.id, 'fill', { type: 'solid', color: e.target.value })}
+                                    />
+                                  </div>
+                                )}
+                                {props.stroke && (
+                                  <>
+                                    <div className="property-row">
+                                      <div className="property-label">描边</div>
+                                      <input 
+                                        className="property-input" 
+                                        type="color" 
+                                        defaultValue={props.stroke.color}
+                                        onChange={(e) => handlePropertyChange(props.id, 'stroke', { ...props.stroke, color: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="property-row">
+                                      <div className="property-label">描边宽度</div>
+                                      <input 
+                                        className="property-input" 
+                                        type="number" 
+                                        defaultValue={props.stroke.width}
+                                        onBlur={(e) => handlePropertyChange(props.id, 'stroke', { ...props.stroke, width: parseFloat(e.target.value) })}
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                                <div className="property-row">
+                                  <div className="property-label">不透明度</div>
+                                  <input 
+                                    className="property-input" 
+                                    type="range" 
+                                    min="0" 
+                                    max="1" 
+                                    step="0.01"
+                                    defaultValue={props.opacity}
+                                    onChange={(e) => handlePropertyChange(props.id, 'opacity', parseFloat(e.target.value))}
+                                  />
+                                  <span style={{ fontSize: '11px', color: '#666', marginLeft: '8px' }}>
+                                    {Math.round(props.opacity * 100)}%
+                                  </span>
+                                </div>
+                              </div>
+
+                              {props.content !== undefined && (
+                                <div className="property-section">
+                                  <div className="section-title">文本</div>
+                                  <div className="property-row">
+                                    <div className="property-label">内容</div>
+                                    <textarea 
+                                      className="property-input" 
+                                      defaultValue={props.content}
+                                      onBlur={(e) => managersActions.updateTextContent(props.id, e.target.value)}
+                                      style={{ height: '60px', resize: 'vertical' }}
+                                    />
+                                  </div>
+                                  {props.textStyle && (
+                                    <>
+                                      <div className="property-row">
+                                        <div className="property-label">字体大小</div>
+                                        <input 
+                                          className="property-input" 
+                                          type="number" 
+                                          defaultValue={props.textStyle.fontSize}
+                                          onBlur={(e) => managersActions.updateTextStyle(props.id, { fontSize: parseFloat(e.target.value) })}
+                                        />
+                                      </div>
+                                      <div className="property-row">
+                                        <div className="property-label">字体</div>
+                                        <select 
+                                          className="property-input" 
+                                          defaultValue={props.textStyle.fontFamily}
+                                          onChange={(e) => managersActions.updateTextStyle(props.id, { fontFamily: e.target.value })}
+                                        >
+                                          <option value="Arial">Arial</option>
+                                          <option value="Helvetica">Helvetica</option>
+                                          <option value="Times New Roman">Times New Roman</option>
+                                          <option value="Courier New">Courier New</option>
+                                          <option value="微软雅黑">微软雅黑</option>
+                                          <option value="宋体">宋体</option>
+                                        </select>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+
+                              {props.cornerRadius !== undefined && (
+                                <div className="property-section">
+                                  <div className="section-title">形状</div>
+                                  <div className="property-row">
+                                    <div className="property-label">圆角</div>
+                                    <input 
+                                      className="property-input" 
+                                      type="number" 
+                                      defaultValue={props.cornerRadius}
+                                      onBlur={(e) => managersActions.updateCornerRadius(props.id, parseFloat(e.target.value))}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()
+                      ) : (
+                        // 多个对象属性
+                        <div className="property-section">
+                          <div className="section-title">多选对象 ({currentProperties.length})</div>
+                          <div style={{ color: '#666', fontSize: '12px' }}>
+                            选中了 {currentProperties.length} 个对象
+                          </div>
+                          <div className="property-row">
+                            <div className="property-label">不透明度</div>
+                            <input 
+                              className="property-input" 
+                              type="range" 
+                              min="0" 
+                              max="1" 
+                              step="0.01"
+                              onChange={(e) => {
+                                const opacity = parseFloat(e.target.value);
+                                currentProperties.forEach(props => {
+                                  handlePropertyChange(props.id, 'opacity', opacity);
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {currentProperties.length === 0 && (
+                    <div style={{ color: '#999', fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>
+                      选择一个对象以查看属性
+                    </div>
+                  )}
+                </SuikaPropertyPanel>
+              )}
             </UnifiedRightArea>
           )}
         </AnimatePresence>
@@ -1086,11 +1468,67 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
             style={{ height: '100%', border: 'none', borderRadius: 0, backgroundColor: 'transparent' }}
           />
         </div>
-      </Modal>
+             </Modal>
 
+       {/* 右键菜单 */}
+       <ContextMenu
+         $visible={contextMenu.visible}
+         $x={contextMenu.x}
+         $y={contextMenu.y}
+       >
+         <div 
+           className="context-menu-item"
+           onClick={() => contextMenu.pageId && handleContextMenuAction('rename', contextMenu.pageId)}
+         >
+           重命名页面
+         </div>
+         <div 
+           className="context-menu-item"
+           onClick={() => contextMenu.pageId && handleContextMenuAction('duplicate', contextMenu.pageId)}
+         >
+           创建页面副本
+         </div>
+         {pages.length > 1 && (
+           <div 
+             className="context-menu-item"
+             onClick={() => contextMenu.pageId && handleContextMenuAction('delete', contextMenu.pageId)}
+           >
+             删除页面
+           </div>
+         )}
+       </ContextMenu>
 
-    </UnifiedLayoutContainer>
-  );
-};
+       {/* 重命名输入框 */}
+       {renameDialog.visible && (
+         <RenameInput>
+           <div className="rename-title">重命名页面</div>
+           <input
+             className="rename-input"
+             type="text"
+             value={renameDialog.newName}
+             onChange={(e) => setRenameDialog(prev => ({ ...prev, newName: e.target.value }))}
+             onKeyDown={(e) => {
+               if (e.key === 'Enter') {
+                 handleRenameConfirm();
+               } else if (e.key === 'Escape') {
+                 handleRenameCancel();
+               }
+             }}
+             autoFocus
+           />
+           <div className="rename-buttons">
+             <button className="cancel" onClick={handleRenameCancel}>
+               取消
+             </button>
+             <button className="confirm" onClick={handleRenameConfirm}>
+               确定
+             </button>
+           </div>
+         </RenameInput>
+       )}
+ 
+     </UnifiedLayoutContainer>
+   );
+ };
 
 export default SuikaIntegratedLayout;

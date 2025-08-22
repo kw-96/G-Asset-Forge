@@ -10,29 +10,24 @@
 
 // === 分类导出 ===
 export * from './managers';
-export * from './performance';
+
 export * from './events';
 
 // === 开发工具 ===
 export * from './DevTools';
 
-// === 向后兼容的直接导出 ===
-// 专用性能监控
-export { RadixUIPerformanceMonitor } from './RadixUIPerformanceMonitor';
 
-// 性能监控系统 (从performance目录导出)
+// 性能监控系统 (直接导出核心工具)
 export { 
   unifiedPerformanceMonitor, 
-  useUnifiedPerformanceMonitor,
-  fileOperationOptimizer,
-  performanceTestRunner,
-  startupPerformanceMonitor,
-  runtimePerformanceMonitor
-} from './performance';
+  useUnifiedPerformanceMonitor
+} from './performance/UnifiedPerformanceMonitor';
+export { 
+  fileOperationOptimizer 
+} from './performance/FileOperationOptimizer';
 
 // 管理器
 export * from './InitializationManager';
-// UIEnhancementManager removed - UI enhancement features are now integrated directly
 export * from './FigmaBatchUpdateManager';
 
 // 事件系统

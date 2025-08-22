@@ -8,19 +8,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { SuikaEditor } from '../logic/engines/suika';
 
-// 简化的游戏素材预设
-const SIMPLE_GAME_ASSET_PRESETS = {
-  MOBILE_PORTRAIT: { width: 1080, height: 1920, name: '手机竖屏 (1080x1920)' },
-  MOBILE_LANDSCAPE: { width: 1920, height: 1080, name: '手机横屏 (1920x1080)' },
-  TABLET_PORTRAIT: { width: 768, height: 1024, name: '平板竖屏 (768x1024)' },
-  TABLET_LANDSCAPE: { width: 1024, height: 768, name: '平板横屏 (1024x768)' },
-  DESKTOP: { width: 1920, height: 1080, name: '桌面 (1920x1080)' },
-  SQUARE: { width: 1080, height: 1080, name: '正方形 (1080x1080)' },
-  HD: { width: 1280, height: 720, name: 'HD (1280x720)' },
-  ICON_SMALL: { width: 64, height: 64, name: '小图标 (64x64)' },
-  ICON_MEDIUM: { width: 128, height: 128, name: '中图标 (128x128)' },
-  ICON_LARGE: { width: 256, height: 256, name: '大图标 (256x256)' }
-};
+
 
 export interface CanvasState {
   // Suika编辑器实例
@@ -55,8 +43,7 @@ export interface CanvasState {
   memoryUsage: number;
   objectCount: number;
   
-  // 画布预设
-  presets: typeof SIMPLE_GAME_ASSET_PRESETS;
+
   
   // Suika集成方法
   setSuikaEditor: (editor: SuikaEditor | null) => void;
@@ -86,9 +73,7 @@ export interface CanvasState {
   // 性能监控
   updatePerformanceMetrics: (fps: number, memory: number, objectCount?: number) => void;
   
-  // 预设操作
-  applyPreset: (presetKey: keyof typeof SIMPLE_GAME_ASSET_PRESETS) => void;
-  getPresetList: () => Array<{ key: string; name: string; width: number; height: number }>;
+
 
   // Suika工具状态管理
   updateSuikaToolState: (toolState: Partial<CanvasState['suikaToolState']>) => void;
@@ -121,7 +106,7 @@ export const useCanvasStore = create<CanvasState>()(
       fps: 60,
       memoryUsage: 0,
       objectCount: 0,
-      presets: SIMPLE_GAME_ASSET_PRESETS,
+
 
       // Suika集成方法
       setSuikaEditor: (editor: SuikaEditor | null) => {
@@ -188,10 +173,8 @@ export const useCanvasStore = create<CanvasState>()(
         if (suikaEditor) {
           // 根据模式调整Suika设置
           if (mode === 'h5') {
-            // H5模式：固定画布尺寸，禁用网格
+            // H5模式：禁用网格，中心画布区域跟设计模式保持一致
             suikaEditor.setting?.set('enablePixelGrid', false);
-            // 设置固定画布尺寸 - 通过ViewportManager
-            suikaEditor.viewportManager?.setViewportSize({ width: 375, height: 667 });
           } else {
             // 设计模式：启用网格，无限画布
             suikaEditor.setting?.set('enablePixelGrid', get().showGrid);
@@ -203,7 +186,6 @@ export const useCanvasStore = create<CanvasState>()(
       // 初始化画布 (通过Suika)
       initializeCanvas: async () => {
         try {
-          console.log('Suika画布系统初始化成功');
           set({ 
             fps: 60, 
             memoryUsage: 0, 
@@ -390,24 +372,6 @@ export const useCanvasStore = create<CanvasState>()(
       // 性能监控
       updatePerformanceMetrics: (fps: number, memory: number, objectCount = 0) => {
         set({ fps, memoryUsage: memory, objectCount });
-      },
-
-      // 预设操作
-      applyPreset: (presetKey: keyof typeof SIMPLE_GAME_ASSET_PRESETS) => {
-        const preset = SIMPLE_GAME_ASSET_PRESETS[presetKey];
-        if (preset) {
-          // 对于无限画布，预设主要用于参考尺寸
-          console.log(`应用预设: ${preset.name} (${preset.width}x${preset.height})`);
-        }
-      },
-
-      getPresetList: () => {
-        return Object.entries(SIMPLE_GAME_ASSET_PRESETS).map(([key, preset]) => ({
-          key,
-          name: preset.name,
-          width: preset.width,
-          height: preset.height
-        }));
       },
 
       // Suika工具状态管理

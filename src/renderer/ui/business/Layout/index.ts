@@ -1,5 +1,3 @@
-// 布局系统核心组件
-// MainLayout, TopToolbar, StatusBar 已移动到 components/templates 和 components/organisms
 
 // Figma风格组件
 export { FigmaToolbar } from './FigmaToolbar';

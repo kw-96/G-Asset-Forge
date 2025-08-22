@@ -23,7 +23,7 @@ const commonConfig = {
       // 引擎集成
       '@/engines': path.resolve(__dirname, 'src/renderer/engines'),
       '@suika': path.resolve(__dirname, 'src/renderer/engines/suika'),
-      '@h5-editor': path.resolve(__dirname, 'src/renderer/engines/h5-editor'),
+      // '@h5-editor': path.resolve(__dirname, 'src/renderer/engines/h5-editor'), // 已移除H5-editor引擎
       
       // 管理器
       '@/managers': path.resolve(__dirname, 'src/renderer/managers'),

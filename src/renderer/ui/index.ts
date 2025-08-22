@@ -10,9 +10,6 @@ export * from './theme/ThemeProvider';
 // 基础组件
 export * from './components';
 
-// 布局组件
-export * from './components/templates/Layout/MainLayout';
-
 /**
  * 导出所有业务组件
  */

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 // 备份管理器
-import { EventEmitter } from '../../engines/h5-editor/utils/event-emitter';
+import { EventEmitter } from '../../engines/suika/utils/event-emitter';
 import path from 'path-browserify';
 // 渲染进程通过 preload 提供的 fs 桥接
 const fsBridge = {

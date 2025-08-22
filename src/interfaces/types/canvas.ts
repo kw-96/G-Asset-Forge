@@ -327,7 +327,7 @@ export interface CanvasConfig {
   zoomLevel: number;
   minZoom: number;
   maxZoom: number;
-  engineType: 'suika' | 'h5-editor';
+  engineType: 'suika'; // 已移除H5-editor引擎，仅保留Suika引擎
   enableGPUAcceleration: boolean;
   maxTextureSize: number;
   targetFPS: number;

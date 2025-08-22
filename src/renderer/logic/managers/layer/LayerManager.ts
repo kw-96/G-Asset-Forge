@@ -119,7 +119,6 @@ export class LayerManager extends EventEmitter {
   private handleSceneGraphChange = () => {
     // 场景图发生变化时，通知图层列表更新
     this.emit('layerAdded', {} as any); // 触发图层列表刷新
-    console.log('[LayerManager] 场景图变化，刷新图层列表');
   };
 
   /**
@@ -128,7 +127,6 @@ export class LayerManager extends EventEmitter {
   private handleCommandChange = () => {
     // 命令执行后，图层可能发生变化，通知更新
     this.emit('layerAdded', {} as any); // 触发图层列表刷新
-    console.log('[LayerManager] 命令执行，刷新图层列表');
   };
 
   /**
@@ -171,11 +169,6 @@ export class LayerManager extends EventEmitter {
 
       const children = currentCanvas.getChildren();
       const layers = this.buildLayerTree(children);
-      
-      // 调试信息
-      if (process.env['NODE_ENV'] === 'development') {
-        console.log(`[LayerManager] 获取图层列表: ${layers.length} 个图层`, layers.map(l => l.name));
-      }
       
       return layers;
     } catch (error) {
@@ -287,7 +280,6 @@ export class LayerManager extends EventEmitter {
         this.suikaEditor.selectedElements.setItems(graphics);
       }
 
-      console.log(`[LayerManager] 选择图层: ${layerIds.join(', ')}`);
     } catch (error) {
       console.error('[LayerManager] 选择图层失败:', error);
     }
@@ -321,7 +313,6 @@ export class LayerManager extends EventEmitter {
       this.suikaEditor.render();
       this.emit('layerVisibilityChanged', layerId, newVisible);
 
-      console.log(`[LayerManager] 切换图层可见性: ${layerId} -> ${newVisible}`);
       return newVisible;
     } catch (error) {
       console.error('[LayerManager] 切换图层可见性失败:', error);
@@ -345,7 +336,6 @@ export class LayerManager extends EventEmitter {
       this.suikaEditor.render();
       this.emit('layerVisibilityChanged', layerId, visible);
 
-      console.log(`[LayerManager] 设置图层可见性: ${layerId} -> ${visible}`);
     } catch (error) {
       console.error('[LayerManager] 设置图层可见性失败:', error);
     }
@@ -369,7 +359,6 @@ export class LayerManager extends EventEmitter {
       this.suikaEditor.render();
       this.emit('layerLockChanged', layerId, newLocked);
 
-      console.log(`[LayerManager] 切换图层锁定: ${layerId} -> ${newLocked}`);
       return newLocked;
     } catch (error) {
       console.error('[LayerManager] 切换图层锁定失败:', error);
@@ -393,7 +382,6 @@ export class LayerManager extends EventEmitter {
       this.suikaEditor.render();
       this.emit('layerLockChanged', layerId, locked);
 
-      console.log(`[LayerManager] 设置图层锁定: ${layerId} -> ${locked}`);
     } catch (error) {
       console.error('[LayerManager] 设置图层锁定失败:', error);
     }
@@ -415,7 +403,6 @@ export class LayerManager extends EventEmitter {
       graphic.updateAttrs({ objectName: newName });
       this.emit('layerRenamed', layerId, newName);
 
-      console.log(`[LayerManager] 重命名图层: ${layerId} -> ${newName}`);
       return true;
     } catch (error) {
       console.error('[LayerManager] 重命名图层失败:', error);
@@ -449,7 +436,6 @@ export class LayerManager extends EventEmitter {
       this.suikaEditor.selectedElements.clear();
       this.suikaEditor.render();
 
-      console.log(`[LayerManager] 删除图层: ${layerIds.join(', ')}`);
       return true;
     } catch (error) {
       console.error('[LayerManager] 删除图层失败:', error);
@@ -476,7 +462,6 @@ export class LayerManager extends EventEmitter {
 
       // TODO: 实现图层复制逻辑
       // 这需要深度克隆Suika图形对象并添加到场景中
-      console.log(`[LayerManager] 复制图层: ${layerIds.join(', ')}`);
 
       return newLayerIds;
     } catch (error) {
@@ -503,7 +488,6 @@ export class LayerManager extends EventEmitter {
       this.suikaEditor.render();
       this.emit('layerOpacityChanged', layerId, clampedOpacity);
 
-      console.log(`[LayerManager] 设置图层不透明度: ${layerId} -> ${clampedOpacity}`);
     } catch (error) {
       console.error('[LayerManager] 设置图层不透明度失败:', error);
     }
@@ -514,7 +498,7 @@ export class LayerManager extends EventEmitter {
    * @param layerId 图层ID
    * @param targetIndex 目标索引
    */
-  moveLayerToIndex(layerId: string, targetIndex: number) {
+  moveLayerToIndex(layerId: string, _targetIndex: number) {
     if (!this.suikaEditor) return;
 
     const graphic = this.suikaEditor.doc.getGraphicsById(layerId);
@@ -526,7 +510,6 @@ export class LayerManager extends EventEmitter {
 
       // TODO: 实现图层重排序逻辑
       // 这需要调用Suika的图层排序API
-      console.log(`[LayerManager] 移动图层: ${layerId} -> 索引 ${targetIndex}`);
       
       this.suikaEditor.render();
       this.emit('layerReordered', this.getLayers().map(layer => layer.id));

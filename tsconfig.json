@@ -25,7 +25,7 @@
       "@/panels/*": ["renderer/components/panels/*"],
       "@/engines/*": ["renderer/engines/*"],
       "@suika/*": ["renderer/engines/suika/*"],
-      "@h5-editor/*": ["renderer/engines/h5-editor/*"],
+      // "@h5-editor/*": ["renderer/engines/h5-editor/*"], // 已移除H5-editor引擎
       "@/managers/*": ["renderer/managers/*"],
       "@/canvas-manager/*": ["renderer/managers/canvas/*"],
       "@/tools-manager/*": ["renderer/managers/tools/*"],

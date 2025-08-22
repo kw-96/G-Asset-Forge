@@ -6,8 +6,8 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import styled from 'styled-components';
-import { EnhancedErrorBoundary } from '../../../business/ErrorBoundary/EnhancedErrorBoundary';
-import { reactLoopFixToolkit } from '../../../../logic/utils/ReactLoopFix';
+
+
 
 interface StableSwitchProps {
   checked: boolean;
@@ -119,16 +119,11 @@ const useSwitchPerformanceMonitor = (componentName: string) => {
     
     // 检测异常渲染频率
     if (timeSinceLastRender < 16 && renderCountRef.current > 10) {
-      reactLoopFixToolkit.debugLogger.warn(
-        'switch-performance',
-        `${componentName}组件渲染频率异常`,
-        {
-          renderCount: renderCountRef.current,
-          timeSinceLastRender,
-          componentName,
-        },
-        'StableSwitch'
-      );
+      console.warn(`${componentName}组件渲染频率异常:`, {
+        renderCount: renderCountRef.current,
+        timeSinceLastRender,
+        componentName,
+      });
     }
     
     lastRenderTimeRef.current = now;
@@ -163,16 +158,11 @@ export const StableSwitch: React.FC<StableSwitchProps> = React.memo(({
       try {
         onCheckedChange(newChecked);
       } catch (error) {
-        reactLoopFixToolkit.debugLogger.error(
-          'switch-callback',
-          'Switch状态变更回调执行失败',
-          { 
-            error: error instanceof Error ? error.message : String(error),
-            newChecked,
-            currentChecked: checked,
-          },
-          'StableSwitch'
-        );
+        console.error('Switch状态变更回调执行失败:', { 
+          error: error instanceof Error ? error.message : String(error),
+          newChecked,
+          currentChecked: checked,
+        });
       }
     }
   }, [onCheckedChange, checked]);
@@ -196,38 +186,36 @@ export const StableSwitch: React.FC<StableSwitchProps> = React.memo(({
   }, [checked, disabled]);
   
   return (
-    <EnhancedErrorBoundary>
-      <SwitchContainer className={className}>
-        <SwitchWrapper>
-          <StableSwitchRoot
-            checked={checked}
-            onCheckedChange={stableOnCheckedChange}
-            disabled={disabled}
-            name={name}
-            value={value}
-            required={required}
-            $checked={checked}
-          >
-            <StableSwitchThumb />
-          </StableSwitchRoot>
-        </SwitchWrapper>
-        
-        {(stableLabel || stableDescription) && (
-          <SwitchContent>
-            {stableLabel && (
-              <SwitchLabel data-disabled={disabled ? '' : undefined}>
-                {stableLabel}
-              </SwitchLabel>
-            )}
-            {stableDescription && (
-              <SwitchDescription data-disabled={disabled ? '' : undefined}>
-                {stableDescription}
-              </SwitchDescription>
-            )}
-          </SwitchContent>
-        )}
-      </SwitchContainer>
-    </EnhancedErrorBoundary>
+    <SwitchContainer className={className}>
+      <SwitchWrapper>
+        <StableSwitchRoot
+          checked={checked}
+          onCheckedChange={stableOnCheckedChange}
+          disabled={disabled}
+          name={name}
+          value={value}
+          required={required}
+          $checked={checked}
+        >
+          <StableSwitchThumb />
+        </StableSwitchRoot>
+      </SwitchWrapper>
+      
+      {(stableLabel || stableDescription) && (
+        <SwitchContent>
+          {stableLabel && (
+            <SwitchLabel data-disabled={disabled ? '' : undefined}>
+              {stableLabel}
+            </SwitchLabel>
+          )}
+          {stableDescription && (
+            <SwitchDescription data-disabled={disabled ? '' : undefined}>
+              {stableDescription}
+            </SwitchDescription>
+          )}
+        </SwitchContent>
+      )}
+    </SwitchContainer>
   );
 });
 

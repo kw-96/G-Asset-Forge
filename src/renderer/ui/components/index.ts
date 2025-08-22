@@ -14,6 +14,3 @@ export * from './organisms';
 
 // 模板组件 - 页面级别的组件
 export * from './templates';
-
-// RadixUI集成
-export * from './RadixUI';

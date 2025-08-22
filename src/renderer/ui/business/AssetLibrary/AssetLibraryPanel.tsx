@@ -520,7 +520,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
                 e.currentTarget.style.borderColor = '#e9ecef';
               }}
             >
-              {viewMode === 'grid' ? '📋 列表视图' : '⊞ 网格视图'}
+              {viewMode === 'grid' ? '列表视图' : '网格视图'}
             </button>
             
             <button
@@ -553,7 +553,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
                 }
               }}
             >
-              {isUploading ? '⏳ 上传中...' : '📤 上传素材'}
+              {isUploading ? '上传中...' : '上传素材'}
             </button>
             
             <button
@@ -582,7 +582,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
                 e.currentTarget.style.color = '#dc3545';
               }}
             >
-              ❤️ 收藏管理
+              收藏管理
             </button>
             
             <button
@@ -615,7 +615,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
                 }
               }}
             >
-              ⚙️ 批量管理
+              批量管理
             </button>
           </div>
         </div>
@@ -624,7 +624,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
         <AssetSearchBar
           onSearch={handleSearch}
           getSuggestions={getSuggestions}
-          placeholder="🔍 搜索素材名称、标签或分类..."
+          placeholder="搜索素材名称、标签或分类..."
           style={{ 
             marginBottom: '12px',
             border: '1px solid #e9ecef',
@@ -651,7 +651,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
                 transition: 'all 0.2s ease'
               }}
             >
-              🔍 过滤器
+              筛选
             </button>
             
             <button
@@ -669,7 +669,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
                 transition: 'all 0.2s ease'
               }}
             >
-              ⚙️ 高级搜索
+              高级搜索
             </button>
           </div>
           
@@ -893,7 +893,7 @@ export const AssetLibraryPanel: React.FC<IAssetLibraryPanelProps> = ({
                 justifyContent: 'center'
               }}
             >
-              ✕
+              X
             </button>
           </div>
         </div>

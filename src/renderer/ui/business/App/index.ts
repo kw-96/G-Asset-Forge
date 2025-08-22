@@ -8,7 +8,7 @@
 export { AppContainer } from './AppContainer';
 
 // 错误处理组件
-export { EnhancedErrorBoundary } from '../ErrorBoundary/EnhancedErrorBoundary';
+
 
 // 调试组件已移除，仅保留 DevTools
 

@@ -506,7 +506,7 @@ export class EngineManager {
     // 引擎优先级设置
     const priorities: Record<EngineType, number> = {
       'suika': 10,      // 高性能引擎，优先级最高
-      'h5-editor': 8,   // 专业导出引擎
+      // 'h5-editor': 8,   // 专业导出引擎 - 已移除
       'custom': 5,      // 自定义引擎
     };
 

@@ -4,7 +4,7 @@
  */
 
 import { useRef, useEffect } from 'react';
-import { reactLoopFixToolkit } from '../logic/utils/ReactLoopFix';
+
 
 export interface UseRenderCounterOptions {
   componentName: string;
@@ -70,41 +70,26 @@ export function useRenderCounter(
         logData.reason = reason;
       }
 
-      reactLoopFixToolkit.debugLogger.logRender(
-        componentName,
-        currentRenderCount,
-        logData,
-        reason
-      );
+      console.log(`${componentName} 渲染:`, logData);
     }
 
     // 检查是否渲染过多
     if (currentRenderCount > maxRenderWarning) {
-      reactLoopFixToolkit.debugLogger.warn(
-        'render-counter',
-        `${componentName} 渲染次数过多: ${currentRenderCount}`,
-        {
-          renderCount: currentRenderCount,
-          maxWarning: maxRenderWarning,
-          averageInterval: renderTimesRef.current.length > 1
-            ? (now - (renderTimesRef.current[0] || 0)) / (renderTimesRef.current.length - 1)
-            : 0,
-        },
-        componentName
-      );
+      console.warn(`${componentName} 渲染次数过多: ${currentRenderCount}`, {
+        renderCount: currentRenderCount,
+        maxWarning: maxRenderWarning,
+        averageInterval: renderTimesRef.current.length > 1
+          ? (now - (renderTimesRef.current[0] || 0)) / (renderTimesRef.current.length - 1)
+          : 0,
+      });
     }
 
     // 检查渲染频率是否过高
     if (renderInterval > 0 && renderInterval < 16) {
-      reactLoopFixToolkit.debugLogger.warn(
-        'render-counter',
-        `${componentName} 渲染频率过高: ${renderInterval}ms`,
-        {
-          renderInterval,
-          renderCount: currentRenderCount,
-        },
-        componentName
-      );
+      console.warn(`${componentName} 渲染频率过高: ${renderInterval}ms`, {
+        renderInterval,
+        renderCount: currentRenderCount,
+      });
     }
   });
 
