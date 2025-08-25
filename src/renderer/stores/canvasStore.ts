@@ -341,16 +341,8 @@ export const useCanvasStore = create<CanvasState>()(
         set({ showGuides: show });
         
         if (suikaEditor?.setting) {
-          // 参考线通过snapToObjects控制，当启用对象吸附时会显示参考线
-          // 注意：这里不应该影响snapToObjects，因为它是吸附功能，不是显示功能
-          // 参考线的显示应该通过其他方式控制
-          if (show) {
-            // 启用参考线显示
-            suikaEditor.setting.set('showGuides', true);
-          } else {
-            // 隐藏参考线显示
-            suikaEditor.setting.set('showGuides', false);
-          }
+          // 参考线显示状态由内部状态管理，不需要设置SuikaEditor属性
+          // 重新渲染以应用显示状态变化
           suikaEditor.render?.();
         }
       },

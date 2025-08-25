@@ -11,7 +11,7 @@ export { SuikaCanvasComponent as UnifiedCanvas } from './SuikaCanvasComponent'; 
 // 兼容性组件已移除，请直接使用SuikaCanvasComponent
 
 // 画布工具栏和UI组件
-export { default as FloatingToolbar } from './FloatingToolbar';
+// export { default as FloatingToolbar } from './FloatingToolbar';
 // export { default as CanvasPerformanceOverlay } from './CanvasPerformanceOverlay';
 export { default as CanvasMinimap } from './CanvasMinimap';
 export { default as CanvasToolbar } from './CanvasToolbar';

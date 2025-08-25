@@ -314,6 +314,61 @@ const MenuButton = styled.button`
   }
 `;
 
+// 模式切换分隔符
+const ModeSeparator = styled.div`
+  width: 1px;
+  height: 30px;
+  background: #e5e7eb;
+  margin: 0 10px 0 0;
+`;
+
+// 模式切换开关容器
+const ModeToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  background: #f3f4f6;
+  border-radius: 8px;
+  // padding: 2px;
+  border: 1px solid #e5e7eb;
+  // gap: 2px;
+`;
+
+// 模式切换开关按钮
+const ModeToggleButton = styled.button<{ $active: boolean; $isLeft: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 34px;
+  border: none;
+  border-radius: ${({ $isLeft }) => $isLeft ? '6px 0 0 6px' : '0 6px 6px 0'};
+  background: ${({ $active }) => $active ? 'white' : 'transparent'};
+  color: ${({ $active }) => $active ? '#374151' : '#6b7280'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: ${({ $active }) => $active ? '0 0px 6px rgba(0, 0, 0, 0.1)' : 'none'};
+   
+  &:hover {
+    background: ${({ $active }) => $active ? 'white' : '#e5e7eb'};
+  }
+   
+  &:active {
+    transform: scale(0.95);
+  }
+   
+  &:focus-visible {
+    // outline: 2px solid #10b981;
+    outline-offset: 2px;
+  }
+   
+  svg, img {
+    width: 24px;
+    height: 24px;
+    filter: none;
+    opacity: ${({ $active }) => $active ? 1 : 0.5}; // 非激活状态降低透明度
+  }
+`;
+
 
 
 /**
@@ -324,12 +379,18 @@ export const FigmaToolbar: React.FC<FigmaToolbarProps> = ({
   onToolChange,
   className,
 }) => {
-  const { suikaEditor } = useCanvasStore();
+  const { suikaEditor, mode, setMode } = useCanvasStore();
   const [currentTool, setCurrentTool] = useState('select');
   const [enabledTools, setEnabledTools] = useState<string[]>([]);
   const [isPathEditorActive, setIsPathEditorActive] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // 处理模式切换
+  const handleModeClick = useCallback((modeId: 'design' | 'h5') => {
+    setMode(modeId);
+    console.log(`[figma-toolbar] 切换到模式: ${modeId}`);
+  }, [setMode]);
 
   // 监听Suika编辑器的工具变化
   useEffect(() => {
@@ -526,23 +587,48 @@ export const FigmaToolbar: React.FC<FigmaToolbarProps> = ({
         </svg>
       </MenuButton>
 
-             {/* 工具按钮组 */}
-       {getToolCategoriesWithStatus().map(category => renderToolButton(category))}
+      {/* 工具按钮组 */}
+      {getToolCategoriesWithStatus().map(category => renderToolButton(category))}
 
-             {/* 路径编辑器完成按钮 */}
-       {isPathEditorActive && (
-         <ToolButton
-           $active={false}
-           onClick={handlePathEditorDone}
-           style={{ marginLeft: '16px' }}
-           aria-label="完成路径编辑"
-         >
-           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z"/>
-           </svg>
-         </ToolButton>
-       )}
+      {/* 路径编辑器完成按钮 */}
+      {isPathEditorActive && (
+        <ToolButton
+          $active={false}
+          onClick={handlePathEditorDone}
+          style={{ marginLeft: '16px' }}
+          aria-label="完成路径编辑"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z"/>
+          </svg>
+        </ToolButton>
+      )}
 
+      {/* 模式切换分隔线 */}
+      <ModeSeparator />
+       
+              {/* 模式切换开关容器 */}
+        <ModeToggleContainer>
+          <ModeToggleButton
+            $active={mode === 'design'}
+            $isLeft={true}
+            onClick={() => handleModeClick('design')}
+            aria-label="设计模式"
+            title="设计模式"
+          >
+            <SvgIcon name="icon.24.file.design" size={24} />
+          </ModeToggleButton>
+          
+          <ModeToggleButton
+            $active={mode === 'h5'}
+            $isLeft={false}
+            onClick={() => handleModeClick('h5')}
+            aria-label="H5模式"
+            title="H5模式"
+          >
+            <SvgIcon name="icon.24.file.H5" size={24} />
+          </ModeToggleButton>
+        </ModeToggleContainer>
        
     </ToolbarContainer>
   );

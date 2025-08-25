@@ -18,6 +18,7 @@ import { AssetLibraryPanel } from '../AssetLibrary/AssetLibraryPanel';
 import { TemplateLibraryPanel } from '../TemplateLibrary/TemplateLibraryPanel';
 import { SvgIcon } from '../../components/atoms/Icon/SvgIcon';
 import { useSuikaManagers } from '../../../hooks/useSuikaManagers';
+import { ProjectLibraryPanel } from '../ProjectLibrary/ProjectLibraryPanel';
 
 
 
@@ -35,8 +36,8 @@ const UnifiedLayoutContainer = styled.div`
 // GAF顶部工具栏区域
 const GAFTopSection = styled.div`
   flex-shrink: 0;
-  height: 48px;
-  background: ${({ theme }) => theme.colors.interface?.toolbar?.light || '#fff'};
+  // height: 48px;
+  // background: ${({ theme }) => theme.colors.interface?.toolbar?.light || '#fff'};
   border-bottom: 1px solid ${({ theme }) => theme.colors.interface?.divider?.light || '#e6e6e6'};
   z-index: 100;
 `;
@@ -108,8 +109,8 @@ const GAFModeButtonsContainer = styled.div`
 const GAFModeButtonsGrid = styled.div`
   display: flex;
   flex-direction: row;
-  // gap: 12px;
-  justify-content: space-between;
+  gap: 12px;
+  justify-content: center;
   align-items: center;
 `;
 
@@ -118,7 +119,7 @@ const GAFModeButton = styled.button<{ $active?: boolean }>`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 10px;
   // border: 1px solid ${({ theme }) => theme.colors.interface?.divider?.light || '#e6e6e6'};
   // border-radius: 6px;
   background: ${({ $active, theme }) => 
@@ -141,7 +142,7 @@ const GAFModeButton = styled.button<{ $active?: boolean }>`
   
   .mode-icon {
     font-size: 16px;
-    margin-bottom: 4px;
+    // margin-bottom: 4px;
   }
   
   .mode-name {
@@ -480,7 +481,7 @@ interface SuikaIntegratedLayoutProps {
  * @description 统一GAF和Suika的界面，使用GAF的顶部工具栏、底部状态栏，结合Suika的页面面板、图层面板和画布系统
  */
 export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () => {
-  const { mode: canvasMode, setMode: setCanvasMode, suikaEditor } = useCanvasStore();
+  const { mode: canvasMode, suikaEditor } = useCanvasStore();
   const [leftPanelWidth] = useState(240);
   const [rightPanelWidth] = useState(280);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
@@ -495,6 +496,7 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
   // GAF模式切换和弹窗状态
   const [isAssetsOpen, setIsAssetsOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isProjectsOpen, setIsProjectsOpen] = useState(false);
   
   // 性能监控数据 - 用于底部状态栏
   const [performanceData, setPerformanceData] = useState({
@@ -615,10 +617,10 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
   // 缩放控制现在通过TopToolbar的菜单处理，这里不再需要
 
   // GAF模式切换处理
-  const handleModeSwitch = useCallback((mode: 'design' | 'h5') => {
-    setCanvasMode(mode);
-    console.log(`[unified-layout] 切换到${mode === 'design' ? '设计' : 'H5'}模式`);
-  }, [setCanvasMode]);
+  // const handleModeSwitch = useCallback((mode: 'design' | 'h5') => {
+  //   setCanvasMode(mode);
+  //   console.log(`[unified-layout] 切换到${mode === 'design' ? '设计' : 'H5'}模式`);
+  // }, [setCanvasMode]);
 
   // GAF弹窗处理
   const handleOpenAssets = useCallback(() => {
@@ -629,7 +631,9 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
     setIsTemplatesOpen(true);
   }, []);
 
-  // 项目库暂时不实现，移除相关代码
+  const handleOpenProjects = useCallback(() => {
+    setIsProjectsOpen(true);
+  }, []);
 
   // 面板切换处理
   const toggleLeftPanel = useCallback(() => {
@@ -822,25 +826,9 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
               exit={{ width: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {/* GAF模式切换按钮容器 */}
+              {/* GAF功能按钮容器 */}
               <GAFModeButtonsContainer>
                 <GAFModeButtonsGrid>
-                  <GAFModeButton
-                    $active={canvasMode === 'design'}
-                    onClick={() => handleModeSwitch('design')}
-                    // title="设计模式"
-                  >
-                    <div className="mode-icon"><SvgIcon name="icon.24.file.design" size={24} title="设计模式" /></div>
-                    <div className="mode-name">设计模式</div>
-                  </GAFModeButton>
-                  <GAFModeButton
-                    $active={canvasMode === 'h5'}
-                    onClick={() => handleModeSwitch('h5')}
-                    // title="H5模式"
-                  >
-                    <div className="mode-icon"><SvgIcon name="icon.24.file.H5" size={24} title="H5模式" /></div>
-                    <div className="mode-name">H5模式</div>
-                  </GAFModeButton>
                   <GAFModeButton
                     onClick={handleOpenAssets}
                     // title="素材库"
@@ -854,6 +842,13 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
                   >
                     <div className="mode-icon"><SvgIcon name="icon.24.file.design.mods" size={24} title="模板库" /></div>
                     <div className="mode-name">模板库</div>
+                  </GAFModeButton>
+                  <GAFModeButton
+                    onClick={handleOpenProjects}
+                    // title="项目库"
+                  >
+                    <div className="mode-icon"><SvgIcon name="icon.24.file.design.library" size={24} title="项目库" /></div>
+                    <div className="mode-name">项目库</div>
                   </GAFModeButton>
                 </GAFModeButtonsGrid>
               </GAFModeButtonsContainer>
@@ -1450,7 +1445,12 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
       <Modal
         isOpen={isAssetsOpen}
         onClose={() => setIsAssetsOpen(false)}
-        title="🎨 素材库"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <SvgIcon name="icon.24.file.design.assets" size={20} />
+            素材库
+          </div>
+        }
         size="adaptive"
         className="asset-library-modal"
         zIndexLevel="topmost"
@@ -1468,7 +1468,12 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
       <Modal
         isOpen={isTemplatesOpen}
         onClose={() => setIsTemplatesOpen(false)}
-        title="📚 模板库"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <SvgIcon name="icon.24.file.design.mods" size={20} />
+            模板库
+          </div>
+        }
         size="adaptive"
         className="template-library-modal"
         zIndexLevel="topmost"
@@ -1480,7 +1485,29 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
             style={{ height: '100%', border: 'none', borderRadius: 0, backgroundColor: 'transparent' }}
           />
         </div>
-             </Modal>
+      </Modal>
+
+      {/* GAF弹窗 - 项目库 */}
+      <Modal
+        isOpen={isProjectsOpen}
+        onClose={() => setIsProjectsOpen(false)}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <SvgIcon name="icon.24.file.design.library" size={20} />
+            项目库
+          </div>
+        }
+        size="adaptive"
+        className="project-library-modal"
+        zIndexLevel="topmost"
+      >
+        <div style={{ height: 'calc(85vh - 120px)', margin: '-24px', display: 'flex', flexDirection: 'column' }}>
+          <ProjectLibraryPanel
+            onOpenProject={() => setIsProjectsOpen(false)}
+            style={{ height: '100%', border: 'none', borderRadius: 0, backgroundColor: 'transparent' }}
+          />
+        </div>
+      </Modal>
 
        {/* 右键菜单 */}
        <ContextMenu

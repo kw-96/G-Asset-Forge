@@ -19,7 +19,7 @@ const CtrlBtn = styled.button<{ $danger?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) => theme.colors.background.secondary};
+  // background: ${({ theme }) => theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.secondary};
   cursor: pointer;
   padding: 12px;

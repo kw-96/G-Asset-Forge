@@ -50,7 +50,7 @@ interface TopToolbarProps {
 
 const ToolbarContainer = styled.div`
   height: 100%;
-  background: ${({ theme }) => theme.colors.surface};
+  // background: ${({ theme }) => theme.colors.surface};
   display: flex;
   align-items: center;
   -webkit-app-region: drag;
@@ -111,7 +111,7 @@ const MenuTriggerButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) => theme.colors.background.secondary};
+  // background: ${({ theme }) => theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.secondary};
   cursor: pointer;
   padding: 12px;
@@ -183,7 +183,7 @@ const NewTabButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) => theme.colors.background.secondary};
+  // background: ${({ theme }) => theme.colors.background.secondary};
   color: ${({ theme }) => theme.colors.text.secondary};
   padding: 12px 0;
   cursor: pointer;

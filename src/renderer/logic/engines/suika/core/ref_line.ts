@@ -365,14 +365,14 @@ export class RefLine {
   /**
    * 获取基于缩放级别的步长
    */
-  private getStepByZoom(zoom: number): number {
-    const steps = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
-    const step = 50 / zoom;
-    for (let i = 0, len = steps.length; i < len; i++) {
-      if (steps[i]! >= step) return steps[i]!;
-    }
-    return steps[0]!;
-  }
+  // private getStepByZoom(zoom: number): number {
+  //   const steps = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
+  //   const step = 50 / zoom;
+  //   for (let i = 0, len = steps.length; i < len; i++) {
+  //     if (steps[i]! >= step) return steps[i]!;
+  //   }
+  //   return steps[0]!;
+  // }
 
   /**
    * 销毁RefLine，清理事件监听器

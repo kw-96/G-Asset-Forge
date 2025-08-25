@@ -13,7 +13,7 @@ import { IconButton } from '../../atoms/IconButton/IconButton';
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
+  title?: React.ReactNode;
   /**
    * 尺寸预设
    * 增加 adaptive 模式：基于视口宽高自适应，宽度 92vw 且不超过 1200px，高度不超过 85vh
