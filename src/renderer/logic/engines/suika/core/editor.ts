@@ -213,6 +213,8 @@ export class SuikaEditor {
     this.toolManager.destroy();
     this.perfMonitor.destroy();
     this.controlHandleManager.unbindEvents();
+    this.ruler.destroy(); // 清理标尺事件监听器
+    this.refLine.destroy(); // 清理辅助线事件监听器
     this.emitter.emit('destroy');
   }
   setCursor(cursor: ICursor) {

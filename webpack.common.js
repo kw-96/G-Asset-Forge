@@ -31,13 +31,21 @@ const getCommonConfig = (isDevelopment = false) => ({
             transpileOnly: isDevelopment, // 开发模式下快速编译
             configFile: path.resolve(__dirname, 'tsconfig.json'),
             compilerOptions: {
-              declaration: false,
-              declarationMap: false,
+              declaration: isDevelopment, // 开发环境生成声明文件
+              declarationMap: isDevelopment,
               emitDeclarationOnly: false
             }
           }
         },
-        exclude: /node_modules/
+        exclude: [
+          /node_modules/,
+          /\.test\./,
+          /\.spec\./,
+          /Test.*\.tsx?$/,
+          /Spec.*\.tsx?$/,
+          /__tests__/,
+          /__mocks__/
+        ]
       }
     ]
   },

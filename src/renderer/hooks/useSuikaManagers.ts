@@ -81,13 +81,29 @@ export const useSuikaManagers = (suikaEditor: SuikaEditor | null): [SuikaManager
 
     // 定期同步状态，确保UI与Suika编辑器保持一致
     const syncInterval = setInterval(() => {
-      setState(prev => ({
-        ...prev,
-        pages: pageManager.getPages(),
-        layers: layerManager.getLayers(),
-        selectedLayerIds: layerManager.getSelectedLayerIds(),
-        currentProperties: propertyManager.getCurrentProperties(),
-      }));
+      setState(prev => {
+        const newPages = pageManager.getPages();
+        const newLayers = layerManager.getLayers();
+        const newSelectedLayerIds = layerManager.getSelectedLayerIds();
+        const newCurrentProperties = propertyManager.getCurrentProperties();
+        
+        // 只有当数据真正发生变化时才更新状态
+        if (
+          JSON.stringify(newPages) !== JSON.stringify(prev.pages) ||
+          JSON.stringify(newLayers) !== JSON.stringify(prev.layers) ||
+          JSON.stringify(newSelectedLayerIds) !== JSON.stringify(prev.selectedLayerIds) ||
+          JSON.stringify(newCurrentProperties) !== JSON.stringify(prev.currentProperties)
+        ) {
+          return {
+            ...prev,
+            pages: newPages,
+            layers: newLayers,
+            selectedLayerIds: newSelectedLayerIds,
+            currentProperties: newCurrentProperties,
+          };
+        }
+        return prev; // 如果没有变化，返回原状态
+      });
     }, 1000); // 每秒同步一次
 
     return () => {

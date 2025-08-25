@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { canvasEvents } from '../logic/utils/events/canvasEvents';
+import { useCanvasStore } from '../stores/canvasStore';
 
 export interface CanvasDisplayState {
   showGrid: boolean;
@@ -29,6 +30,8 @@ export interface CanvasStateHook {
  * @returns 画布状态和控制方法
  */
 export const useCanvasState = (initialState?: Partial<CanvasDisplayState>): CanvasStateHook => {
+  const { setShowGrid: setStoreShowGrid, setShowRuler: setStoreShowRuler, setShowGuides: setStoreShowGuides } = useCanvasStore();
+  
   const [displayState, setDisplayState] = useState<CanvasDisplayState>({
     showGrid: true,
     showRuler: true,
@@ -38,27 +41,39 @@ export const useCanvasState = (initialState?: Partial<CanvasDisplayState>): Canv
 
   // 切换网格显示
   const toggleGrid = useCallback(() => {
-    setDisplayState(prev => ({
-      ...prev,
-      showGrid: !prev.showGrid
-    }));
-  }, []);
+    setDisplayState(prev => {
+      const newShowGrid = !prev.showGrid;
+      setStoreShowGrid(newShowGrid); // 同步到canvas store
+      return {
+        ...prev,
+        showGrid: newShowGrid
+      };
+    });
+  }, [setStoreShowGrid]);
 
   // 切换标尺显示
   const toggleRuler = useCallback(() => {
-    setDisplayState(prev => ({
-      ...prev,
-      showRuler: !prev.showRuler
-    }));
-  }, []);
+    setDisplayState(prev => {
+      const newShowRuler = !prev.showRuler;
+      setStoreShowRuler(newShowRuler); // 同步到canvas store
+      return {
+        ...prev,
+        showRuler: newShowRuler
+      };
+    });
+  }, [setStoreShowRuler]);
 
   // 切换参考线显示
   const toggleGuides = useCallback(() => {
-    setDisplayState(prev => ({
-      ...prev,
-      showGuides: !prev.showGuides
-    }));
-  }, []);
+    setDisplayState(prev => {
+      const newShowGuides = !prev.showGuides;
+      setStoreShowGuides(newShowGuides); // 同步到canvas store
+      return {
+        ...prev,
+        showGuides: newShowGuides
+      };
+    });
+  }, [setStoreShowGuides]);
 
   // 设置网格显示
   const setShowGrid = useCallback((show: boolean) => {
@@ -66,7 +81,9 @@ export const useCanvasState = (initialState?: Partial<CanvasDisplayState>): Canv
       ...prev,
       showGrid: show
     }));
-  }, []);
+    // 使用setTimeout避免在渲染过程中调用store方法
+    setTimeout(() => setStoreShowGrid(show), 0);
+  }, [setStoreShowGrid]);
 
   // 设置标尺显示
   const setShowRuler = useCallback((show: boolean) => {
@@ -74,7 +91,9 @@ export const useCanvasState = (initialState?: Partial<CanvasDisplayState>): Canv
       ...prev,
       showRuler: show
     }));
-  }, []);
+    // 使用setTimeout避免在渲染过程中调用store方法
+    setTimeout(() => setStoreShowRuler(show), 0);
+  }, [setStoreShowRuler]);
 
   // 设置参考线显示
   const setShowGuides = useCallback((show: boolean) => {
@@ -82,20 +101,46 @@ export const useCanvasState = (initialState?: Partial<CanvasDisplayState>): Canv
       ...prev,
       showGuides: show
     }));
-  }, []);
+    // 使用setTimeout避免在渲染过程中调用store方法
+    setTimeout(() => setStoreShowGuides(show), 0);
+  }, [setStoreShowGuides]);
 
   // 监听画布事件
   useEffect(() => {
     const handleToggleGrid = () => {
-      toggleGrid();
+      setDisplayState(prev => {
+        const newShowGrid = !prev.showGrid;
+        // 使用setTimeout避免在渲染过程中调用store方法
+        setTimeout(() => setStoreShowGrid(newShowGrid), 0);
+        return {
+          ...prev,
+          showGrid: newShowGrid
+        };
+      });
     };
 
     const handleToggleRuler = () => {
-      toggleRuler();
+      setDisplayState(prev => {
+        const newShowRuler = !prev.showRuler;
+        // 使用setTimeout避免在渲染过程中调用store方法
+        setTimeout(() => setStoreShowRuler(newShowRuler), 0);
+        return {
+          ...prev,
+          showRuler: newShowRuler
+        };
+      });
     };
 
     const handleToggleGuides = () => {
-      toggleGuides();
+      setDisplayState(prev => {
+        const newShowGuides = !prev.showGuides;
+        // 使用setTimeout避免在渲染过程中调用store方法
+        setTimeout(() => setStoreShowGuides(newShowGuides), 0);
+        return {
+          ...prev,
+          showGuides: newShowGuides
+        };
+      });
     };
 
     // 注册事件监听器
@@ -109,7 +154,7 @@ export const useCanvasState = (initialState?: Partial<CanvasDisplayState>): Canv
       canvasEvents.off('toggleRuler', handleToggleRuler);
       canvasEvents.off('toggleGuides', handleToggleGuides);
     };
-  }, [toggleGrid, toggleRuler, toggleGuides]);
+  }, [setStoreShowGrid, setStoreShowRuler, setStoreShowGuides]);
 
   return {
     displayState,

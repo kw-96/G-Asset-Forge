@@ -165,6 +165,7 @@ interface SuikaIntegratedCanvasProps {
   onReady?: (editor: SuikaEditor) => void;
   showRuler?: boolean;
   showGrid?: boolean;
+  showGuides?: boolean; // 参考线显示控制
   enableSnap?: boolean;
   mode?: 'design' | 'h5';
   showInfo?: boolean;
@@ -180,6 +181,7 @@ export const SuikaIntegratedCanvas: React.FC<SuikaIntegratedCanvasProps> = ({
   onReady,
   showRuler = true,
   showGrid = true,
+  showGuides = true,
   enableSnap = true,
   mode = 'design',
   showInfo = false,
@@ -223,7 +225,7 @@ export const SuikaIntegratedCanvas: React.FC<SuikaIntegratedCanvasProps> = ({
         enableRuler: showRuler,
         enablePixelGrid: showGrid && mode === 'design',
         snapToGrid: enableSnap,
-        snapToObjects: enableSnap,
+        snapToObjects: showGuides, // 参考线通过snapToObjects控制
         // 根据模式调整设置
         ...(mode === 'h5' && {
           enableInfiniteCanvas: false,
@@ -361,7 +363,15 @@ export const SuikaIntegratedCanvas: React.FC<SuikaIntegratedCanvasProps> = ({
       console.error('[suika-integrated-canvas] Suika编辑器初始化失败:', error);
       setIsReady(false);
     }
-  }, [width, height, showRuler, showGrid, enableSnap, mode, onReady, updatePerformanceMetrics, setSuikaEditor]);
+  }, [width, height, showRuler, showGrid, showGuides, enableSnap, mode, onReady, updatePerformanceMetrics, setSuikaEditor]);
+
+  // 处理参考线显示设置变化
+  useEffect(() => {
+    if (editorRef.current && isReady) {
+      editorRef.current.setting.set('snapToObjects', showGuides);
+      editorRef.current.render();
+    }
+  }, [showGuides, isReady]);
 
   // 监听窗口大小变化和容器位置变化
   useEffect(() => {

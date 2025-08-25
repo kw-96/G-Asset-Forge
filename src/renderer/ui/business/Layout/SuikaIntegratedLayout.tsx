@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCanvasStore } from '../../../stores/canvasStore';
+import { useCanvasState } from '../../../hooks/useCanvasState';
 import { SuikaIntegratedCanvas } from '../Canvas/SuikaIntegratedCanvas';
 import { FigmaToolbar } from './FigmaToolbar';
 import { TopToolbar } from '../../components/organisms/Navbar/TopToolbar';
@@ -532,6 +533,13 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
   const [managersState, managersActions] = useSuikaManagers(suikaEditor);
   const { pages, layers, selectedLayerIds, currentProperties } = managersState;
 
+  // 使用画布状态Hook来管理显示选项
+  const { displayState } = useCanvasState({
+    showGrid: canvasMode === 'design',
+    showRuler: true,
+    showGuides: true,
+  });
+
   // 监听窗口大小变化
   useEffect(() => {
     const handleResize = () => {
@@ -586,10 +594,13 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
 
     // 定期更新性能数据
     const performanceInterval = setInterval(updatePerformanceData, 1000);
-    updatePerformanceData(); // 立即更新一次
+    
+    // 使用setTimeout延迟执行，避免在渲染过程中立即更新状态
+    const initialUpdateTimeout = setTimeout(updatePerformanceData, 0);
 
     return () => {
       clearInterval(performanceInterval);
+      clearTimeout(initialUpdateTimeout);
     };
   }, [suikaEditor]);
 
@@ -1027,8 +1038,9 @@ export const SuikaIntegratedLayout: React.FC<SuikaIntegratedLayoutProps> = () =>
             width={windowSize.width - (leftPanelCollapsed ? 0 : leftPanelWidth) - (rightPanelCollapsed ? 0 : rightPanelWidth)}
             height={windowSize.height - 48 - 24} // 减去顶部工具栏和底部状态栏高度
             mode={canvasMode}
-            showRuler={true}
-            showGrid={canvasMode === 'design'}
+            showRuler={displayState.showRuler}
+            showGrid={displayState.showGrid && canvasMode === 'design'}
+            showGuides={displayState.showGuides} // 使用状态管理的参考线显示设置
             enableSnap={true}
             showInfo={false} // 不显示Suika的调试信息，使用GAF的底部状态栏
           />

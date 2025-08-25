@@ -155,6 +155,23 @@ module.exports = (env, argv) => {
             }
           }
         }
+      },
+      // 生产环境排除测试文件
+      module: {
+        rules: [
+          {
+            test: /\.tsx?$/,
+            exclude: [
+              /node_modules/,
+              /\.test\./,
+              /\.spec\./,
+              /Test.*\.tsx?$/,
+              /Spec.*\.tsx?$/,
+              /__tests__/,
+              /__mocks__/
+            ]
+          }
+        ]
       }
     })
   };

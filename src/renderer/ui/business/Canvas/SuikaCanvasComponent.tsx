@@ -10,6 +10,7 @@ import { SuikaEditor } from '../../../logic/engines/suika';
 // 直接使用Suika核心功能
 import { useCanvasStore } from '../../../stores/canvasStore';
 import { toolManager } from '../../../logic/managers/tools/ToolManager';
+import { canvasEvents } from '../../../logic/utils/events/canvasEvents';
 
 const CanvasContainer = styled.div<{ $mode: 'design' | 'h5' }>`
   position: relative;
@@ -51,9 +52,9 @@ interface SuikaCanvasComponentProps {
   onReady?: (editor: SuikaEditor) => void;
   showRuler?: boolean;
   showGrid?: boolean;
+  showGuides?: boolean; // 参考线显示控制
   enableSnap?: boolean;
   mode?: 'design' | 'h5';
-  // 参考线由Suika核心管理
 }
 
 /**
@@ -66,6 +67,7 @@ export const SuikaCanvasComponent: React.FC<SuikaCanvasComponentProps> = ({
   onReady,
   showRuler = false,
   showGrid = true,
+  showGuides = true,
   enableSnap = true,
   mode = 'design',
 }) => {
@@ -112,7 +114,7 @@ export const SuikaCanvasComponent: React.FC<SuikaCanvasComponentProps> = ({
         enableRuler: showRuler,
         enablePixelGrid: showGrid && mode === 'design', // H5模式下不显示网格
         snapToGrid: enableSnap,
-        snapToObjects: enableSnap,
+        snapToObjects: showGuides, // 参考线通过snapToObjects控制
         // 根据模式调整设置
         minPixelGridZoom: 0.5,
         pixelGridLineColor: '#cccccc55',
@@ -164,7 +166,7 @@ export const SuikaCanvasComponent: React.FC<SuikaCanvasComponentProps> = ({
       editorRef.current = null;
       setIsReady(false);
     };
-  }, [width, height, showRuler, showGrid, enableSnap, mode]); 
+  }, [width, height, showRuler, showGrid, showGuides, enableSnap, mode]); 
 
   // 处理容器尺寸变化
   useEffect(() => {
@@ -195,10 +197,10 @@ export const SuikaCanvasComponent: React.FC<SuikaCanvasComponentProps> = ({
       const shouldShowGrid = showGrid && mode === 'design';
       editorRef.current.setting.set('enablePixelGrid', shouldShowGrid);
       editorRef.current.setting.set('snapToGrid', enableSnap);
-      editorRef.current.setting.set('snapToObjects', enableSnap);
+      editorRef.current.setting.set('snapToObjects', showGuides); // 参考线通过snapToObjects控制
       editorRef.current.render();
     }
-  }, [showGrid, enableSnap, isReady, mode]);
+  }, [showGrid, showGuides, enableSnap, isReady, mode]);
 
   // 处理模式切换
   useEffect(() => {
@@ -216,6 +218,112 @@ export const SuikaCanvasComponent: React.FC<SuikaCanvasComponentProps> = ({
       editorRef.current.render();
     }
   }, [mode, isReady, showGrid, width, height]);
+
+  // 监听画布事件 - 标尺和辅助线控制
+  useEffect(() => {
+    if (!editorRef.current || !isReady) return;
+
+    const editor = editorRef.current;
+
+    // 切换标尺显示/隐藏
+    const handleToggleRuler = () => {
+      const currentState = editor.setting.get('enableRuler');
+      editor.setting.set('enableRuler', !currentState);
+      
+      if (!currentState) {
+        editor.ruler.open();
+      } else {
+        editor.ruler.close();
+      }
+      
+      editor.render();
+      console.log(`[SuikaCanvas] 标尺${!currentState ? '显示' : '隐藏'}`);
+    };
+
+    // 切换参考线显示/隐藏
+    const handleToggleGuides = () => {
+      const currentState = editor.setting.get('snapToObjects');
+      editor.setting.set('snapToObjects', !currentState);
+      
+      // 清除当前参考线缓存，强制重新计算
+      editor.refLine.clear();
+      
+      editor.render();
+      console.log(`[SuikaCanvas] 参考线${!currentState ? '启用' : '禁用'}`);
+    };
+
+    // 切换网格显示/隐藏
+    const handleToggleGrid = () => {
+      const currentState = editor.setting.get('enablePixelGrid');
+      const newState = !currentState;
+      
+      // H5模式下不允许显示网格
+      if (mode === 'h5' && newState) {
+        console.log('[SuikaCanvas] H5模式下不支持网格显示');
+        return;
+      }
+      
+      editor.setting.set('enablePixelGrid', newState);
+      editor.render();
+      console.log(`[SuikaCanvas] 网格${newState ? '显示' : '隐藏'}`);
+    };
+
+    // 适应内容
+    const handleFitToContent = () => {
+      editor.viewportManager.zoomToFit();
+      editor.render();
+      console.log('[SuikaCanvas] 适应内容');
+    };
+
+    // 重置视图
+    const handleResetView = () => {
+      editor.viewportManager.resetViewport();
+      editor.render();
+      console.log('[SuikaCanvas] 重置视图');
+    };
+
+    // 放大
+    const handleZoomIn = () => {
+      const currentZoom = editor.viewportManager.getZoom();
+      const newZoom = Math.min(currentZoom * 1.2, editor.setting.get('zoomMax'));
+      const pageSize = editor.viewportManager.getPageSize();
+      const center = { x: pageSize.width / 2, y: pageSize.height / 2 };
+      editor.viewportManager.setZoom(newZoom, center);
+      editor.render();
+      console.log(`[SuikaCanvas] 放大到 ${Math.round(newZoom * 100)}%`);
+    };
+
+    // 缩小
+    const handleZoomOut = () => {
+      const currentZoom = editor.viewportManager.getZoom();
+      const newZoom = Math.max(currentZoom / 1.2, editor.setting.get('zoomMin'));
+      const pageSize = editor.viewportManager.getPageSize();
+      const center = { x: pageSize.width / 2, y: pageSize.height / 2 };
+      editor.viewportManager.setZoom(newZoom, center);
+      editor.render();
+      console.log(`[SuikaCanvas] 缩小到 ${Math.round(newZoom * 100)}%`);
+    };
+
+    // 绑定事件监听器
+    canvasEvents.on('toggleRuler', handleToggleRuler);
+    canvasEvents.on('toggleGuides', handleToggleGuides);
+    canvasEvents.on('toggleGrid', handleToggleGrid);
+    canvasEvents.on('fitToContent', handleFitToContent);
+    canvasEvents.on('resetView', handleResetView);
+    canvasEvents.on('zoomIn', handleZoomIn);
+    canvasEvents.on('zoomOut', handleZoomOut);
+
+    return () => {
+      // 清理事件监听器
+      canvasEvents.off('toggleRuler', handleToggleRuler);
+      canvasEvents.off('toggleGuides', handleToggleGuides);
+      canvasEvents.off('toggleGrid', handleToggleGrid);
+      canvasEvents.off('fitToContent', handleFitToContent);
+      canvasEvents.off('resetView', handleResetView);
+      canvasEvents.off('zoomIn', handleZoomIn);
+      canvasEvents.off('zoomOut', handleZoomOut);
+    };
+  }, [isReady, mode]);
   return (
     <CanvasContainer $mode={mode}>
       <CanvasWrapper 

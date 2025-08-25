@@ -32,6 +32,7 @@ export interface CanvasState {
   // 显示选项
   showGrid: boolean;
   showRuler: boolean;
+  showGuides: boolean; // 参考线显示状态
   snapToGrid: boolean;
   
   // 画布设置
@@ -59,6 +60,7 @@ export interface CanvasState {
   setPan: (x: number, y: number) => void;
   setShowGrid: (show: boolean) => void;
   setShowRuler: (show: boolean) => void;
+  setShowGuides: (show: boolean) => void; // 设置参考线显示
   setSnapToGrid: (snap: boolean) => void;
   setBackgroundColor: (color: string) => void;
   setGridSize: (size: number) => void;
@@ -100,6 +102,7 @@ export const useCanvasStore = create<CanvasState>()(
       panY: 0,
       showGrid: true,
       showRuler: true,
+      showGuides: true, // 默认显示参考线
       snapToGrid: false,
       backgroundColor: '#ffffff',
       gridSize: 1, // 改为1px，支持1px精度的网格线
@@ -143,7 +146,7 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       syncToSuika: () => {
-        const { suikaEditor, zoom, showGrid, snapToGrid, showRuler } = get();
+        const { suikaEditor, zoom, showGrid, snapToGrid, showRuler, showGuides } = get();
         if (!suikaEditor) return;
 
         try {
@@ -156,7 +159,7 @@ export const useCanvasStore = create<CanvasState>()(
           suikaEditor.setting?.set('enablePixelGrid', showGrid);
           suikaEditor.setting?.set('enableRuler', showRuler);
           suikaEditor.setting?.set('snapToGrid', snapToGrid);
-          suikaEditor.setting?.set('snapToObjects', snapToGrid);
+          suikaEditor.setting?.set('snapToObjects', showGuides); // 参考线通过snapToObjects控制
           
           // 重新渲染
           suikaEditor.render?.();
@@ -333,13 +336,33 @@ export const useCanvasStore = create<CanvasState>()(
         }
       },
 
+      setShowGuides: (show: boolean) => {
+        const { suikaEditor } = get();
+        set({ showGuides: show });
+        
+        if (suikaEditor?.setting) {
+          // 参考线通过snapToObjects控制，当启用对象吸附时会显示参考线
+          // 注意：这里不应该影响snapToObjects，因为它是吸附功能，不是显示功能
+          // 参考线的显示应该通过其他方式控制
+          if (show) {
+            // 启用参考线显示
+            suikaEditor.setting.set('showGuides', true);
+          } else {
+            // 隐藏参考线显示
+            suikaEditor.setting.set('showGuides', false);
+          }
+          suikaEditor.render?.();
+        }
+      },
+
       setSnapToGrid: (snap: boolean) => {
         const { suikaEditor } = get();
         set({ snapToGrid: snap });
         
         if (suikaEditor?.setting) {
           suikaEditor.setting.set('snapToGrid', snap);
-          suikaEditor.setting.set('snapToObjects', snap);
+          // 注意：snapToObjects不应该被snapToGrid影响，它们是独立的功能
+          // suikaEditor.setting.set('snapToObjects', snap);
           suikaEditor.render?.();
         }
       },
