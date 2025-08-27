@@ -1,0 +1,51 @@
+{
+  "appId": "com.gassetforge.app",
+  "productName": "G-Asset Forge",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "build/**/*",
+    "electron/**/*",
+    "node_modules/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "assets",
+      "to": "assets"
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "assets/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "G-Asset Forge"
+  },
+  "mac": {
+    "target": "dmg",
+    "icon": "assets/icon.icns"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "assets/icon.png"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "your-username",
+    "repo": "g-asset-forge"
+  }
+}

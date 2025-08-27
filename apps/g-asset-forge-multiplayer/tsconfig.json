@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "noImplicitOverride": true,
+    "paths": {
+      "@g-asset-forge/common": ["../../packages/common/src"],
+      "@g-asset-forge/icons": ["../../packages/icons/src"],
+      "@g-asset-forge/components": ["../../packages/components/src"],
+      "@g-asset-forge/geo": ["../../packages/geo/src"],
+      "@g-asset-forge/core": ["../../packages/core/src"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

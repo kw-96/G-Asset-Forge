@@ -1,0 +1,408 @@
+import { cloneDeep } from '@g-asset-forge/common';
+
+import { SetGraphsAttrsCmd } from '../commands/set_elements_attrs';
+import { type GAssetForgeEditor } from '../editor';
+import {
+  type GAssetForgeGraphics,
+  type GAssetForgeRect,
+  type GAssetForgeRegularPolygon,
+  type GAssetForgeStar,
+} from '../graphics';
+import { Transaction } from '../transaction';
+import { GraphicsType } from '../type';
+
+/**
+ * mutate elements and record to history
+ */
+export const MutateGraphsAndRecord = {
+  setX({
+    editor,
+    graphicsArr,
+    val,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    val: number;
+    isDelta: boolean;
+  }) {
+    if (graphicsArr.length === 0) {
+      return;
+    }
+
+    const transaction = new Transaction(editor);
+
+    for (const graphics of graphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        transform: cloneDeep(graphics.attrs.transform),
+      });
+
+      const tf = graphics.getWorldTransform();
+      const newVal = isDelta ? tf[4] + val : val;
+      tf[4] = newVal;
+
+      graphics.setWorldTransform(tf);
+      transaction.update(graphics.attrs.id, {
+        transform: cloneDeep(graphics.attrs.transform),
+      });
+    }
+
+    transaction.updateParentSize(graphicsArr);
+    transaction.commit('Update X of Elements');
+  },
+  setY({
+    editor,
+    graphicsArr,
+    val,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    val: number;
+    isDelta: boolean;
+  }) {
+    if (graphicsArr.length === 0) {
+      return;
+    }
+
+    const transaction = new Transaction(editor);
+
+    for (const graphics of graphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        transform: cloneDeep(graphics.attrs.transform),
+      });
+
+      const tf = graphics.getWorldTransform();
+      const newVal = isDelta ? tf[5] + val : val;
+      tf[5] = newVal;
+
+      graphics.setWorldTransform(tf);
+      transaction.update(graphics.attrs.id, {
+        transform: cloneDeep(graphics.attrs.transform),
+      });
+    }
+
+    transaction.updateParentSize(graphicsArr);
+    transaction.commit('Update Y of Elements');
+  },
+  setWidth({
+    editor,
+    graphicsArr,
+    val,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    val: number;
+    isDelta: boolean;
+  }) {
+    let updateSuccess = false;
+
+    if (graphicsArr.length === 0) {
+      return false;
+    }
+
+    const transaction = new Transaction(editor);
+    for (const graphics of graphicsArr) {
+      transaction.recordOld(graphics.attrs.id, { width: graphics.attrs.width });
+      let newVal = isDelta ? graphics.attrs.width + val : val;
+      if (newVal <= 0) {
+        newVal = 0.0000001;
+      }
+      if (newVal !== graphics.attrs.width) {
+        updateSuccess = true;
+      }
+      graphics.updateAttrs({ width: newVal });
+      transaction.update(graphics.attrs.id, { width: graphics.attrs.width });
+    }
+
+    if (updateSuccess) {
+      transaction.updateParentSize(graphicsArr);
+      // FIXME: update group children
+      transaction.commit('Update Width of Elements');
+    }
+
+    return updateSuccess;
+  },
+  setHeight({
+    editor,
+    graphicsArr,
+    val,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    val: number;
+    isDelta: boolean;
+  }) {
+    if (graphicsArr.length === 0) {
+      return false;
+    }
+
+    let updateSuccess = false;
+
+    const transaction = new Transaction(editor);
+    for (const graphics of graphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        height: graphics.attrs.height,
+      });
+      let newVal = isDelta ? graphics.attrs.height + val : val;
+      if (newVal <= 0) {
+        newVal = 0;
+      }
+      if (newVal !== graphics.attrs.height) {
+        updateSuccess = true;
+      }
+      graphics.updateAttrs({ height: newVal });
+      transaction.update(graphics.attrs.id, { height: graphics.attrs.height });
+    }
+
+    if (updateSuccess) {
+      transaction.updateParentSize(graphicsArr);
+      // FIXME: update children
+      transaction.commit('Update Height of Elements');
+    }
+
+    return updateSuccess;
+  },
+  setRotation({
+    editor,
+    graphicsArr,
+    rotation,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    rotation: number;
+    isDelta: boolean;
+  }) {
+    if (graphicsArr.length === 0) {
+      return;
+    }
+
+    const transaction = new Transaction(editor);
+
+    for (const graphics of graphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        transform: cloneDeep(graphics.attrs.transform),
+      });
+      const newVal = isDelta ? graphics.getRotate() + rotation : rotation;
+      graphics.setRotate(newVal);
+      transaction.update(graphics.attrs.id, {
+        transform: cloneDeep(graphics.attrs.transform),
+      });
+    }
+
+    transaction.updateParentSize(graphicsArr);
+    transaction.commit('Update Rotation');
+  },
+  setCornerRadius({
+    editor,
+    graphicsArr,
+    val,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    val: number;
+    isDelta: boolean;
+  }) {
+    if (graphicsArr.length === 0) {
+      return false;
+    }
+
+    let updateSuccess = false;
+    const matchGraphicsArr = graphicsArr.filter(
+      (el) =>
+        el.type === GraphicsType.Rect ||
+        el.type === GraphicsType.RegularPolygon ||
+        el.type === GraphicsType.Star,
+    ) as (GAssetForgeRect | GAssetForgeRegularPolygon | GAssetForgeStar)[];
+
+    const transaction = new Transaction(editor);
+    for (const graphics of matchGraphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        cornerRadius: graphics.attrs.cornerRadius,
+      });
+      const oldVal = graphics.attrs.cornerRadius ?? 0;
+      let newVal = isDelta ? oldVal + val : val;
+      if (newVal <= 0) {
+        newVal = 0;
+      }
+      if (newVal !== oldVal) {
+        updateSuccess = true;
+      }
+      graphics.updateAttrs({ cornerRadius: newVal });
+      transaction.update(graphics.attrs.id, {
+        cornerRadius: graphics.attrs.cornerRadius,
+      });
+    }
+    if (updateSuccess) {
+      transaction.commit('Update CornerRadius of Elements');
+    }
+    return updateSuccess;
+  },
+
+  setCount({
+    editor,
+    graphicsArr,
+    val,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    val: number;
+    isDelta: boolean;
+  }) {
+    if (graphicsArr.length === 0) {
+      return;
+    }
+    let updateSuccess = false;
+
+    const matchGraphicsArr = graphicsArr.filter(
+      (el) =>
+        el.type === GraphicsType.RegularPolygon ||
+        el.type === GraphicsType.Star,
+    ) as (GAssetForgeRegularPolygon | GAssetForgeStar)[];
+
+    const transaction = new Transaction(editor);
+    for (const graphics of matchGraphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        count: graphics.attrs.count,
+      });
+      const oldVal = graphics.attrs.count ?? 0;
+      let newVal = isDelta ? oldVal + val : val;
+      if (newVal <= 3) {
+        newVal = 3;
+      }
+      if (newVal !== oldVal) {
+        updateSuccess = true;
+      }
+      graphics.updateAttrs({ count: newVal });
+      transaction.update(graphics.attrs.id, {
+        count: graphics.attrs.count,
+      });
+    }
+    if (updateSuccess) {
+      transaction.commit('Update Count of Elements');
+    }
+    return updateSuccess;
+  },
+
+  setStarInnerScale({
+    editor,
+    graphicsArr,
+    val,
+    isDelta = false,
+  }: {
+    editor: GAssetForgeEditor;
+    graphicsArr: GAssetForgeGraphics[];
+    val: number;
+    isDelta: boolean;
+  }) {
+    if (graphicsArr.length === 0) {
+      return;
+    }
+
+    let updateSuccess = false;
+    const matchGraphicsArr = graphicsArr.filter(
+      (el) => el.type === GraphicsType.Star,
+    ) as GAssetForgeStar[];
+
+    const transaction = new Transaction(editor);
+    for (const graphics of matchGraphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        starInnerScale: graphics.attrs.starInnerScale,
+      });
+      const oldVal = graphics.attrs.starInnerScale ?? 0;
+      let newVal = isDelta ? oldVal + val : val;
+      if (newVal <= 0.001) {
+        newVal = 0.001;
+      }
+      if (newVal !== oldVal) {
+        updateSuccess = true;
+      }
+      graphics.updateAttrs({ starInnerScale: newVal });
+      transaction.update(graphics.attrs.id, {
+        starInnerScale: graphics.attrs.starInnerScale,
+      });
+    }
+    if (updateSuccess) {
+      transaction.commit('Update StarInnerScale of Elements');
+    }
+    return updateSuccess;
+  },
+
+  /**
+   * show graphs when at least one graphics is hidden
+   * and
+   * hide graphs when all graphs are shown
+   */
+  toggleVisible(editor: GAssetForgeEditor, graphicsArr: GAssetForgeGraphics[]) {
+    if (graphicsArr.length === 0) {
+      return;
+    }
+    // if at least one graphics is hidden, show all graphs; otherwise, hide all graphs
+    const newVal = graphicsArr.some((item) => !item.isVisible());
+
+    const transaction = new Transaction(editor);
+
+    for (const graphics of graphicsArr) {
+      transaction.recordOld(graphics.attrs.id, {
+        visible: graphics.attrs.visible,
+      });
+      graphics.updateAttrs({
+        visible: newVal,
+      });
+      transaction.update(graphics.attrs.id, { visible: newVal });
+    }
+
+    transaction.updateParentSize(graphicsArr);
+    transaction.commit('update visible of graphs');
+  },
+  /**
+   * lock / unlock
+   */
+  toggleLock(editor: GAssetForgeEditor, graphicsArr: GAssetForgeGraphics[]) {
+    if (graphicsArr.length === 0) {
+      return;
+    }
+
+    // if at least one graphics is unlocked, lock all graphs; otherwise, unlock all graphs
+    const newLock = graphicsArr.some((item) => !item.isLock());
+    const prevAttrs = graphicsArr.map((el) => ({ lock: el.attrs.lock }));
+    graphicsArr.forEach((el) => {
+      el.updateAttrs({
+        lock: newLock,
+      });
+    });
+    editor.commandManager.pushCommand(
+      new SetGraphsAttrsCmd(
+        'update lock of graphs',
+        graphicsArr,
+        { lock: newLock },
+        prevAttrs,
+      ),
+    );
+  },
+
+  /** set name of graphics */
+  setGraphName(
+    editor: GAssetForgeEditor,
+    graphics: GAssetForgeGraphics,
+    objectName: string,
+  ) {
+    const prevAttrs = [{ objectName: graphics.attrs.objectName }];
+    graphics.updateAttrs({
+      objectName,
+    });
+    editor.commandManager.pushCommand(
+      new SetGraphsAttrsCmd(
+        'update name of graphics',
+        [graphics],
+        { objectName },
+        prevAttrs,
+      ),
+    );
+  },
+};

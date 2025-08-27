@@ -1,0 +1,65 @@
+.g-asset-forge {
+  .body {
+    position: relative;
+  }
+
+  .g-asset-forge-editor-left-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-sizing: border-box;
+    border-right: 1px solid #e6e6e6;
+    width: 240px;
+    height: calc(100vh - 48px);
+
+    display: flex;
+    flex-direction: column;
+
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  // 悬浮工具栏容器
+  .floating-toolbar-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: none; // 允许事件穿透到下层元素
+    
+    // 工具栏背景和阴影
+    .g-asset-forge-tool-bar {
+      background: rgba(255, 255, 255, 0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      
+      // 确保工具栏内容居中
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      
+      // 确保工具栏本身可以接收事件
+      pointer-events: auto;
+      
+      // 按钮样式优化
+      button {
+        pointer-events: auto;
+        cursor: pointer;
+        
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        &.active {
+          background-color: rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+  }
+}

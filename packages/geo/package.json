@@ -1,0 +1,28 @@
+{
+  "name": "@g-asset-forge/geo",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/geo.es.js",
+  "module": "dist/geo.es.js",
+  "types": "dist/geo.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/geo.es.js",
+      "types": "./dist/geo.d.ts"
+    },
+    "./src": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "node ../../scripts/dev.js geo",
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@g-asset-forge/common": "workspace:^",
+    "fit-curve": "^0.2.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.8"
+  }
+}
