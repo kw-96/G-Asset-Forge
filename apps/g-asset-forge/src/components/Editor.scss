@@ -19,6 +19,16 @@
     user-select: none;
   }
 
+  .editor-canvas-container {
+    position: absolute;
+    left: 240px;
+    top: 0;
+    width: calc(100% - 240px);
+    height: 100%;
+    min-width: 800px;
+    min-height: 600px;
+  }
+
   // 悬浮工具栏容器
   .floating-toolbar-container {
     position: fixed;
@@ -27,7 +37,7 @@
     transform: translateX(-50%);
     z-index: 1000;
     pointer-events: none; // 允许事件穿透到下层元素
-    
+
     // 工具栏背景和阴影
     .g-asset-forge-tool-bar {
       background: rgba(255, 255, 255, 0.95);
@@ -37,25 +47,25 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 8px 16px;
-      
+
       // 确保工具栏内容居中
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      
+
       // 确保工具栏本身可以接收事件
       pointer-events: auto;
-      
+
       // 按钮样式优化
       button {
         pointer-events: auto;
         cursor: pointer;
-        
+
         &:hover {
           background-color: rgba(0, 0, 0, 0.05);
         }
-        
+
         &.active {
           background-color: rgba(0, 0, 0, 0.1);
         }

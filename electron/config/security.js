@@ -10,17 +10,17 @@ const SecurityConfig = {
     contextIsolation: true, // 启用上下文隔离
     enableRemoteModule: false, // 禁用远程模块
     allowRunningInsecureContent: false, // 禁止运行不安全内容
-    webSecurity: true, // 启用 web 安全
+    webSecurity: false, // 临时禁用 web 安全以支持编辑器功能
     experimentalFeatures: false, // 禁用实验性功能
     // 内容安全策略
     webPreferences: {
       // 禁用危险的 API
       enableWebSQL: false,
-      // 启用沙箱
-      sandbox: true,
+      // 禁用沙箱以支持编辑器功能
+      sandbox: false,
       // 限制文件访问
-      webSecurity: true,
-    }
+      webSecurity: false,
+    },
   },
 
   // 内容安全策略
@@ -40,11 +40,7 @@ const SecurityConfig = {
   // 权限控制
   permissions: {
     // 允许的权限
-    allowed: [
-      'notifications',
-      'fullscreen',
-      'display-capture'
-    ],
+    allowed: ['notifications', 'fullscreen', 'display-capture'],
     // 禁止的权限
     denied: [
       'geolocation',
@@ -53,9 +49,9 @@ const SecurityConfig = {
       'midi',
       'usb',
       'serial',
-      'bluetooth'
-    ]
-  }
+      'bluetooth',
+    ],
+  },
 };
 
 module.exports = { SecurityConfig };
