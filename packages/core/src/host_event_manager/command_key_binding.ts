@@ -1,9 +1,9 @@
 import { type GAssetForgeEditor } from '../editor';
 import {
-  isFrameGraphics,
   type GAssetForgeGraphics,
   GAssetForgePath,
   GAssetForgeText,
+  isFrameGraphics,
 } from '../graphics';
 import {
   alignAndRecord,
@@ -54,7 +54,14 @@ export class CommandKeyBinding {
       // TODO: 一些情况要考虑是否允许删除操作，以及允许删除的处理方案
       // 绘制图形中、对图形旋转或缩放时
       if (editor.hostEventManager.isEnableDelete) {
-        editor.selectedElements.removeFromScene();
+        // 优先删除选中的辅助线
+        if (editor.guideLineManager.hasSelectedGuideLines()) {
+          editor.guideLineManager.deleteSelectedGuideLines();
+          editor.render();
+        } else {
+          // 删除选中的图形元素
+          editor.selectedElements.removeFromScene();
+        }
       }
     };
     editor.keybindingManager.register({

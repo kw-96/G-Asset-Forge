@@ -1,7 +1,11 @@
 import './menu.scss';
 
 import { Dropdown, type IDropdownProps } from '@g-asset-forge/components';
-import { exportService, importService, type SettingValue } from '@g-asset-forge/core';
+import {
+  exportService,
+  importService,
+  type SettingValue,
+} from '@g-asset-forge/core';
 import { MenuOutlined } from '@g-asset-forge/icons';
 import { type FC, useContext, useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
@@ -72,6 +76,11 @@ export const Menu: FC = () => {
           check: editorSetting.flipObjectsWhileResizing,
           label: t({ id: 'flipObjectsWhileResizing' }),
         },
+        {
+          key: 'enableRuler',
+          check: editorSetting.enableRuler,
+          label: t({ id: 'setting.rulers' }),
+        },
       ],
     },
   ];
@@ -93,6 +102,7 @@ export const Menu: FC = () => {
       case 'highlightLayersOnHover':
       case 'flipObjectsWhileResizing':
       case 'snapToObjects':
+      case 'enableRuler':
         editor.setting.toggle(key);
         preventClose = true;
         break;

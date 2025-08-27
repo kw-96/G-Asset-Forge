@@ -1,5 +1,6 @@
-import React from 'react';
 import './SvgIcon.scss';
+
+import React from 'react';
 
 type SvgIconProps = {
   name: string; // e.g. "icon.24.settings" or "icon.16.more"
@@ -8,13 +9,13 @@ type SvgIconProps = {
   title?: string;
 };
 
-let iconMap: Record<string, string> = {};
+const iconMap: Record<string, string> = {};
 
 // 初始化图标映射 - 统一使用动态加载
 const initIconMap = () => {
   try {
     // 使用Vite的import.meta.glob动态加载所有图标
-    // @ts-ignore - import.meta.glob is provided by Vite
+    // @ ts-ignore - import.meta.glob is provided by Vite
     const modules = import.meta.glob('../../../../../assets/icons/**/*.svg', {
       eager: true,
     });
@@ -48,8 +49,6 @@ const initIconMap = () => {
         }
       }
     });
-
-    console.log(`SvgIcon: 已动态加载 ${Object.keys(iconMap).length} 个图标`);
   } catch (error) {
     console.warn('SvgIcon: 图标加载失败:', error);
   }

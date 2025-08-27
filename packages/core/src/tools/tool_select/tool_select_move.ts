@@ -1,15 +1,19 @@
 import { cloneDeep } from '@g-asset-forge/common';
-import { type IMatrixArr, type IPoint, type ITransformRect } from '@g-asset-forge/geo';
+import {
+  type IMatrixArr,
+  type IPoint,
+  type ITransformRect,
+} from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../../editor';
 import {
-  type IParentIndex,
-  isFrameGraphics,
   type GAssetForgeCanvas,
   type GAssetForgeFrame,
   type GAssetForgeGraphics,
+  type IParentIndex,
+  isFrameGraphics,
 } from '../../graphics';
-import { RefLine } from '../../ref_line';
+import { GuideLineManager } from '../../guide_lines/guide_line_manager';
 import { Transaction } from '../../transaction';
 import { getDeepFrameAtPoint } from '../../utils';
 import { type IBaseTool } from '../type';
@@ -87,7 +91,7 @@ export class SelectMoveTool implements IBaseTool {
     }
 
     if (this.editor.setting.get('snapToObjects')) {
-      this.editor.refLine.cacheGraphicsRefLines({
+      this.editor.guideLineManager.cacheGraphicsRefLines({
         excludeItems: this.selectedItems,
       });
     }
@@ -146,8 +150,9 @@ export class SelectMoveTool implements IBaseTool {
       });
     }
 
-    const targetPoints = RefLine.getGraphicsTargetPoints(record);
-    const offset = this.editor.refLine.getGraphicsSnapOffset(targetPoints);
+    const targetPoints = GuideLineManager.getGraphicsTargetPoints(record);
+    const offset =
+      this.editor.guideLineManager.getGraphicsSnapOffset(targetPoints);
 
     const canvasGraphics = this.editor.doc.getCurrentCanvas();
     const newParent =
@@ -253,7 +258,7 @@ export class SelectMoveTool implements IBaseTool {
 
     this.editor.sceneGraph.showBoxAndHandleWhenSelected = true;
     this.editor.sceneGraph.showSelectedGraphsOutline = true;
-    this.editor.refLine.clear();
+    this.editor.guideLineManager.clear();
     this.editor.render();
   }
 }

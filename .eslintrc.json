@@ -64,6 +64,7 @@
     ],
     "@typescript-eslint/no-non-null-assertion": 0,
     "@typescript-eslint/no-explicit-any": 0, // 允许使用 any
+    "@typescript-eslint/prefer-ts-expect-error": 0, // 允许使用 @ts-ignore
     "@typescript-eslint/consistent-type-imports": [
       "warn",
       { "fixStyle": "inline-type-imports" }

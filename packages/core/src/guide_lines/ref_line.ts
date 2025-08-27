@@ -13,20 +13,20 @@ import {
   rectToVertices,
 } from '@g-asset-forge/geo';
 
-import { type GAssetForgeEditor } from './editor';
+import { type GAssetForgeEditor } from '../editor';
 import {
+  type GAssetForgeGraphics,
   isCanvasGraphics,
   isFrameGraphics,
-  type GAssetForgeGraphics,
-} from './graphics';
-import { type IHorizontalLine, type IVerticalLine } from './type';
+} from '../graphics';
+import { type IHorizontalLine, type IVerticalLine } from '../type';
 import {
   bboxToBboxWithMid,
   drawLine,
   drawXShape,
   pointsToHLines,
   pointsToVLines,
-} from './utils';
+} from '../utils';
 
 /**
  * reference line

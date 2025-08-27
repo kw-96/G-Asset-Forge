@@ -1,6 +1,8 @@
 .g-asset-forge {
   .sk-header {
     display: flex;
+    position: relative;
+    z-index: 1001; // 确保 Header 在 WindowControls 之上
 
     box-sizing: border-box;
     border-bottom: 1px solid #e6e6e6;
@@ -8,10 +10,11 @@
     background-color: #fff;
 
     .sk-right-area {
-      flex-basis: 10%;
       display: flex;
       justify-content: flex-end;
       align-items: center;
+      gap: 8px; // 添加间距
+      padding-right: 9rem; // 为 WindowControls 留出空间
     }
   }
 }

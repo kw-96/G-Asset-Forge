@@ -6,14 +6,14 @@ import { ClipboardManager } from './clipboard';
 import { CommandManager } from './commands/command_manager';
 import { ControlHandleManager } from './control_handle_manager';
 import { CursorManger, type ICursor } from './cursor_manager';
-import { type GraphicsAttrs, GAssetForgeCanvas } from './graphics';
+import { GAssetForgeCanvas, type GraphicsAttrs } from './graphics';
 import { GAssetForgeDocument } from './graphics/document';
+import { GuideLineManager } from './guide_lines/guide_line_manager';
 import { HostEventManager, MouseEventManager } from './host_event_manager';
 import { ImgManager } from './Img_manager';
 import { KeyBindingManager } from './key_binding_manager';
 import { PathEditor } from './path_editor';
 import { PerfMonitor } from './perf_monitor';
-import { RefLine } from './ref_line';
 import { Ruler } from './ruler';
 import { SceneGraph } from './scene/scene_graph';
 import { SelectedBox } from './selected_box';
@@ -70,7 +70,7 @@ export class GAssetForgeEditor {
   selectedElements: SelectedElements;
   selectedBox: SelectedBox;
   ruler: Ruler;
-  refLine: RefLine;
+  guideLineManager: GuideLineManager;
   textEditor: TextEditor;
   pathEditor: PathEditor;
 
@@ -105,7 +105,7 @@ export class GAssetForgeEditor {
     this.selectedElements = new SelectedElements(this);
     this.selectedBox = new SelectedBox(this);
     this.ruler = new Ruler(this);
-    this.refLine = new RefLine(this);
+    this.guideLineManager = new GuideLineManager(this);
 
     this.controlHandleManager = new ControlHandleManager(this);
     this.controlHandleManager.bindEvents();

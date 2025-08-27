@@ -11,7 +11,7 @@ import {
 import { AddGraphCmd } from '../commands/add_graphs';
 import { type ICursor } from '../cursor_manager';
 import { type GAssetForgeEditor } from '../editor';
-import { isFrameGraphics, type GAssetForgeGraphics } from '../graphics';
+import { type GAssetForgeGraphics, isFrameGraphics } from '../graphics';
 import { SnapHelper } from '../snap';
 import { getDeepFrameAtPoint } from '../utils';
 import { type ITool } from './type';
@@ -60,7 +60,7 @@ export abstract class DrawGraphicsTool implements ITool {
         return;
       }
       if (this.isDragging && this.editor.setting.get('snapToObjects')) {
-        this.editor.refLine.cacheGraphicsRefLines({
+        this.editor.guideLineManager.cacheGraphicsRefLines({
           excludeItems: this.editor.selectedElements.getItems(),
         });
       }
@@ -151,9 +151,11 @@ export abstract class DrawGraphicsTool implements ITool {
     );
 
     if (!this.isDragging && this.editor.setting.get('snapToObjects')) {
-      this.editor.refLine.cacheGraphicsRefLines();
+      this.editor.guideLineManager.cacheGraphicsRefLines({
+        excludeItems: [],
+      });
     }
-    const offset = this.editor.refLine.getGraphicsSnapOffset([
+    const offset = this.editor.guideLineManager.getGraphicsSnapOffset([
       this.lastDragPoint,
     ]);
     this.lastDragPoint = {
@@ -385,6 +387,6 @@ export abstract class DrawGraphicsTool implements ITool {
     }
     this.startPointWhenSpaceDown = null;
     this.lastDragPointWhenSpaceDown = null;
-    this.editor.refLine.clear();
+    this.editor.guideLineManager.clear();
   }
 }

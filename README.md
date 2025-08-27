@@ -28,7 +28,21 @@
 ### 安装依赖
 
 ```bash
+- 安装 pnpm
+npm install -g pnpm
+
+- 安装项目依赖
 pnpm install
+
+- 设置 electron 镜像（看网络情况）
+pnpm config set registry https://registry.npmmirror.com
+pnpm config set electron_mirror https://npmmirror.com/mirrors/electron/
+
+- 安装 electron
+pnpm add -D -w electron
+
+- 手动触发 electron 二进制文件的下载（如果 electron 不完整）
+$env:ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"; node install.js
 ```
 
 ### 开发模式

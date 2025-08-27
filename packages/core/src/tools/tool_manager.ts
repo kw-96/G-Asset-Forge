@@ -15,6 +15,7 @@ import { DrawTextTool } from './tool_draw_text';
 import { PathSelectTool } from './tool_path_select/tool_path_select';
 import { PenTool } from './tool_pen';
 import { PencilTool } from './tool_pencil';
+import { RulerGuideTool } from './tool_ruler_guide';
 import { SelectTool } from './tool_select';
 import { type ITool, type IToolClassConstructor } from './type';
 
@@ -39,10 +40,12 @@ export class ToolManager {
   private _isDragging = false;
   private enableToolTypes: string[] = [];
   private currViewportPoint: IPoint = { x: Infinity, y: Infinity };
+  private rulerGuideTool: RulerGuideTool;
 
   _unbindEvent: () => void;
 
   constructor(private editor: GAssetForgeEditor) {
+    this.rulerGuideTool = new RulerGuideTool(editor);
     this.registerToolCtor(SelectTool);
     this.registerToolCtor(DrawFrameTool);
     this.registerToolCtor(DrawRectTool);
@@ -161,6 +164,16 @@ export class ToolManager {
           return;
         }
 
+        // 检查是否在标尺区域开始拖拽辅助线
+        const point = this.editor.getCursorXY(e);
+        if (this.rulerGuideTool.checkRulerDragStart(point)) {
+          isPressing = true;
+          startWithLeftMouse = true;
+          startPos = { x: e.clientX, y: e.clientY };
+          this.rulerGuideTool.onStart(e);
+          return;
+        }
+
         isPressing = true;
         startWithLeftMouse = true;
         if (!this.currentTool) {
@@ -172,13 +185,33 @@ export class ToolManager {
     };
     const handleMove = (e: PointerEvent) => {
       this.currViewportPoint = this.editor.getCursorXY(e);
-      if (!this.currentTool) {
-        throw new Error('未设置当前使用工具');
-      }
+
       if (isPressing) {
         if (!startWithLeftMouse) {
           return;
         }
+
+        // 处理标尺辅助线拖拽
+        if (this.rulerGuideTool.getIsDragging()) {
+          const dx = e.clientX - startPos.x;
+          const dy = e.clientY - startPos.y;
+          const dragBlockStep = this.editor.setting.get('dragBlockStep');
+          if (
+            !this._isDragging &&
+            (Math.abs(dx) > dragBlockStep || Math.abs(dy) > dragBlockStep)
+          ) {
+            this._isDragging = true;
+          }
+          if (this._isDragging) {
+            this.rulerGuideTool.onDrag(e);
+          }
+          return;
+        }
+
+        if (!this.currentTool) {
+          throw new Error('未设置当前使用工具');
+        }
+
         const dx = e.clientX - startPos.x;
         const dy = e.clientY - startPos.y;
         const dragBlockStep =
@@ -196,6 +229,9 @@ export class ToolManager {
           this.currentTool.onDrag(e);
         }
       } else {
+        if (!this.currentTool) {
+          throw new Error('未设置当前使用工具');
+        }
         const isOutsideCanvas = this.editor.canvasElement !== e.target;
         this.currentTool.onMoveExcludeDrag(e, isOutsideCanvas);
       }
@@ -206,11 +242,21 @@ export class ToolManager {
       if (!startWithLeftMouse) {
         return;
       }
-      if (!this.currentTool) {
-        throw new Error('未设置当前使用工具');
-      }
 
       if (isPressing) {
+        // 处理标尺辅助线拖拽结束
+        if (this.rulerGuideTool.getIsDragging()) {
+          this.rulerGuideTool.onEnd(e, this._isDragging);
+          this.rulerGuideTool.afterEnd();
+          isPressing = false;
+          this._isDragging = false;
+          return;
+        }
+
+        if (!this.currentTool) {
+          throw new Error('未设置当前使用工具');
+        }
+
         this.editor.canvasDragger.enableDragBySpace();
         isPressing = false;
         this.currentTool.onEnd(e, this._isDragging);

@@ -3,9 +3,11 @@
  * 提供窗口最小化、最大化、关闭等操作
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { SvgIcon } from '../SvgIcon';
 import './WindowControls.scss';
+
+import React, { useCallback, useEffect, useState } from 'react';
+
+import { SvgIcon } from '../SvgIcon';
 
 // 声明全局类型
 declare global {

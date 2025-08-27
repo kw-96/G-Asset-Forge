@@ -3,8 +3,6 @@ import { type IRect, Matrix } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../editor';
 import {
-  type GraphicsAttrs,
-  isFrameGraphics,
   GAssetForgeCanvas,
   GAssetForgeDocument,
   GAssetForgeEllipse,
@@ -16,6 +14,8 @@ import {
   GAssetForgeRegularPolygon,
   GAssetForgeStar,
   GAssetForgeText,
+  type GraphicsAttrs,
+  isFrameGraphics,
 } from '../graphics';
 import { Grid } from '../grid';
 import { GraphicsType, type IEditorPaperData } from '../type';
@@ -195,7 +195,7 @@ export class SceneGraph {
       ctx.restore();
     }
 
-    this.editor.refLine.drawRefLine(ctx);
+    this.editor.guideLineManager.draw(ctx);
 
     /** drawing rulers */
     if (setting.get('enableRuler')) {

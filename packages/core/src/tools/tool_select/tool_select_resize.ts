@@ -15,7 +15,7 @@ import { UpdateGraphicsAttrsCmd } from '../../commands';
 import { HALF_PI } from '../../constant';
 import { isTransformHandle } from '../../control_handle_manager';
 import { type GAssetForgeEditor } from '../../editor';
-import { type GraphicsAttrs, type GAssetForgeGraphics } from '../../graphics';
+import { type GAssetForgeGraphics, type GraphicsAttrs } from '../../graphics';
 import { SnapHelper } from '../../snap';
 import { getChildNodeSet, getParentIdSet, updateNodeSize } from '../../utils';
 import { type IBaseTool } from '../type';
@@ -107,7 +107,7 @@ export class SelectResizeTool implements IBaseTool {
         this.editor.selectedElements.getItems()[0].getRotate() % HALF_PI === 0);
 
     if (!this.lastDragPoint && this.editor.setting.get('snapToObjects')) {
-      this.editor.refLine.cacheGraphicsRefLines({
+      this.editor.guideLineManager.cacheGraphicsRefLines({
         excludeItems: this.editor.selectedElements.getItems(),
       });
     }
@@ -121,9 +121,10 @@ export class SelectResizeTool implements IBaseTool {
         );
       }
 
-      const objectSnapOffset = this.editor.refLine.getGraphicsSnapOffset([
-        this.lastDragPoint,
-      ]);
+      const objectSnapOffset =
+        this.editor.guideLineManager.getGraphicsSnapOffset([
+          this.lastDragPoint,
+        ]);
 
       this.lastDragPoint = {
         x: this.lastDragPoint.x + objectSnapOffset.x,
@@ -382,6 +383,6 @@ export class SelectResizeTool implements IBaseTool {
     this.updatedAttrsMap = new Map();
 
     this.lastDragPoint = null;
-    this.editor.refLine.clear();
+    this.editor.guideLineManager.clear();
   }
 }

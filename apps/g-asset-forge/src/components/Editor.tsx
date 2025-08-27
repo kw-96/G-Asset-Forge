@@ -8,10 +8,10 @@ import { EditorContext } from '../context';
 import { AutoSaveGraphics } from '../store/auto-save-graphs';
 import { ContextMenu } from './ContextMenu';
 import { Header } from './Header';
+import { ToolBar } from './Header/components/Toolbar';
 import { InfoPanel } from './InfoPanel';
 import { LayerPanel } from './LayerPanel';
 import { Pages } from './Pages';
-import { ToolBar } from './Header/components/Toolbar';
 
 const topMargin = 48;
 const leftRightMargin = 240 * 2;

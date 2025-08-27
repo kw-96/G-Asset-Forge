@@ -2,27 +2,27 @@
  * 欢迎屏幕
  */
 
-import React, { useState } from 'react';
-import { Button } from '@g-asset-forge/components';
 import './WelcomeScreen.scss';
+
+import { Button } from '@g-asset-forge/components';
+import React, { useState } from 'react';
 
 interface WelcomeScreenProps {
   onComplete: () => void;
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
-  console.log('WelcomeScreen 组件渲染');
   const [selectedOption] = useState<string>('new-project');
 
   const handleStart = () => {
     // 标记用户已经使用过应用
     localStorage.setItem('g-asset-forge-used', 'true');
-    
+
     // 动态调整窗口尺寸为开发模式尺寸
     if (window.electronAPI?.windowControl?.resize) {
       window.electronAPI.windowControl.resize(1400, 900, true);
     }
-    
+
     // 根据选择的选项执行不同的操作
     switch (selectedOption) {
       case 'tutorial':
@@ -45,9 +45,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
       <div className="welcome-content">
         <div className="welcome-header">
           <h1 className="welcome-title">G-ASSET FORGE</h1>
-          <p className="welcome-subtitle">
-            快速、批量、标准化的美术素材生产
-          </p>
+          <p className="welcome-subtitle">快速、批量、标准化的美术素材生产</p>
         </div>
 
         <div className="action-buttons">

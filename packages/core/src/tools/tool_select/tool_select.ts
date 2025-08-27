@@ -4,10 +4,10 @@ import { type IPoint } from '@g-asset-forge/geo';
 import { type ICursor, isRotationCursor } from '../../cursor_manager';
 import { type GAssetForgeEditor } from '../../editor';
 import {
-  isFrameGraphics,
   type GAssetForgeGraphics,
   GAssetForgePath,
   GAssetForgeText,
+  isFrameGraphics,
 } from '../../graphics';
 import { type IMouseEvent } from '../../host_event_manager';
 import { type IBaseTool, type ITool } from '../type';
@@ -40,7 +40,8 @@ export class SelectTool implements ITool {
   private readonly strategySelectResize: SelectResizeTool;
 
   /** the graphics should be removed from selected if not moved */
-  private graphShouldRemovedFromSelectedIfNotMoved: GAssetForgeGraphics | null = null;
+  private graphShouldRemovedFromSelectedIfNotMoved: GAssetForgeGraphics | null =
+    null;
 
   constructor(private editor: GAssetForgeEditor) {
     this.strategyMove = new SelectMoveTool(editor);
@@ -167,6 +168,18 @@ export class SelectTool implements ITool {
     const isShiftPressing = this.editor.hostEventManager.isShiftPressing;
 
     this.startPoint = this.editor.getSceneCursorXY(e);
+
+    // 检查是否点击了手动辅助线
+    const isShiftPressed = e.shiftKey;
+    if (
+      this.editor.guideLineManager.handleGuideLineClick(
+        this.startPoint,
+        isShiftPressed,
+      )
+    ) {
+      this.editor.render();
+      return;
+    }
 
     const handleInfo = this.editor.controlHandleManager.getHandleInfoByPoint(
       this.startPoint,

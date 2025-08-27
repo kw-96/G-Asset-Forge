@@ -30,10 +30,8 @@ function App() {
 
     // 恢复正常的欢迎页面逻辑
     if (hasUsedApp) {
-      console.log('用户已使用过应用，跳过欢迎页面');
       setShowWelcome(false);
     } else {
-      console.log('用户首次使用，显示欢迎页面');
       setShowWelcome(true);
     }
   }, []); // 空依赖数组，只在组件挂载时执行一次
@@ -51,8 +49,6 @@ function App() {
   const handleWelcomeComplete = () => {
     setShowWelcome(false);
   };
-
-  console.log('App 组件渲染 - 当前状态:', { showWelcome, locale });
 
   return (
     <IntlProvider locale={locale} messages={messageMap[locale]}>

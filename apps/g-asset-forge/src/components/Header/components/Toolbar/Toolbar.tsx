@@ -23,7 +23,6 @@ import { useIntl } from 'react-intl';
 import { EditorContext } from '../../../../context';
 import { type MessageIds } from '../../../../locale';
 import { ToolBtn } from './components/ToolBtn';
-import { Menu } from './menu';
 
 export const ToolBar = () => {
   const editor = useContext(EditorContext);
@@ -145,7 +144,6 @@ export const ToolBar = () => {
 
   return (
     <div className="g-asset-forge-tool-bar">
-      <Menu />
       {enableTools.map((toolType) => {
         const tool = keyMap[toolType];
         return (
