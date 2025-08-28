@@ -1,0 +1,29 @@
+.sk-color-picker {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+}
+
+.sk-color-picker-trigger {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+
+  &:hover {
+    border-color: #007aff;
+  }
+}
+
+.sk-color-picker-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}

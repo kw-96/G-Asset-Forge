@@ -1,0 +1,148 @@
+/**
+ * 素材重命名对话框样式
+ */
+.asset-rename-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.asset-rename-dialog {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+  .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+
+      &:hover {
+        background-color: #e9ecef;
+        color: #333;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .dialog-content {
+    padding: 20px;
+
+    .form-group {
+      margin-bottom: 20px;
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+
+        &:focus {
+          outline: none;
+          border-color: #007bff;
+          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        &:disabled {
+          background-color: #f8f9fa;
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      input::placeholder {
+        color: #999;
+      }
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      .cancel-button {
+        background-color: #6c757d;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background-color: #5a6268;
+        }
+      }
+
+      .rename-button {
+        background-color: #007bff;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background-color: #0056b3;
+        }
+
+        &:disabled {
+          background-color: #6c757d;
+        }
+      }
+    }
+  }
+}

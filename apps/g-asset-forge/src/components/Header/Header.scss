@@ -7,14 +7,232 @@
     box-sizing: border-box;
     border-bottom: 1px solid #e6e6e6;
     height: 48px;
-    background-color: #fff;
+    background-color: #e9e9e9;
+
+    // 左侧区域 - 主页按钮
+    .sk-left-area {
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      position: relative; // 为分隔线定位提供参考
+
+      .home-btn {
+        height: 48px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        border: none;
+        background: transparent;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.1);
+          color: #333;
+        }
+      }
+
+      // 右侧分隔线
+      &::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 32px;
+        background-color: #d3d3d3;
+      }
+    }
+
+    // 项目标签页区域
+    .sk-tabs-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      min-width: 0; // 允许收缩
+      margin-left: 16px;
+    }
+
+    // 新建项目按钮 - 独立定位
+    .new-project-btn {
+      height: 48px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      border: none;
+      background: transparent;
+      margin-left: 8px; // 与标签页区域保持间距
+      border-radius: 4px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: #333;
+      }
+
+      &:active {
+        background: rgba(0, 0, 0, 0.15);
+      }
+    }
 
     .sk-right-area {
       display: flex;
       justify-content: flex-end;
       align-items: center;
       gap: 8px; // 添加间距
-      padding-right: 9rem; // 为 WindowControls 留出空间
+      padding: 0 8px;
+      margin-left: auto;
+    }
+
+    // 头部控制区域样式
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .back-to-home-btn {
+        padding: 6px 12px;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        background-color: #ffffff;
+        color: #495057;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: #f8f9fa;
+          border-color: #dee2e6;
+        }
+      }
+    }
+  }
+}
+
+// 项目标签页样式
+.project-tabs {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  max-width: 100%;
+
+  .tabs-container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    overflow-x: auto;
+    scrollbar-width: none; // Firefox
+    -ms-overflow-style: none; // IE/Edge
+
+    &::-webkit-scrollbar {
+      display: none; // Chrome/Safari
+    }
+
+    .project-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      padding: 0 12px;
+      border-right: 1px solid #e6e6e6;
+      background: #f8f9fa;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      -webkit-user-select: none;
+
+      &:hover {
+        background: #e9ecef;
+      }
+
+      &.active {
+        background: #fff;
+        color: #374151;
+        border-bottom: 2px solid #0d6efd;
+      }
+
+      &.dirty {
+        .tab-name {
+          font-style: italic;
+        }
+      }
+
+      &.dragging {
+        opacity: 0.5;
+      }
+
+      &.drag-over {
+        background: #cfe2ff;
+      }
+
+      .tab-icon {
+        display: flex;
+        align-items: center;
+        color: inherit;
+      }
+
+      .tab-name {
+        font-size: 13px;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        .dirty-indicator {
+          color: #dc3545;
+          font-weight: bold;
+          margin-left: 2px;
+        }
+      }
+
+      .tab-close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        background: none;
+        border: none;
+        border-radius: 2px;
+        color: inherit;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: all 0.2s;
+
+        &:hover {
+          opacity: 1;
+          background: rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+  }
+
+  .tabs-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: 8px;
+
+    .tab-scroll-btn,
+    .tab-menu-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: none;
+      border: none;
+      border-radius: 4px;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f8f9fa;
+        color: #374151;
+      }
     }
   }
 }

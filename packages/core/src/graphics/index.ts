@@ -3,6 +3,7 @@ export * from './document';
 export * from './ellipse';
 export * from './frame';
 export * from './graphics';
+export * from './h5';
 export * from './line';
 export * from './path';
 export * from './rect';

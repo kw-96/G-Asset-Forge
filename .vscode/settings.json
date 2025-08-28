@@ -17,7 +17,9 @@
     "clonedeep",
     "Dists",
     "Formatjs",
+    "g-asset-forge",
     "hocuspocus",
+    "indexeddb",
     "IRGB",
     "IRGBA",
     "isequal",
@@ -25,7 +27,6 @@
     "outfile",
     "pixi",
     "segs",
-    "g-asset-forge",
     "ungroup",
     "xigua"
   ]

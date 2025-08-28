@@ -6,7 +6,7 @@ export const exportService = {
     const blob = new Blob([data], {
       type: 'application/json',
     });
-    download(blob, filename + '.g-asset-forge');
+    download(blob, filename + '.gaf');
   },
 };
 

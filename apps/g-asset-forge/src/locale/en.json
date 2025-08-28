@@ -68,5 +68,22 @@
 
   "done": "Done",
 
-  "layer": "Layer"
+  "layer": "Layer",
+
+  "homePage.title": "G-Asset Forge",
+  "homePage.subtitle": "Professional Game Asset Creation Tool",
+  "homePage.selectMode": "Select Editing Mode",
+  "homePage.designMode": "Design Mode",
+  "homePage.designModeDesc": "Figma-like professional design experience for creating game marketing assets",
+  "homePage.h5Mode": "H5 Mode",
+  "homePage.h5ModeDesc": "Xiumi-like H5 editing experience for creating long-form activity materials",
+  "homePage.quickStart": "Quick Start",
+  "homePage.resourceManagement": "Resource Management",
+  "homePage.createNewProject": "Create New Project",
+  "homePage.templateLibrary": "Template Library",
+  "homePage.projectLibrary": "Project Library",
+  "homePage.assetLibrary": "Asset Library",
+  "homePage.recentProjects": "Recent Projects",
+  "homePage.designType": "Design",
+  "homePage.h5Type": "H5"
 }

@@ -6,12 +6,12 @@ import {
   importService,
   type SettingValue,
 } from '@g-asset-forge/core';
-import { MenuOutlined } from '@g-asset-forge/icons';
 import { type FC, useContext, useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { EditorContext } from '../../../../../context';
 import { type MessageIds } from '../../../../../locale';
+import { SvgIcon } from '../../../../SvgIcon';
 
 export const Menu: FC = () => {
   const intl = useIntl();
@@ -115,9 +115,15 @@ export const Menu: FC = () => {
 
   return (
     <Dropdown items={items} onClick={handleClick}>
-      <div className="sk-ed-menu-btn">
-        <MenuOutlined />
-      </div>
+      <button
+        type="button"
+        className="sk-ed-menu-btn"
+        aria-label="菜单"
+        title="菜单"
+        onClick={() => handleClick({ key: 'menu' })}
+      >
+        <SvgIcon name="icon.24.more" size={24} title="菜单" />
+      </button>
     </Dropdown>
   );
 };

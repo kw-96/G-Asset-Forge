@@ -2,26 +2,13 @@ import './Toolbar.scss';
 
 import { isWindows } from '@g-asset-forge/common';
 import { Button } from '@g-asset-forge/components';
-import {
-  EllipseOutlined,
-  FrameOutlined,
-  HandOutlined,
-  ImageOutlined,
-  LineOutlined,
-  PencilOutlined,
-  PenOutlined,
-  PolygonOutlined,
-  RectOutlined,
-  SelectOutlined,
-  StarOutlined,
-  TextFilled,
-} from '@g-asset-forge/icons';
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 import { EditorContext } from '../../../../context';
 import { type MessageIds } from '../../../../locale';
+import { SvgIcon } from '../../../SvgIcon';
 import { ToolBtn } from './components/ToolBtn';
 
 export const ToolBar = () => {
@@ -66,79 +53,79 @@ export const ToolBar = () => {
       name: 'select',
       hotkey: 'V',
       intlId: 'tool.select',
-      icon: <SelectOutlined />,
+      icon: <SvgIcon name="icon.24.move" size={24} />,
     },
     drawFrame: {
       name: 'drawFrame',
       hotkey: 'F',
       intlId: 'tool.frame',
-      icon: <FrameOutlined />,
+      icon: <SvgIcon name="icon.24.frame" size={24} />,
     },
     drawRect: {
       name: 'drawRect',
       hotkey: 'R',
       intlId: 'tool.rectangle',
-      icon: <RectOutlined />,
+      icon: <SvgIcon name="icon.24.rectangle" size={24} />,
     },
     drawEllipse: {
       name: 'drawEllipse',
       hotkey: 'O',
       intlId: 'tool.ellipse',
-      icon: <EllipseOutlined />,
+      icon: <SvgIcon name="icon.24.ellipse" size={24} />,
     },
     drawImg: {
       name: 'drawImg',
       hotkey: '',
       intlId: 'tool.image',
-      icon: <ImageOutlined />,
+      icon: <SvgIcon name="icon.24.image" size={24} />,
     },
     pathSelect: {
       name: 'pathSelect',
       hotkey: 'V',
       intlId: 'tool.select',
-      icon: <SelectOutlined />,
+      icon: <SvgIcon name="icon.24.select" size={24} />,
     },
     pen: {
       name: 'pen',
       hotkey: 'P',
       intlId: 'tool.pen',
-      icon: <PenOutlined />,
+      icon: <SvgIcon name="icon.24.pen" size={24} />,
     },
     pencil: {
       name: 'pencil',
       hotkey: `${isWindows() ? 'Shift+' : '⇧'}P`,
       intlId: 'tool.pencil',
-      icon: <PencilOutlined />,
+      icon: <SvgIcon name="icon.24.pencil" size={24} />,
     },
     drawLine: {
       name: 'drawLine',
       hotkey: 'L',
       intlId: 'tool.line',
-      icon: <LineOutlined />,
+      icon: <SvgIcon name="icon.24.line" size={24} />,
     },
     drawRegularPolygon: {
       name: 'drawRegularPolygon',
       hotkey: '',
       intlId: 'tool.polygon',
-      icon: <PolygonOutlined />,
+      icon: <SvgIcon name="icon.24.polygon" size={24} />,
     },
     drawStar: {
       name: 'drawStar',
       hotkey: '',
       intlId: 'tool.star',
-      icon: <StarOutlined />,
+      icon: <SvgIcon name="icon.24.star" size={24} />,
     },
     drawText: {
       name: 'drawText',
       hotkey: 'T',
       intlId: 'tool.text',
-      icon: <TextFilled />,
+      icon: <SvgIcon name="icon.24.text" size={24} />,
     },
     dragCanvas: {
       name: 'dragCanvas',
       hotkey: 'H',
       intlId: 'tool.hand',
-      icon: <HandOutlined />,
+      icon: <SvgIcon name="icon.24.hand" size={24} />,
     },
   };
 

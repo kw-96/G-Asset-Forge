@@ -1,0 +1,149 @@
+/**
+ * 素材库面板样式
+ */
+.asset-library-panel {
+  .asset-search-bar {
+    &:focus-within {
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+  }
+
+  .asset-filter-panel {
+    .filter-section {
+      margin-bottom: 16px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .filter-tags {
+      max-height: 120px;
+      overflow-y: auto;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+
+        &:hover {
+          background: #a8a8a8;
+        }
+      }
+    }
+  }
+
+  .asset-grid {
+    &.grid-view {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      padding: 16px;
+    }
+
+    &.list-view {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 16px;
+    }
+  }
+
+  .asset-card {
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &.selected {
+      box-shadow: 0 0 0 2px #2196f3;
+    }
+
+    .asset-thumbnail {
+      position: relative;
+      overflow: hidden;
+
+      img {
+        transition: transform 0.2s ease;
+      }
+
+      &:hover img {
+        transform: scale(1.05);
+      }
+    }
+
+    .favorite-button {
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: scale(1.1);
+        background-color: rgba(255, 255, 255, 0.95) !important;
+      }
+    }
+  }
+
+  .loading-spinner {
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    animation: spin 1s linear infinite;
+  }
+
+  .empty-state {
+    svg {
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover svg {
+      opacity: 0.7;
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .asset-library-panel {
+    .asset-grid.grid-view {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .asset-library-toolbar {
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+
+      .toolbar-left,
+      .toolbar-right {
+        justify-content: center;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .asset-library-panel {
+    .asset-grid.grid-view {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+      padding: 8px;
+    }
+  }
+}

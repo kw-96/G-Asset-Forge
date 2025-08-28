@@ -1,0 +1,49 @@
+/**
+ * 模式切换器样式
+ */
+.g-asset-forge {
+  .mode-switcher {
+    display: flex;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #ffffff;
+
+    &__btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      background-color: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #6c757d;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+
+      &:hover {
+        background-color: #f8f9fa;
+        color: #495057;
+      }
+
+      &--active {
+        background-color: #007bff;
+        color: #ffffff;
+
+        &:hover {
+          background-color: #0056b3;
+        }
+      }
+
+      &:not(:last-child) {
+        border-right: 1px solid #e9ecef;
+      }
+
+      span {
+        font-size: 13px;
+      }
+    }
+  }
+}

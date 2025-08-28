@@ -1,5 +1,8 @@
 import { debounce } from '@g-asset-forge/common';
-import { type IEditorPaperData, type GAssetForgeEditor } from '@g-asset-forge/core';
+import {
+  type GAssetForgeEditor,
+  type IEditorPaperData,
+} from '@g-asset-forge/core';
 
 import { dataCompatibilityV3 } from './data-compatibility-v3';
 

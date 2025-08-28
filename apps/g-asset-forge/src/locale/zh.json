@@ -7,18 +7,23 @@
 
   "uploadFile": "上传文件",
 
-  "tool.select": "选择",
-  "tool.frame": "画板",
+  "tool.select": "移动",
+  "tool.hand": "抓手",
+  "tool.zoom": "缩放",
+  "tool.frame": "画框",
+  "tool.slice": "切片",
+  "tool.section": "分区",
   "tool.rectangle": "矩形",
-  "tool.ellipse": "圆",
-  "tool.image": "图片",
-  "tool.pen": "钢笔",
   "tool.line": "直线",
+  "tool.arrow": "箭头",
+  "tool.ellipse": "椭圆",
   "tool.polygon": "多边形",
   "tool.star": "星形",
-  "tool.text": "文字",
-  "tool.hand": "拖拽画布",
+  "tool.image": "图片",
+  "tool.pen": "钢笔",
   "tool.pencil": "铅笔",
+  "tool.text": "文本",
+
   "command.copy": "复制",
   "command.copyAsSVG": "复制 SVG 代码",
   "command.pasteHere": "粘贴到此处",
@@ -67,5 +72,22 @@
 
   "done": "完成",
 
-  "layer": "图层"
+  "layer": "图层",
+
+  "homePage.title": "G-Asset Forge",
+  "homePage.subtitle": "专业的游戏运营素材创建工具",
+  "homePage.selectMode": "选择编辑模式",
+  "homePage.designMode": "设计模式",
+  "homePage.designModeDesc": "类似 Figma 的专业设计体验，用于创建游戏营销素材",
+  "homePage.h5Mode": "H5 模式",
+  "homePage.h5ModeDesc": "类似秀米的 H5 编辑体验，用于创建长图活动素材",
+  "homePage.quickStart": "快速开始",
+  "homePage.resourceManagement": "资源管理",
+  "homePage.createNewProject": "创建新项目",
+  "homePage.templateLibrary": "模板库",
+  "homePage.projectLibrary": "项目库",
+  "homePage.assetLibrary": "素材库",
+  "homePage.recentProjects": "最近项目",
+  "homePage.designType": "设计",
+  "homePage.h5Type": "H5"
 }

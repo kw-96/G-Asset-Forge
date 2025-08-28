@@ -54,6 +54,9 @@ pnpm run dev
 # 桌面应用开发
 $env:PATH += ";$env:APPDATA\npm"
 pnpm run electron:dev
+
+# 停止开发服务器
+taskkill /F /IM node.exe
 ```
 
 ### 构建应用
@@ -63,10 +66,10 @@ pnpm run electron:dev
 pnpm run app:build
 
 # 构建桌面应用
-pnpm run tauri:build
+pnpm run electron:build
 
 # 预览桌面应用
-pnpm run tauri:preview
+pnpm run electron:preview
 ```
 
 ## 📁 项目结构

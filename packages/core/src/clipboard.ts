@@ -10,11 +10,11 @@ import { generateNKeysBetween } from 'fractional-indexing';
 
 import { type GAssetForgeEditor } from './editor';
 import {
+  GAssetForgeGraphics,
+  GAssetForgeRect,
   type GraphicsAttrs,
   isCanvasGraphics,
   isFrameGraphics,
-  GAssetForgeGraphics,
-  GAssetForgeRect,
 } from './graphics';
 import { PaintType } from './paint';
 import { toSVG } from './to_svg';
@@ -209,9 +209,9 @@ export class ClipboardManager {
     let left: string | null = null;
     let right: string | null = null;
     const firstGraphics =
-      GAssetForgeGraphics.sortGraphics(this.editor.selectedElements.getItems()).at(
-        -1,
-      ) ?? this.editor.doc.getCurrentCanvas();
+      GAssetForgeGraphics.sortGraphics(
+        this.editor.selectedElements.getItems(),
+      ).at(-1) ?? this.editor.doc.getCurrentCanvas();
     let parent = firstGraphics;
 
     if (isCanvasGraphics(firstGraphics) || isFrameGraphics(firstGraphics)) {

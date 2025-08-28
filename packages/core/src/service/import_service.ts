@@ -2,7 +2,7 @@ import { type GAssetForgeEditor } from '../editor';
 
 export const importService = {
   importOriginFile: (editor: GAssetForgeEditor) => {
-    readTextFile('.g-asset-forge', (content) => {
+    readTextFile('.gaf', (content) => {
       editor.setContents(JSON.parse(content));
     });
   },

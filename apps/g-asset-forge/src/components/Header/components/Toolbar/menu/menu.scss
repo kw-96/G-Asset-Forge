@@ -1,12 +1,14 @@
 .sk-ed-menu-btn {
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
+  height: 48px;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  border: none;
+  background: transparent;
 
   &:hover {
-    background-color: #eee;
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
   }
 }
