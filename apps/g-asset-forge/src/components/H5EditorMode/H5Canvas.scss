@@ -1,125 +1,168 @@
 .h5-canvas-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  background-color: #f5f5f5;
+  position: relative;
+  overflow: hidden;
+}
+
+.h5-canvas-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+// H5容器占位符样式
+.h5-container-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
+}
+
+.h5-container-outline {
+  width: 375px;
+  height: 667px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.h5-container-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 12px;
+}
+
+.h5-container-size {
+  font-size: 14px;
+  color: #666666;
+  margin-bottom: 20px;
+  padding: 4px 12px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+}
+
+.h5-container-hint {
+  font-size: 14px;
+  color: #999999;
+  line-height: 1.5;
+}
+
+// 内容块预览样式
+.h5-content-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.h5-block-preview {
+  width: 375px;
+  min-height: 60px;
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   position: relative;
 
-  .canvas-info-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e6e6e6;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-
-    .canvas-title {
-      font-size: 14px;
-      font-weight: 500;
-      color: #333333;
-    }
-
-    .canvas-stats {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 12px;
-      color: #666666;
-
-      .canvas-size {
-        background: #e9ecef;
-        padding: 4px 8px;
-        border-radius: 4px;
-      }
-
-      .block-count {
-        background: #007aff;
-        color: #ffffff;
-        padding: 4px 8px;
-        border-radius: 4px;
-      }
-    }
+  &:hover {
+    border-color: #1890ff;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
   }
 
-  .h5-canvas-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 20px;
-    overflow: auto;
-    background: #f5f5f5;
-    position: relative;
-
-    // 添加网格背景
-    background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-    background-size: 20px 20px;
-
-    // 编辑器画布样式
-    canvas {
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-      border: 1px solid #e6e6e6;
-      background: #ffffff;
-    }
+  &.selected {
+    border-color: #1890ff;
+    background-color: #f6ffed;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
   }
+}
 
-  .empty-canvas-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    pointer-events: none;
+.block-type-badge {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  background-color: #1890ff;
+  color: #ffffff;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
 
-    .empty-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      color: #999999;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.block-content {
+  margin-top: 8px;
+}
 
-      .empty-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-      }
+.text-preview {
+  font-size: 14px;
+  color: #333333;
+  line-height: 1.4;
+  min-height: 20px;
+}
 
-      .empty-text {
-        font-size: 16px;
-        font-weight: 500;
-        color: #666666;
-        margin-bottom: 8px;
-      }
+.image-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
 
-      .empty-hint {
-        font-size: 14px;
-        color: #999999;
-        line-height: 1.5;
-      }
-    }
+  img {
+    max-width: 100%;
+    max-height: 60px;
+    border-radius: 4px;
   }
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 40px;
+  background-color: #f0f0f0;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999999;
+  font-size: 12px;
+}
+
+.button-preview {
+  background-color: #1890ff;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 // 响应式设计
 @media (max-width: 1024px) {
   .h5-canvas-container {
-    .canvas-info-bar {
-      padding: 8px 12px;
-
-      .canvas-stats {
-        gap: 8px;
-        font-size: 11px;
-      }
-    }
-
     .h5-canvas-wrapper {
       padding: 15px;
     }
@@ -128,36 +171,8 @@
 
 @media (max-width: 768px) {
   .h5-canvas-container {
-    .canvas-info-bar {
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-start;
-
-      .canvas-stats {
-        align-self: stretch;
-        justify-content: space-between;
-      }
-    }
-
     .h5-canvas-wrapper {
       padding: 10px;
-    }
-
-    .empty-canvas-overlay .empty-content {
-      padding: 24px;
-      margin: 0 16px;
-
-      .empty-icon {
-        font-size: 36px;
-      }
-
-      .empty-text {
-        font-size: 14px;
-      }
-
-      .empty-hint {
-        font-size: 12px;
-      }
     }
   }
 }
@@ -166,11 +181,13 @@
 .h5-canvas-wrapper::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+  display: none; // 隐藏滚动条
 }
 
 .h5-canvas-wrapper::-webkit-scrollbar-track {
   background: #f5f5f5;
   border-radius: 4px;
+  display: none; // 隐藏滚动条
 }
 
 .h5-canvas-wrapper::-webkit-scrollbar-thumb {

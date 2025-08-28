@@ -385,6 +385,30 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
+   * 获取存储服务实例
+   */
+  getStorageService(): ProjectStorageService {
+    return this.storageService;
+  }
+
+  /**
+   * 创建新项目
+   */
+  async createProject(params: {
+    name: string;
+    description: string;
+    type: 'design' | 'h5';
+  }): Promise<{ id: string; name: string } | null> {
+    try {
+      const projectData = await this.storageService.createProject(params);
+      return { id: projectData.id, name: projectData.name };
+    } catch (error) {
+      console.error('创建项目失败:', error);
+      return null;
+    }
+  }
+
+  /**
    * 保存打开的标签页状态到本地存储
    */
   private saveOpenTabs(): void {

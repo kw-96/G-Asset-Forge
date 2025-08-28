@@ -8,6 +8,7 @@ import { HomePage } from './components/HomePage';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { appEventEmitter } from './events';
 import { en, type SupportedLocale, zh } from './locale';
+import { ProjectManagementService } from './services/ProjectManagementService';
 
 const messageMap = {
   zh,
@@ -26,6 +27,10 @@ function App() {
   const [locale, setLocale] = useState(getLocale());
   const [currentView, setCurrentView] = useState<AppView>('welcome');
   const [selectedMode, setSelectedMode] = useState<'design' | 'h5'>('design');
+  const [projectManagementService] = useState(
+    () => new ProjectManagementService(),
+  );
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     // 检查用户是否已经使用过应用(暂时始终设置为首次使用)
@@ -54,9 +59,38 @@ function App() {
     setCurrentView('home');
   };
 
-  const handleModeSelect = (mode: 'design' | 'h5') => {
+  const handleModeSelect = async (mode: 'design' | 'h5') => {
     setSelectedMode(mode);
-    setCurrentView('editor');
+
+    // 自动创建一个未命名项目
+    try {
+      const projectResult = await projectManagementService.createProject({
+        name: '未命名项目',
+        description: '',
+        type: mode,
+      });
+
+      if (projectResult) {
+        // 打开创建的项目
+        const success = await projectManagementService.openProject(
+          projectResult.id,
+        );
+        if (success) {
+          setCurrentProjectId(projectResult.id);
+          setCurrentView('editor');
+          console.log('自动创建并打开项目:', projectResult.name);
+        } else {
+          console.error('打开自动创建的项目失败');
+          setCurrentView('editor'); // 即使失败也进入编辑器
+        }
+      } else {
+        console.error('创建项目失败');
+        setCurrentView('editor'); // 即使失败也进入编辑器
+      }
+    } catch (error) {
+      console.error('自动创建项目失败:', error);
+      setCurrentView('editor'); // 即使失败也进入编辑器
+    }
   };
 
   const handleBackToHome = () => {
@@ -82,16 +116,56 @@ function App() {
     console.log('打开素材库');
   };
 
-  const handleCreateNewProject = () => {
-    // 这里可以添加创建新项目的逻辑
-    console.log('创建新项目');
-    setCurrentView('editor');
+  const handleCreateNewProject = async () => {
+    try {
+      const projectResult = await projectManagementService.createProject({
+        name: '新项目',
+        description: '',
+        type: selectedMode,
+      });
+
+      if (projectResult) {
+        // 打开创建的项目
+        const success = await projectManagementService.openProject(
+          projectResult.id,
+        );
+        if (success) {
+          setCurrentProjectId(projectResult.id);
+          setCurrentView('editor');
+          console.log('创建并打开新项目:', projectResult.name);
+        } else {
+          console.error('打开新创建的项目失败');
+        }
+      } else {
+        console.error('创建项目失败');
+      }
+    } catch (error) {
+      console.error('创建新项目失败:', error);
+    }
   };
 
-  const handleOpenProject = (projectId: string) => {
-    // 打开指定项目
-    console.log('打开项目:', projectId);
-    setCurrentView('editor');
+  const handleOpenProject = async (projectId: string) => {
+    try {
+      // 打开指定项目
+      const success = await projectManagementService.openProject(projectId);
+      if (success) {
+        setCurrentProjectId(projectId);
+        setCurrentView('editor');
+        console.log('打开项目成功:', projectId);
+
+        // 获取项目数据以确定模式
+        const projectData = await projectManagementService.getProjectData(
+          projectId,
+        );
+        if (projectData) {
+          setSelectedMode(projectData.type);
+        }
+      } else {
+        console.error('打开项目失败:', projectId);
+      }
+    } catch (error) {
+      console.error('打开项目时发生错误:', error);
+    }
   };
 
   const renderCurrentView = () => {
@@ -119,6 +193,8 @@ function App() {
             onOpenAssetLibrary={handleOpenAssetLibrary}
             onOpenTemplateLibrary={handleOpenTemplateLibrary}
             onOpenProjectLibrary={handleOpenProjectLibrary}
+            projectManagementService={projectManagementService}
+            currentProjectId={currentProjectId}
           />
         );
       default:

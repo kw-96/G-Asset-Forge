@@ -71,7 +71,12 @@ export class RefLine {
     const viewportBbox = this.editor.viewportManager.getSceneBbox();
 
     const refGraphicsSet = new Set<GAssetForgeGraphics>();
-    this.editor.doc.getCurrentCanvas().forEachVisibleChildNode((graphics) => {
+    const currentCanvas = this.editor.doc.getCurrentCanvas();
+    if (!currentCanvas) {
+      console.warn('无法获取当前画布，跳过参考线计算');
+      return;
+    }
+    currentCanvas.forEachVisibleChildNode((graphics) => {
       if (
         isCanvasGraphics(graphics) ||
         (isFrameGraphics(graphics) && graphics.isGroup())

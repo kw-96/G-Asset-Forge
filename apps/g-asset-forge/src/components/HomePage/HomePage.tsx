@@ -9,6 +9,7 @@ import { Button } from '@g-asset-forge/components';
 import React, { useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 
+import { Header } from '../Header';
 import { SvgIcon } from '../SvgIcon';
 
 export interface HomePageProps {
@@ -19,6 +20,16 @@ export interface HomePageProps {
   onCreateNewProject: () => void;
   onOpenProject?: (projectId: string) => void;
   recentProjects?: RecentProject[];
+
+  // Header 相关 props - 从 Editor.tsx 传递过来
+  projectTabs?: any[];
+  activeTabId?: string;
+  onTabSelect?: (tabId: string) => void;
+  onTabClose?: (tabId: string) => void;
+  onTabsReorder?: (tabs: any[]) => void;
+  onBackToHome?: () => void;
+  onCreateProject?: () => void;
+  currentMode?: 'design' | 'h5';
 }
 
 export interface RecentProject {
@@ -37,8 +48,20 @@ export const HomePage: React.FC<HomePageProps> = ({
   onCreateNewProject,
   onOpenProject,
   recentProjects = [],
+
+  // Header 相关 props
+  projectTabs = [],
+  activeTabId,
+  onTabSelect,
+  onTabClose,
+  onTabsReorder,
+  onBackToHome,
+  onCreateProject,
+  currentMode = 'design',
 }) => {
-  const [selectedMode, setSelectedMode] = useState<'design' | 'h5'>('design');
+  const [selectedMode, setSelectedMode] = useState<'design' | 'h5'>(
+    currentMode,
+  );
 
   const handleModeSelect = (mode: 'design' | 'h5') => {
     setSelectedMode(mode);
@@ -56,6 +79,19 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="home-page">
+      {/* 统一的Header - 支持项目标签页和模式切换 */}
+      <Header
+        title="g-asset-forge"
+        projectTabs={projectTabs}
+        activeTabId={activeTabId}
+        onTabSelect={onTabSelect}
+        onTabClose={onTabClose}
+        onTabsReorder={onTabsReorder}
+        onBackToHome={onBackToHome || (() => window.location.reload())}
+        showHomeButton={true}
+        onCreateProject={onCreateProject || onCreateNewProject}
+      />
+
       <div className="home-page__container">
         {/* 头部区域 */}
         <header className="home-page__header">

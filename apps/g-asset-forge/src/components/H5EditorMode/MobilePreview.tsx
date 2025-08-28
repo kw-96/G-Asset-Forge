@@ -1,3 +1,4 @@
+// 移动端预览
 import './MobilePreview.scss';
 
 // 使用 emoji 图标替代缺失的图标组件

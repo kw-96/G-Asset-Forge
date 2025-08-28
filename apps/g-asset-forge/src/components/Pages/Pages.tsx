@@ -34,39 +34,74 @@ export const Pages: FC = () => {
     if (!editor) return;
 
     const updatePageItems = () => {
-      const pages = editor.doc.graphicsStoreManager.getCanvasItemsData();
-      setPageItems(pages);
-      setCurrPageId(editor.doc.getCurrentCanvas().attrs.id);
+      try {
+        const pages = editor.doc.graphicsStoreManager.getCanvasItemsData();
+        setPageItems(pages);
+
+        // 安全地获取当前画布ID
+        const currentCanvas = editor.doc.getCurrentCanvas();
+        if (currentCanvas && currentCanvas.attrs) {
+          setCurrPageId(currentCanvas.attrs.id);
+        } else {
+          console.warn('当前画布不存在或缺少attrs属性');
+          setCurrPageId('');
+        }
+      } catch (error) {
+        console.error('更新页面项目时出错:', error);
+        setPageItems([]);
+        setCurrPageId('');
+      }
     };
 
     updatePageItems();
 
-    editor.sceneGraph.on('render', () => {
+    const renderHandler = () => {
       updatePageItems();
-    });
+    };
+
+    editor.sceneGraph.on('render', renderHandler);
+
+    // 清理函数
+    return () => {
+      editor.sceneGraph.off('render', renderHandler);
+    };
   }, [editor]);
 
   const setName = (id: string, newName: string) => {
-    if (editor) {
+    if (!editor) return;
+
+    try {
       const graphics = editor.doc.getGraphicsById(id);
-      if (graphics && graphics.attrs.objectName !== newName) {
+      if (graphics && graphics.attrs && graphics.attrs.objectName !== newName) {
         MutateGraphsAndRecord.setGraphName(editor, graphics, newName);
         editor.render();
       }
+    } catch (error) {
+      console.error('设置页面名称时出错:', error);
     }
   };
 
   const switchPage = (canvasId: string) => {
     if (!editor) return;
-    switchCanvasRecord(editor, canvasId);
-    editor.render();
+
+    try {
+      switchCanvasRecord(editor, canvasId);
+      editor.render();
+    } catch (error) {
+      console.error('切换页面时出错:', error);
+    }
   };
 
   const createNewPage = () => {
     if (!editor) return;
 
-    addAndSwitchCanvasRecord(editor, undefined);
-    editor.render();
+    try {
+      addAndSwitchCanvasRecord(editor, undefined);
+      editor.render();
+      console.log('新页面创建成功');
+    } catch (error) {
+      console.error('创建新页面时出错:', error);
+    }
   };
 
   const handleContextMenu = (
@@ -116,22 +151,37 @@ export const Pages: FC = () => {
         disabledDelete={pageItems.length <= 1}
         onDelete={() => {
           if (!editor) return;
-          const canvas = editor.doc.getGraphicsById(
-            canvasIdByMenu,
-          ) as GAssetForgeCanvas;
-          if (!canvas) return;
 
-          const isCurrentCanvasToDelete = canvas.attrs.id === currPageId;
+          try {
+            const canvas = editor.doc.getGraphicsById(
+              canvasIdByMenu,
+            ) as GAssetForgeCanvas;
+            if (!canvas || !canvas.attrs) {
+              console.warn('要删除的画布不存在或缺少attrs属性');
+              return;
+            }
 
-          const newCurrentCanvas =
-            canvas.getNextSibling() || canvas.getPrevSibling();
+            const isCurrentCanvasToDelete = canvas.attrs.id === currPageId;
 
-          editor.commandManager.batchCommandStart();
-          removeGraphicsAndRecord(editor, [canvas]);
-          if (isCurrentCanvasToDelete && newCurrentCanvas) {
-            switchCanvasRecord(editor, newCurrentCanvas.attrs.id);
+            const newCurrentCanvas =
+              canvas.getNextSibling() || canvas.getPrevSibling();
+
+            editor.commandManager.batchCommandStart();
+            removeGraphicsAndRecord(editor, [canvas]);
+
+            if (
+              isCurrentCanvasToDelete &&
+              newCurrentCanvas &&
+              newCurrentCanvas.attrs
+            ) {
+              switchCanvasRecord(editor, newCurrentCanvas.attrs.id);
+            }
+
+            editor.commandManager.batchCommandEnd();
+            editor.render();
+          } catch (error) {
+            console.error('删除页面时出错:', error);
           }
-          editor.commandManager.batchCommandEnd();
         }}
       />
     </div>

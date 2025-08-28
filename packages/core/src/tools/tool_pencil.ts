@@ -38,7 +38,7 @@ export class PencilTool implements ITool {
     this.path = new GAssetForgePath(
       {
         objectName: getNoConflictObjectName(
-          this.editor.doc.getCurrentCanvas(),
+          this.editor.doc.getCurrentCanvas()!,
           GraphicsObjectSuffix.Path,
         ),
         width: 0,
@@ -76,7 +76,12 @@ export class PencilTool implements ITool {
 
     if (this.isFirstDrag) {
       this.editor.sceneGraph.addItems([path]);
-      this.editor.doc.getCurrentCanvas().insertChild(path);
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (currentCanvas) {
+        currentCanvas.insertChild(path);
+      } else {
+        console.error('无法获取当前画布，无法插入路径');
+      }
       this.isFirstDrag = false;
     }
     this.editor.render();

@@ -40,8 +40,16 @@ export const addCanvasAndRecord = (
   return canvas;
 };
 
-export const switchCanvasRecord = (editor: GAssetForgeEditor, canvasId: string) => {
-  const prevId = editor.doc.getCurrentCanvas().attrs.id;
+export const switchCanvasRecord = (
+  editor: GAssetForgeEditor,
+  canvasId: string,
+) => {
+  const currentCanvas = editor.doc.getCurrentCanvas();
+  if (!currentCanvas) {
+    console.error('无法获取当前画布');
+    return;
+  }
+  const prevId = currentCanvas.attrs.id;
   if (prevId === canvasId) {
     console.log('Same canvas, switch canvas failed');
     return;

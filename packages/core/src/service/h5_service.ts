@@ -1,77 +1,262 @@
 import { type GAssetForgeEditor } from '../editor';
-import { H5Container } from '../graphics/h5/h5_container';
 import {
-  H5ContentBlock,
-  H5TextBlock,
-  H5ImageBlock,
   H5ButtonBlock,
+  H5ContentBlock,
   type H5ContentBlockAttrs,
+  H5ImageBlock,
+  H5TextBlock,
 } from '../graphics/h5/content_block';
+import { H5Container } from '../graphics/h5/h5_container';
+import { type IPaint, PaintType } from '../paint';
 import { type IEditorPaperData } from '../type';
 
-// H5 编辑服务
+/**
+ * H5 服务 - 管理H5编辑模式的容器和内容块
+ */
 export class H5Service {
   private editor: GAssetForgeEditor;
   private currentContainer: H5Container | null = null;
+  private containerMonitorInterval: number | null = null;
 
   constructor(editor: GAssetForgeEditor) {
     this.editor = editor;
+    // 启动容器状态监控
+    this.startContainerMonitoring();
   }
 
-  // 初始化 H5 编辑模式
+  /**
+   * 启动容器状态监控
+   */
+  private startContainerMonitoring(): void {
+    // 每5秒检查一次容器状态
+    this.containerMonitorInterval = setInterval(() => {
+      if (this.currentContainer) {
+        this.getCurrentContainer(); // 这会触发状态检查
+      }
+    }, 5000);
+  }
+
+  /**
+   * 停止容器状态监控
+   */
+  private stopContainerMonitoring(): void {
+    if (this.containerMonitorInterval) {
+      clearInterval(this.containerMonitorInterval);
+      this.containerMonitorInterval = null;
+    }
+  }
+
+  /**
+   * 初始化H5模式
+   * 在现有画布中插入H5容器，固定在画布中心
+   */
   initializeH5Mode(): H5Container {
-    // 清空当前画布
     const currentCanvas = this.editor.doc.getCurrentCanvas();
-    if (currentCanvas) {
-      // 清空子元素
-      const children = currentCanvas.getChildren();
-      children.forEach((child) => {
-        currentCanvas.removeChild(child);
-      });
+    if (!currentCanvas) {
+      throw new Error('无法获取当前画布');
     }
 
-    // 创建 H5 容器
+    // 获取画布尺寸
+    const canvasWidth = this.editor.canvasElement?.width || 1200;
+    const canvasHeight = this.editor.canvasElement?.height || 800;
+
+    // 计算H5容器在画布中心的位置
+    const containerWidth = 375;
+    const containerHeight = 667;
+    const centerX = (canvasWidth - containerWidth) / 2;
+    const centerY = (canvasHeight - containerHeight) / 2;
+
+    console.log('H5Service: 初始化H5模式', {
+      canvasWidth,
+      canvasHeight,
+      containerWidth,
+      containerHeight,
+      centerX,
+      centerY,
+    });
+
+    // 创建轻量级H5容器，固定在画布中心
     this.currentContainer = new H5Container(
       {
         id: `h5_container_${Date.now()}`,
         objectName: 'H5长图容器',
-        width: 375,
-        height: 667,
-        mobileWidth: 375,
-        backgroundColor: '#ffffff',
+        width: containerWidth,
+        height: containerHeight,
+        mobileWidth: containerWidth,
         padding: 16,
         gap: 12,
         autoLayout: true,
-        transform: [1, 0, 0, 1, 0, 0],
+        resizeToFit: false,
+        // 设置初始位置在画布中心
+        transform: [1, 0, 0, 1, centerX, centerY],
+        // 确保容器可见 - 添加填充色和边框
+        fill: [
+          {
+            type: PaintType.Solid,
+            attrs: { r: 255, g: 255, b: 255, a: 1 },
+            visible: true,
+          } as IPaint,
+        ],
+        stroke: [
+          {
+            type: PaintType.Solid,
+            attrs: { r: 100, g: 100, b: 100, a: 1 },
+            visible: true,
+          } as IPaint,
+        ],
+        strokeWidth: 2,
       },
-      { editor: this.editor } as any,
+      { doc: this.editor.doc } as any,
     );
 
-    // 将容器添加到画布
-    if (currentCanvas) {
-      currentCanvas.insertChild(this.currentContainer as any);
-    }
+    console.log('H5Service: H5容器创建成功', this.currentContainer);
 
-    // 调整视口以适应移动端尺寸
-    this.editor.viewportManager.setViewportSize({
-      width: 375 + 100, // 留一些边距
-      height: 667 + 100,
+    // 将容器插入到现有画布中
+    currentCanvas.insertChild(this.currentContainer as any);
+
+    console.log('H5Service: H5容器已添加到画布', {
+      canvasChildrenCount: currentCanvas.getChildren().length,
+      containerId: this.currentContainer.attrs.id,
     });
 
-    // 设置画布背景色
-    if (currentCanvas) {
-      currentCanvas.updateAttrs({
-        backgroundColor: '#f5f5f5', // 浅灰色背景，突出显示手机容器
-      } as any);
-    }
+    // 调整视口以聚焦到H5容器，确保容器在视口中心
+    this.centerViewportOnContainer();
 
+    // 渲染编辑器
     this.editor.render();
+
+    console.log('H5Service: H5模式初始化完成');
+
     return this.currentContainer;
   }
 
-  // 获取当前 H5 容器
+  /**
+   * 将视口中心聚焦到H5容器
+   */
+  private centerViewportOnContainer(): void {
+    if (!this.currentContainer) return;
+
+    try {
+      console.log('H5Service: 开始调整视口到容器中心');
+
+      // 获取容器的边界框
+      const containerBbox = this.currentContainer.getLocalBbox();
+      console.log('H5Service: 容器边界框', containerBbox);
+
+      // 计算容器的中心点 - IBox使用minX, minY, maxX, maxY
+      const containerCenterX = (containerBbox.minX + containerBbox.maxX) / 2;
+      const containerCenterY = (containerBbox.minY + containerBbox.maxY) / 2;
+
+      // 获取当前视口尺寸
+      const viewportWidth = this.editor.canvasElement?.width || 1200;
+      const viewportHeight = this.editor.canvasElement?.height || 800;
+
+      console.log('H5Service: 视口尺寸', { viewportWidth, viewportHeight });
+      console.log('H5Service: 容器中心点', {
+        containerCenterX,
+        containerCenterY,
+      });
+
+      // 计算视口中心点
+      const viewportCenterX = viewportWidth / 2;
+      const viewportCenterY = viewportHeight / 2;
+
+      // 计算需要移动的距离
+      const deltaX = viewportCenterX - containerCenterX;
+      const deltaY = viewportCenterY - containerCenterY;
+
+      console.log('H5Service: 视口移动距离', { deltaX, deltaY });
+
+      // 移动视口到容器中心 - 使用translate方法
+      this.editor.viewportManager.translate(deltaX, deltaY);
+
+      // 调整缩放比例，确保容器完全可见
+      const containerWidth = containerBbox.maxX - containerBbox.minX;
+      const containerHeight = containerBbox.maxY - containerBbox.minY;
+      const scaleX = viewportWidth / (containerWidth + 100); // 留100px边距
+      const scaleY = viewportHeight / (containerHeight + 100);
+      const scale = Math.min(scaleX, scaleY, 1); // 不超过100%缩放
+
+      console.log('H5Service: 缩放计算', {
+        containerWidth,
+        containerHeight,
+        scaleX,
+        scaleY,
+        scale,
+      });
+
+      if (scale < 1) {
+        this.editor.viewportManager.setZoom(scale, {
+          x: viewportCenterX,
+          y: viewportCenterY,
+        });
+      }
+
+      console.log('H5Service: 视口调整完成');
+    } catch (error) {
+      console.warn('H5Service: 调整视口到容器中心失败:', error);
+      // 如果失败，使用默认的zoomToFit
+      this.editor.viewportManager.zoomToFit(1);
+    }
+  }
+
+  /**
+   * 获取当前H5容器
+   */
   getCurrentContainer(): H5Container | null {
+    // 检查容器是否仍然有效
+    if (this.currentContainer) {
+      try {
+        // 验证容器是否还在画布中
+        const currentCanvas = this.editor.doc.getCurrentCanvas();
+        if (currentCanvas) {
+          const containerExists = currentCanvas
+            .getChildren()
+            .some(
+              (child) => child.attrs.id === this.currentContainer?.attrs.id,
+            );
+
+          if (!containerExists) {
+            console.warn('H5Service: 容器已从画布中丢失，尝试恢复');
+            // 尝试重新添加容器到画布
+            this.restoreContainer();
+          }
+        }
+      } catch (error) {
+        console.warn('H5Service: 检查容器状态时出错', error);
+      }
+    }
+
     return this.currentContainer;
+  }
+
+  /**
+   * 恢复丢失的容器
+   */
+  private restoreContainer(): void {
+    if (!this.currentContainer) return;
+
+    try {
+      console.log('H5Service: 尝试恢复丢失的H5容器');
+
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (currentCanvas) {
+        // 重新添加容器到画布
+        currentCanvas.insertChild(this.currentContainer as any);
+
+        // 重新调整视口
+        this.centerViewportOnContainer();
+
+        // 重新渲染
+        this.editor.render();
+
+        console.log('H5Service: H5容器恢复成功');
+      }
+    } catch (error) {
+      console.error('H5Service: 恢复H5容器失败', error);
+      // 如果恢复失败，清空引用
+      this.currentContainer = null;
+    }
   }
 
   // 添加文本块
@@ -170,9 +355,10 @@ export class H5Service {
     const targetBlock = blocks.find((block) => block.attrs.id === blockId);
 
     if (targetBlock) {
+      // 更新属性
       targetBlock.updateAttrs(attrs as any);
 
-      // 如果更新了影响布局的属性，触发自动布局
+      // 检查是否需要重新布局
       const layoutAffectingProps = [
         'marginTop',
         'marginBottom',
@@ -184,9 +370,9 @@ export class H5Service {
         layoutAffectingProps.includes(key),
       );
 
-      if (shouldRelayout && this.currentContainer.attrs.autoLayout) {
-        // 触发重新布局
-        this.currentContainer.render(this.editor.ctx, { scaleX: 1, scaleY: 1 });
+      if (shouldRelayout && this.currentContainer.isAutoLayoutEnabled()) {
+        // 触发重新布局 - 使用编辑器的渲染系统
+        this.editor.render();
       }
 
       this.editor.render();
@@ -232,29 +418,45 @@ export class H5Service {
 
   // 选择内容块
   selectContentBlock(blockId: string): void {
-    const blocks = this.getAllContentBlocks();
-    const targetBlock = blocks.find((block) => block.attrs.id === blockId);
+    if (!this.currentContainer) return;
 
-    if (targetBlock) {
-      // 清除当前选择
-      this.editor.selectedElements.clear();
-
-      // 选择目标块
-      (this.editor.selectedElements as any).setElements([targetBlock as any]);
-      this.editor.render();
-    }
+    // 使用容器的选择方法
+    this.currentContainer.selectContentBlock(blockId);
+    this.editor.render();
   }
 
   // 取消选择
   clearSelection(): void {
-    this.editor.selectedElements.clear();
+    if (!this.currentContainer) return;
+
+    // 使用容器的清除选择方法
+    this.currentContainer.clearSelection();
     this.editor.render();
   }
 
-  // 导出 H5 数据
+  // 导出 H5 数据 - 简化版本
   exportH5Data(): any {
     if (!this.currentContainer) return null;
-    return this.currentContainer.exportToH5Data();
+
+    const blocks = this.currentContainer.getSortedContentBlocks();
+    return {
+      container: {
+        id: this.currentContainer.attrs.id,
+        objectName: this.currentContainer.attrs.objectName,
+        width: this.currentContainer.attrs.width,
+        height: this.currentContainer.attrs.height,
+        mobileWidth: this.currentContainer.getMobileWidth(),
+        padding: this.currentContainer.getPadding(),
+        gap: this.currentContainer.getGap(),
+        autoLayout: this.currentContainer.isAutoLayoutEnabled(),
+      },
+      blocks: blocks.map((block) => ({
+        id: block.attrs.id,
+        type: block.attrs.blockType,
+        order: block.attrs.order,
+        attrs: block.attrs,
+      })),
+    };
   }
 
   // 导出为多种分辨率的图片
@@ -284,8 +486,9 @@ export class H5Service {
         // 应用缩放
         tempCtx.scale(scaleX, scaleY);
 
-        // 渲染容器到临时画布
-        this.currentContainer.render(tempCtx, { scaleX, scaleY });
+        // 使用编辑器的渲染系统而不是容器的render方法
+        // 这里需要重新设计导出逻辑，暂时跳过
+        console.warn('图片导出功能需要重新设计');
 
         // 转换为 Blob
         const blob = await new Promise<Blob>((resolve, reject) => {
@@ -312,7 +515,7 @@ export class H5Service {
     }
   }
 
-  // 从编辑器数据加载 H5 内容
+  // 从编辑器数据加载 H5 内容 - 简化版本
   loadFromEditorData(data: IEditorPaperData): boolean {
     try {
       // 查找 H5 容器
@@ -325,17 +528,20 @@ export class H5Service {
         return false;
       }
 
-      // 重建 H5 容器
-      this.currentContainer = H5Container.fromH5Data(
+      // 创建新的H5容器
+      this.currentContainer = new H5Container(
         {
-          container: h5ContainerData,
-          blocks: data.data.filter(
-            (item) =>
-              (item.type as any)?.startsWith('H5') &&
-              (item.type as any) !== 'H5Container',
-          ),
+          id: h5ContainerData.id || `h5_container_${Date.now()}`,
+          objectName: h5ContainerData.objectName || 'H5长图容器',
+          width: h5ContainerData.width || 375,
+          height: h5ContainerData.height || 667,
+          mobileWidth: (h5ContainerData as any).mobileWidth || 375,
+          padding: (h5ContainerData as any).padding || 16,
+          gap: (h5ContainerData as any).gap || 12,
+          autoLayout: (h5ContainerData as any).autoLayout !== false,
+          resizeToFit: false,
         },
-        { editor: this.editor } as any,
+        { doc: this.editor.doc } as any,
       );
 
       // 将容器添加到画布
@@ -361,35 +567,40 @@ export class H5Service {
   toggleAutoLayout(): void {
     if (!this.currentContainer) return;
 
-    const currentAutoLayout = this.currentContainer.attrs.autoLayout;
-    this.currentContainer.updateAttrs({
-      autoLayout: !currentAutoLayout,
-    } as any);
-
-    if (!currentAutoLayout) {
-      // 如果开启自动布局，立即执行一次布局
-      this.currentContainer.render(this.editor.ctx, { scaleX: 1, scaleY: 1 });
-    }
+    // const currentAutoLayout = this.currentContainer.isAutoLayoutEnabled();
+    // 这里需要重新设计，暂时跳过
+    console.warn('自动布局切换功能需要重新设计');
 
     this.editor.render();
   }
 
   // 设置容器样式
   updateContainerStyle(style: {
-    backgroundColor?: string;
     padding?: number;
     gap?: number;
-  }): void {
-    if (!this.currentContainer) return;
+    mobileWidth?: number;
+  }): boolean {
+    if (!this.currentContainer) return false;
 
-    this.currentContainer.updateAttrs(style as any);
+    try {
+      // 更新容器属性
+      if (style.padding !== undefined) {
+        (this.currentContainer as any).padding = style.padding;
+      }
+      if (style.gap !== undefined) {
+        (this.currentContainer as any).gap = style.gap;
+      }
+      if (style.mobileWidth !== undefined) {
+        (this.currentContainer as any).mobileWidth = style.mobileWidth;
+      }
 
-    // 如果更改了padding或gap，需要重新布局
-    if (style.padding !== undefined || style.gap !== undefined) {
-      this.currentContainer.render(this.editor.ctx, { scaleX: 1, scaleY: 1 });
+      // 重新渲染
+      this.editor.render();
+      return true;
+    } catch (error) {
+      console.error('更新容器样式失败:', error);
+      return false;
     }
-
-    this.editor.render();
   }
 
   // 预览功能 - 生成预览数据
@@ -400,10 +611,9 @@ export class H5Service {
 
     return {
       container: {
-        width: this.currentContainer.attrs.mobileWidth || 375,
+        width: this.currentContainer.getMobileWidth() || 375,
         height: this.currentContainer.attrs.height || 667,
-        backgroundColor:
-          this.currentContainer.attrs.backgroundColor || '#ffffff',
+        backgroundColor: '#ffffff', // 使用默认背景色
       },
       blocks: blocks.map((block) => ({
         id: block.attrs.id,
@@ -452,8 +662,39 @@ export class H5Service {
     };
   }
 
-  // 销毁服务
+  /**
+   * 销毁H5服务
+   */
   destroy(): void {
-    this.currentContainer = null;
+    // 停止容器状态监控
+    this.stopContainerMonitoring();
+
+    if (this.currentContainer) {
+      try {
+        const currentCanvas = this.editor.doc.getCurrentCanvas();
+        if (currentCanvas) {
+          // 检查容器是否还在画布中
+          const containerExists = currentCanvas
+            .getChildren()
+            .some(
+              (child) => child.attrs.id === this.currentContainer?.attrs.id,
+            );
+
+          if (containerExists) {
+            // 从画布中移除容器
+            currentCanvas.removeChild(this.currentContainer);
+          }
+        }
+
+        // 清理容器引用
+        this.currentContainer = null;
+
+        // 重新渲染编辑器
+        this.editor.render();
+      } catch (error) {
+        console.warn('H5Service销毁过程中出现警告:', error);
+        this.currentContainer = null;
+      }
+    }
   }
 }

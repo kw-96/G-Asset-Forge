@@ -1,3 +1,4 @@
+// 组件库面板
 import './ContentBlockPanel.scss';
 
 import {
@@ -38,21 +39,18 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
   const blockTypes = [
     {
       type: 'text',
-      name: '文本块',
+      name: '标题文本',
       icon: <TextFilled />,
-      description: '添加文本内容',
     },
     {
       type: 'image',
-      name: '图片块',
+      name: '图片',
       icon: <ImageOutlined />,
-      description: '添加图片内容',
     },
     {
       type: 'button',
-      name: '按钮块',
+      name: '按钮',
       icon: <AddOutlined />,
-      description: '添加交互按钮',
     },
   ];
 
@@ -88,11 +86,11 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
   const getBlockName = (block: ContentBlock) => {
     switch (block.type) {
       case 'text':
-        return block.content.text?.substring(0, 20) || '文本块';
+        return block.content.text?.substring(0, 20) || '标题文本';
       case 'image':
-        return block.content.alt || '图片块';
+        return block.content.alt || '图片';
       case 'button':
-        return block.content.text || '按钮块';
+        return block.content.text || '按钮';
       default:
         return '未知块';
     }
@@ -123,7 +121,7 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
       {/* 内容块选择区 */}
       {activeTab === 'blocks' && (
         <div className="blocks-section">
-          <div className="section-title">添加内容块</div>
+          <div className="section-title">组件库</div>
           <div className="block-types">
             {blockTypes.map((blockType) => (
               <div
@@ -134,9 +132,6 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
                 <div className="block-icon">{blockType.icon}</div>
                 <div className="block-info">
                   <div className="block-name">{blockType.name}</div>
-                  <div className="block-description">
-                    {blockType.description}
-                  </div>
                 </div>
               </div>
             ))}
@@ -147,14 +142,12 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
       {/* 图层管理区 */}
       {activeTab === 'layers' && (
         <div className="layers-section">
-          <div className="section-title">
-            内容块图层 ({contentBlocks.length})
-          </div>
+          <div className="section-title">组件图层 ({contentBlocks.length})</div>
 
           {contentBlocks.length === 0 ? (
             <div className="empty-layers">
-              <div className="empty-text">暂无内容块</div>
-              <div className="empty-hint">从上方添加内容块开始创建</div>
+              <div className="empty-text">暂无组件</div>
+              <div className="empty-hint">从上方添加组件开始创建</div>
             </div>
           ) : (
             <div className="layer-list">

@@ -33,7 +33,7 @@ export const Popover: FC<PopoverProps> = (props) => {
     children,
     placement = 'bottom-start',
     trigger = 'click',
-    offset = 5,
+    offset = 5, // 偏移量
   } = props;
 
   const [open, setOpen] = useState(false);
@@ -46,15 +46,15 @@ export const Popover: FC<PopoverProps> = (props) => {
   const mixedOpen = props.open === undefined ? open : props.open;
 
   const { x, y, strategy, refs, context } = useFloating({
-    placement: placement,
-    open: mixedOpen,
-    onOpenChange,
-    whileElementsMounted: autoUpdate,
+    placement: placement, // 定位策略，如 'bottom-end'
+    open: mixedOpen, // 是否打开
+    onOpenChange, // 打开状态变化回调
+    whileElementsMounted: autoUpdate, // 自动更新位置
     middleware: [
       flip({
-        fallbackAxisSideDirection: 'end',
+        fallbackAxisSideDirection: 'end', // 如果主轴方向空间不足，尝试使用次轴方向
       }),
-      floatUiOffset(offset),
+      floatUiOffset(offset), // 偏移量
     ],
   });
 

@@ -61,6 +61,13 @@ export class SceneGraph {
   render = rafThrottle(() => {
     // 获取视口区域
     const { canvasElement: canvas, ctx, setting } = this.editor;
+
+    // 安全检查：确保ctx和canvas存在
+    if (!ctx || !canvas) {
+      console.warn('SceneGraph.render: ctx或canvas不存在，跳过渲染');
+      return;
+    }
+
     const zoom = this.editor.viewportManager.getZoom();
     const selectedElements = this.editor.selectedElements;
 
@@ -146,20 +153,22 @@ export class SceneGraph {
     }
 
     // draw frame text
-    const padding = 4;
-    const frames = this.editor.doc.graphicsStoreManager.getFrames();
-    for (const frame of frames) {
-      if (
-        (isFrameGraphics(frame) && frame.isGroup()) ||
-        frame.isDeleted() ||
-        // check canvas
-        !frame.hasAncestor(canvasGraphics.attrs.id)
-      ) {
-        continue;
+    if (canvasGraphics) {
+      const padding = 4;
+      const frames = this.editor.doc.graphicsStoreManager.getFrames();
+      for (const frame of frames) {
+        if (
+          (isFrameGraphics(frame) && frame.isGroup()) ||
+          frame.isDeleted() ||
+          // check canvas
+          !frame.hasAncestor(canvasGraphics.attrs.id)
+        ) {
+          continue;
+        }
+        const pos = frame.getWorldPosition();
+        const viewportPos = this.editor.toViewportPt(pos.x, pos.y);
+        frame.drawText(ctx, viewportPos.x, viewportPos.y - padding);
       }
-      const pos = frame.getWorldPosition();
-      const viewportPos = this.editor.toViewportPt(pos.x, pos.y);
-      frame.drawText(ctx, viewportPos.x, viewportPos.y - padding);
     }
 
     /** draw transform handle */

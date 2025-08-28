@@ -74,12 +74,17 @@ export class SelectMoveTool implements IBaseTool {
     }
 
     const canvasGraphics = this.editor.doc.getCurrentCanvas();
-    this.prevParent =
-      getDeepFrameAtPoint(
-        this.startPoint,
-        canvasGraphics.getChildren(),
-        (node) => this.selectedFrameIdSet.has(node.attrs.id),
-      ) ?? canvasGraphics;
+    if (!canvasGraphics) {
+      console.error('无法获取当前画布，无法执行移动操作');
+      return;
+    }
+
+    const deepFrame = getDeepFrameAtPoint(
+      this.startPoint,
+      canvasGraphics.getChildren(),
+      (node) => this.selectedFrameIdSet.has(node.attrs.id),
+    );
+    this.prevParent = deepFrame ?? canvasGraphics;
 
     const boundingRect = this.editor.selectedElements.getBoundingRect();
     if (!boundingRect) {
@@ -155,10 +160,17 @@ export class SelectMoveTool implements IBaseTool {
       this.editor.guideLineManager.getGraphicsSnapOffset(targetPoints);
 
     const canvasGraphics = this.editor.doc.getCurrentCanvas();
-    const newParent =
-      getDeepFrameAtPoint(currPoint, canvasGraphics.getChildren(), (node) =>
-        this.selectedFrameIdSet.has(node.attrs.id),
-      ) ?? canvasGraphics;
+    if (!canvasGraphics) {
+      console.error('无法获取当前画布，无法执行移动操作');
+      return;
+    }
+
+    const deepFrame = getDeepFrameAtPoint(
+      currPoint,
+      canvasGraphics.getChildren(),
+      (node) => this.selectedFrameIdSet.has(node.attrs.id),
+    );
+    const newParent = deepFrame ?? canvasGraphics;
     const newParentId = newParent.attrs.id;
 
     // 2. snap to ref line

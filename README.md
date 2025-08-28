@@ -57,6 +57,9 @@ pnpm run electron:dev
 
 # 停止开发服务器
 taskkill /F /IM node.exe
+
+# 检查问题
+npx tsc --noEmit
 ```
 
 ### 构建应用

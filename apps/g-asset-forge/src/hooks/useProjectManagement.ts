@@ -34,7 +34,9 @@ export interface UseProjectManagementReturn {
 /**
  * 项目管理Hook
  */
-export const useProjectManagement = (): UseProjectManagementReturn => {
+export const useProjectManagement = (
+  externalService?: any,
+): UseProjectManagementReturn => {
   const serviceRef = useRef<ProjectManagementService | null>(null);
   const [openTabs, setOpenTabs] = useState<IProjectTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -44,11 +46,12 @@ export const useProjectManagement = (): UseProjectManagementReturn => {
   // 初始化服务
   useEffect(() => {
     if (!serviceRef.current) {
-      serviceRef.current = new ProjectManagementService();
+      serviceRef.current = externalService || new ProjectManagementService();
+    }
 
+    const service = serviceRef.current;
+    if (service) {
       // 监听事件
-      const service = serviceRef.current;
-
       service.on('tabsChanged', (tabs) => {
         setOpenTabs([...tabs]);
       });
@@ -89,7 +92,7 @@ export const useProjectManagement = (): UseProjectManagementReturn => {
         serviceRef.current = null;
       }
     };
-  }, []);
+  }, [externalService]);
 
   // 打开项目
   const openProject = useCallback(

@@ -1,5 +1,5 @@
 .h5-property-panel {
-  width: 280px;
+  width: 240px; // 调整为与设计模式一致
   background: #ffffff;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
@@ -211,7 +211,7 @@
 // 响应式设计
 @media (max-width: 1024px) {
   .h5-property-panel {
-    width: 260px;
+    width: 240px; // 保持与设计模式一致
     right: 10px;
     top: 70px;
   }

@@ -2,10 +2,11 @@ import { EventEmitter, throttle } from '@g-asset-forge/common';
 
 import { type GAssetForgeEditor } from '../editor';
 import { GraphicsType, type Optional } from '../type';
+import { type GAssetForgeCanvas } from './canvas';
 import {
+  GAssetForgeGraphics,
   type GraphicsAttrs,
   type IGraphicsOpts,
-  GAssetForgeGraphics,
 } from './graphics';
 import { GraphicsStoreManager } from './graphics_manger';
 
@@ -74,11 +75,22 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
     return this.graphicsStoreManager.getAll();
   }
 
-  getCurrentCanvas() {
+  getCurrentCanvas(): GAssetForgeCanvas | null {
     const canvasItems = this.graphicsStoreManager.getCanvasItems();
-    return canvasItems.find(
+    const canvas = canvasItems.find(
       (canvas) => canvas.attrs.id === this.currentCanvasId,
-    )!;
+    );
+
+    // 如果找不到当前画布，尝试返回第一个画布
+    if (!canvas && canvasItems.length > 0) {
+      console.warn(
+        `当前画布ID "${this.currentCanvasId}" 不存在，使用第一个画布`,
+      );
+      this.currentCanvasId = canvasItems[0].attrs.id;
+      return canvasItems[0];
+    }
+
+    return canvas || null;
   }
 
   setCurrentCanvas(canvasId: string) {

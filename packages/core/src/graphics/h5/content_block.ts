@@ -1,3 +1,4 @@
+// H5 内容块
 import { type Optional } from '../../type';
 import {
   GAssetForgeGraphics,

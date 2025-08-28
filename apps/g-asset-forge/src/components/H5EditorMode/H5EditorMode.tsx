@@ -1,3 +1,4 @@
+// H5模式界面
 import './H5EditorMode.scss';
 
 import { H5Service } from '@g-asset-forge/core';
@@ -14,8 +15,6 @@ import { EditorContext } from '../../context';
 import { ContentBlockPanel } from './ContentBlockPanel';
 import { H5Canvas } from './H5Canvas';
 import { H5PropertyPanel } from './H5PropertyPanel';
-import { H5Toolbar } from './H5Toolbar';
-import { MobilePreview } from './MobilePreview';
 
 interface H5EditorModeProps {
   onModeSwitch?: (mode: 'design' | 'h5') => void;
@@ -76,44 +75,68 @@ export const H5EditorMode: FC<H5EditorModeProps> = () => {
 
   useEffect(() => {
     if (editor && containerRef.current) {
-      // 初始化 H5 服务
-      h5ServiceRef.current = new H5Service(editor);
+      try {
+        // 初始化 H5 服务
+        h5ServiceRef.current = new H5Service(editor);
 
-      // 初始化 H5 编辑模式
-      const container = h5ServiceRef.current.initializeH5Mode();
+        // 初始化 H5 编辑模式
+        const container = h5ServiceRef.current.initializeH5Mode();
 
-      console.log('H5 编辑模式已激活', container);
+        console.log('H5 编辑模式已激活', container);
 
-      // 更新内容块列表
-      updateContentBlocksList();
+        // 等待一帧后更新内容块列表，确保容器已完全初始化
+        requestAnimationFrame(() => {
+          updateContentBlocksList();
 
-      // 监听编辑器选择变化
-      const handleSelectionChange = () => {
-        const selectedElements = editor.selectedElements.getItems();
-        if (selectedElements.length === 1) {
-          const selectedElement = selectedElements[0];
-          if (
-            selectedElement.attrs.id &&
-            (selectedElement.attrs as any).blockType
-          ) {
-            setSelectedBlockId(selectedElement.attrs.id);
-            setShowPropertyPanel(true);
+          // 强制重新渲染编辑器，确保H5容器可见
+          editor.render();
+        });
+
+        // 监听编辑器选择变化
+        const handleSelectionChange = () => {
+          const selectedElements = editor.selectedElements.getItems();
+          if (selectedElements.length === 1) {
+            const selectedElement = selectedElements[0];
+            if (
+              selectedElement.attrs.id &&
+              (selectedElement.attrs as any).blockType
+            ) {
+              setSelectedBlockId(selectedElement.attrs.id);
+              setShowPropertyPanel(true);
+            } else {
+              setSelectedBlockId('');
+              setShowPropertyPanel(false);
+            }
           } else {
             setSelectedBlockId('');
             setShowPropertyPanel(false);
           }
-        } else {
-          setSelectedBlockId('');
-          setShowPropertyPanel(false);
-        }
-      };
+        };
 
-      editor.selectedElements.on('itemsChange', handleSelectionChange);
+        editor.selectedElements.on('itemsChange', handleSelectionChange);
 
-      return () => {
-        editor.selectedElements.off('itemsChange', handleSelectionChange);
-        h5ServiceRef.current?.destroy();
-      };
+        return () => {
+          try {
+            // 清理事件监听器
+            editor.selectedElements.off('itemsChange', handleSelectionChange);
+
+            // 销毁H5服务
+            if (h5ServiceRef.current) {
+              h5ServiceRef.current.destroy();
+              h5ServiceRef.current = null;
+            }
+
+            // 清理状态
+            setSelectedBlockId('');
+            setShowPropertyPanel(false);
+            setContentBlocks([]);
+          } catch (error) {
+            console.warn('H5EditorMode清理过程中出现警告:', error);
+          }
+        };
+      } catch (error) {
+        console.error('H5EditorMode初始化失败:', error);
+      }
     }
   }, [editor, updateContentBlocksList]);
 
@@ -266,41 +289,36 @@ export const H5EditorMode: FC<H5EditorModeProps> = () => {
         />
       </div>
 
-      {/* 中间画布区域 */}
+      {/* H5画布区域 */}
       <div className="h5-canvas-area">
+        <div className="editor-canvas-wrapper">
+          {/* 编辑器画布将在这里渲染 */}
+        </div>
         <H5Canvas
           contentBlocks={contentBlocks}
           selectedBlockId={selectedBlockId}
           onBlockSelect={handleBlockSelect}
+          h5Service={h5ServiceRef.current}
         />
       </div>
 
-      {/* 右侧移动端预览 */}
+      {/* 右侧属性面板 */}
       <div className="h5-right-panel">
-        <MobilePreview contentBlocks={contentBlocks} />
+        {showPropertyPanel && selectedBlock ? (
+          <H5PropertyPanel
+            selectedBlock={selectedBlock}
+            onUpdateBlock={handleUpdateBlock}
+            onClose={handleClosePropertyPanel}
+          />
+        ) : (
+          <div className="h5-property-panel-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-title">属性面板</div>
+              <div className="placeholder-text">选择一个内容块来编辑其属性</div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* H5 工具栏 */}
-      <H5Toolbar
-        onAddTextBlock={handleAddTextBlock}
-        onAddImageBlock={handleAddImageBlock}
-        onAddButtonBlock={handleAddButtonBlock}
-        onDeleteSelected={handleDeleteSelected}
-        onTogglePreview={handleTogglePreview}
-        onExport={handleExport}
-        onSettings={handleSettings}
-        hasSelection={!!selectedBlockId}
-        isPreviewMode={isPreviewMode}
-      />
-
-      {/* 属性面板 */}
-      {showPropertyPanel && selectedBlock && (
-        <H5PropertyPanel
-          selectedBlock={selectedBlock}
-          onUpdateBlock={handleUpdateBlock}
-          onClose={handleClosePropertyPanel}
-        />
-      )}
     </div>
   );
 };

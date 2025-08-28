@@ -55,7 +55,11 @@ export class TextEditor {
     return this._active;
   }
 
-  active(params: { textGraphics?: GAssetForgeText; pos: IPoint; range?: IRange }) {
+  active(params: {
+    textGraphics?: GAssetForgeText;
+    pos: IPoint;
+    range?: IRange;
+  }) {
     this._active = true;
     this.editor.controlHandleManager.enableTransformControl = false;
     this.editor.selectedBox.enableDrawSizeIndicator = false;
@@ -83,7 +87,12 @@ export class TextEditor {
       this.textGraphics = textGraphics;
 
       this.editor.sceneGraph.addItems([textGraphics]);
-      this.editor.doc.getCurrentCanvas().insertChild(textGraphics);
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (currentCanvas) {
+        currentCanvas.insertChild(textGraphics);
+      } else {
+        console.error('无法获取当前画布，无法插入文本图形');
+      }
     }
     this.textGraphics = textGraphics!;
     this.editor.selectedElements.setItems([textGraphics!]);
@@ -133,7 +142,10 @@ export class TextEditor {
     this.editor.selectedBox.enableDrawSizeIndicator = true;
   }
 
-  static updateTextContentAndResize(textGraphics: GAssetForgeText, content: string) {
+  static updateTextContentAndResize(
+    textGraphics: GAssetForgeText,
+    content: string,
+  ) {
     const { width, height } = calcTextSize(content, {
       fontSize: textGraphics.attrs.fontSize,
       fontFamily: textGraphics.attrs.fontFamily,

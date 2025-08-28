@@ -1,42 +1,91 @@
 /**
- * 悬浮操作按钮样式 - 竖向排列在画布右上角
+ * 悬浮操作按钮样式 - 竖向排列在画布右上角，整体状态
  */
 .g-asset-forge {
   .floating-action-buttons {
     position: fixed;
-    top: 10%; // 避开头部区域，适配设计模式和H5模式
-    left: 20%;
+    top: 80px; // 固定距离顶部80px，避开Header区域
+    left: 280px; // 距离左侧面板右边缘40px，避免遮挡
     z-index: 999; // 提高z-index确保在所有模式下都能显示
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    gap: 2px;
 
     .floating-btn {
       display: flex;
       align-items: center;
+      justify-content: center;
       padding: 12px;
       border: none;
-      border-radius: 8px;
-      background-color: #ffffff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      border-radius: 12px;
+      background-color: transparent;
       cursor: pointer;
       color: #495057;
       transition: all 0.2s ease;
+      min-width: 48px;
+      min-height: 48px;
 
       &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        background-color: #f8f9fa;
+        transform: scale(1.05);
       }
 
       &:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        background-color: #e9ecef;
+        transform: scale(1);
+      }
+
+      &:first-child {
+        border-radius: 12px 12px 8px 8px;
+      }
+
+      &:last-child {
+        border-radius: 8px 8px 12px 12px;
       }
 
       .floating-btn__label {
         font-size: 13px;
         white-space: nowrap;
       }
+    }
+  }
+}
+
+// 响应式设计 - 在不同屏幕尺寸下调整位置，确保避开面板
+@media (max-width: 1400px) {
+  .g-asset-forge .floating-action-buttons {
+    top: 70px;
+    left: 280px; // 保持距离左侧面板的安全距离
+  }
+}
+
+@media (max-width: 1200px) {
+  .g-asset-forge .floating-action-buttons {
+    top: 60px;
+    left: 280px; // 保持距离左侧面板的安全距离
+  }
+}
+
+@media (max-width: 1024px) {
+  .g-asset-forge .floating-action-buttons {
+    top: 70px;
+    left: 260px; // 在小屏幕上稍微调整位置
+  }
+}
+
+@media (max-width: 768px) {
+  .g-asset-forge .floating-action-buttons {
+    top: 70px;
+    left: 20px; // 移动端放在左侧，避免与右侧内容冲突
+    // 移动端可以调整按钮大小
+    .floating-btn {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 10px;
     }
   }
 }

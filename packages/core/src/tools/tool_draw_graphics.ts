@@ -286,6 +286,11 @@ export abstract class DrawGraphicsTool implements ITool {
       this.updateGraphics(rect);
     } else {
       const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (!currentCanvas) {
+        console.error('无法获取当前画布，无法创建图形');
+        return;
+      }
+
       const frame = getDeepFrameAtPoint(
         this.startPoint,
         currentCanvas.getChildren(),
@@ -299,7 +304,9 @@ export abstract class DrawGraphicsTool implements ITool {
       }
 
       sceneGraph.addItems([graphics]);
-      parent.insertChild(graphics);
+      if (parent) {
+        parent.insertChild(graphics);
+      }
       if (frame) {
         const tf = [...graphics.attrs.transform] as IMatrixArr;
         graphics.setWorldTransform(tf);
@@ -338,6 +345,11 @@ export abstract class DrawGraphicsTool implements ITool {
       const height = this.editor.setting.get('drawGraphDefaultHeight');
 
       const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (!currentCanvas) {
+        console.error('无法获取当前画布，无法创建图形');
+        return;
+      }
+
       const frame = getDeepFrameAtPoint(
         this.startPoint,
         currentCanvas.getChildren(),
@@ -358,7 +370,9 @@ export abstract class DrawGraphicsTool implements ITool {
       if (this.drawingGraphics) {
         const graphics = this.drawingGraphics;
         this.editor.sceneGraph.addItems([graphics]);
-        parent.insertChild(graphics);
+        if (parent) {
+          parent.insertChild(graphics);
+        }
         if (frame) {
           const tf = [...graphics.attrs.transform] as IMatrixArr;
           graphics.setWorldTransform(tf);

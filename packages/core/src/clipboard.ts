@@ -110,7 +110,12 @@ export class ClipboardManager {
         },
       );
       editor.sceneGraph.addItems([rectGraphics]);
-      editor.doc.getCurrentCanvas().insertChild(rectGraphics);
+      const currentCanvas = editor.doc.getCurrentCanvas();
+      if (currentCanvas) {
+        currentCanvas.insertChild(rectGraphics);
+      } else {
+        console.error('无法获取当前画布，无法插入矩形图形');
+      }
       editor.render();
     }
   }
@@ -208,19 +213,35 @@ export class ClipboardManager {
      */
     let left: string | null = null;
     let right: string | null = null;
+    const currentCanvas = this.editor.doc.getCurrentCanvas();
+    if (!currentCanvas) {
+      console.error('无法获取当前画布，无法粘贴');
+      return 0;
+    }
+
     const firstGraphics =
       GAssetForgeGraphics.sortGraphics(
         this.editor.selectedElements.getItems(),
-      ).at(-1) ?? this.editor.doc.getCurrentCanvas();
+      ).at(-1) ?? currentCanvas;
     let parent = firstGraphics;
 
-    if (isCanvasGraphics(firstGraphics) || isFrameGraphics(firstGraphics)) {
+    if (
+      firstGraphics &&
+      (isCanvasGraphics(firstGraphics) || isFrameGraphics(firstGraphics))
+    ) {
       left = firstGraphics.getMaxChildIndex();
-    } else {
-      parent = firstGraphics.getParent()!;
-      left = firstGraphics.getSortIndex();
-      const nextSibling = firstGraphics.getNextSibling();
-      right = nextSibling ? nextSibling.getSortIndex() : null;
+    } else if (firstGraphics) {
+      const parentGraphics = firstGraphics.getParent();
+      if (!parentGraphics) {
+        console.error('无法获取父级图形，使用当前画布作为父级');
+        parent = currentCanvas;
+        left = currentCanvas.getMaxChildIndex();
+      } else {
+        parent = parentGraphics;
+        left = firstGraphics.getSortIndex();
+        const nextSibling = firstGraphics.getNextSibling();
+        right = nextSibling ? nextSibling.getSortIndex() : null;
+      }
     }
 
     const parentId = parent.attrs.id;

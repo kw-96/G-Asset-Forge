@@ -6,9 +6,17 @@
   position: relative;
   border: none;
   background: transparent;
+  z-index: 1002; // 确保在Header之上
 
   &:hover {
     background: rgba(0, 0, 0, 0.1);
     color: #333;
   }
+}
+
+// 确保下拉菜单内容有足够高的z-index
+:global(.sk-dropdown-content) {
+  z-index: 1003 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e6e6e6;
 }

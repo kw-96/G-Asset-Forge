@@ -58,7 +58,13 @@ export class ControlHandleManager {
   }
 
   private onHoverItemChange = () => {
-    if (!this.editor.pathEditor.isActive()) {
+    try {
+      // 安全检查：确保编辑器状态正常
+      if (!this.editor || !this.editor.ctx || !this.editor.canvasElement) {
+        console.warn('ControlHandleManager: 编辑器状态异常，跳过hover处理');
+        return;
+      }
+
       const hoverItem = this.editor.selectedElements.getHoverItem();
       const isSingleSelectedGraph = this.editor.selectedElements.size() === 1;
       const selectedGraph = isSingleSelectedGraph
@@ -76,8 +82,12 @@ export class ControlHandleManager {
       } else {
         this.setCustomHandles([]);
       }
+
+      // 只有在编辑器状态正常时才调用render
+      this.editor.render();
+    } catch (error) {
+      console.warn('ControlHandleManager.onHoverItemChange 出现错误:', error);
     }
-    this.editor.render();
   };
   bindEvents() {
     this.editor.selectedElements.on('hoverItemChange', this.onHoverItemChange);

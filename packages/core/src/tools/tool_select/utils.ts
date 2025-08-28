@@ -11,6 +11,11 @@ export const getTopHitElement = (
   const zoom = editor.viewportManager.getZoom();
   const tol = editor.setting.get('selectionHitPadding') / zoom;
   const canvasGraphics = editor.doc.getCurrentCanvas();
+  if (!canvasGraphics) {
+    console.warn('无法获取当前画布，返回空的命中结果');
+    return null;
+  }
+
   const parentIdSet = editor.selectedElements.getParentIdSet();
 
   const hitOptions: IHitOptions = {
@@ -34,10 +39,16 @@ export const getElementsInSelection = (
   }
   const selectionBox = rectToBox(selection);
 
+  const currentCanvas = editor.doc.getCurrentCanvas();
+  if (!currentCanvas) {
+    console.warn('无法获取当前画布，返回空的选择结果');
+    return [];
+  }
+
   const graphicsArr = getElementsInSelectionDFS(
     editor,
     selectionBox,
-    editor.doc.getCurrentCanvas(),
+    currentCanvas,
     parentIdSet,
   );
 

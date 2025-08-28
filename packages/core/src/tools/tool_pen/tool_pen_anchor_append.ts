@@ -1,5 +1,10 @@
 import { cloneDeep, parseHexToRGBA } from '@g-asset-forge/common';
-import type { IMatrixArr, IPathItem, IPoint, ISegment } from '@g-asset-forge/geo';
+import type {
+  IMatrixArr,
+  IPathItem,
+  IPoint,
+  ISegment,
+} from '@g-asset-forge/geo';
 
 import { AddGraphCmd, SetGraphsAttrsCmd } from '../../commands';
 import { type GAssetForgeEditor } from '../../editor';
@@ -56,7 +61,7 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
       const path = new GAssetForgePath(
         {
           objectName: getNoConflictObjectName(
-            currCanvas,
+            currCanvas!,
             GraphicsObjectSuffix.Path,
           ),
           width: 100,
@@ -78,7 +83,12 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
       this.parentTool.path = path;
 
       this.editor.sceneGraph.addItems([path]);
-      this.editor.doc.getCurrentCanvas().insertChild(path);
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (currentCanvas) {
+        currentCanvas.insertChild(path);
+      } else {
+        console.error('无法获取当前画布，无法插入路径');
+      }
       this.editor.commandManager.batchCommandStart();
       this.editor.commandManager.pushCommand(
         new AddGraphCmd('Add Path', this.editor, [path]),

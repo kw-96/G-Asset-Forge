@@ -194,20 +194,44 @@ export class ViewportManager {
   }
 
   getPageSize() {
-    return {
-      width: parseFloat(this.editor.canvasElement.style.width),
-      height: parseFloat(this.editor.canvasElement.style.height),
-    };
+    // 安全检查canvasElement是否存在
+    if (!this.editor.canvasElement) {
+      console.warn('Canvas元素不存在，返回默认尺寸');
+      return { width: 800, height: 600 };
+    }
+
+    // 安全检查style属性是否存在
+    const canvasStyle = this.editor.canvasElement.style;
+    if (!canvasStyle) {
+      console.warn('Canvas样式不存在，返回默认尺寸');
+      return { width: 800, height: 600 };
+    }
+
+    // 获取样式中的宽高，如果无效则使用默认值
+    const width = parseFloat(canvasStyle.width) || 800;
+    const height = parseFloat(canvasStyle.height) || 600;
+
+    return { width, height };
   }
 
   setViewportSize({ width, height }: ISize) {
+    // 安全检查canvasElement是否存在
+    if (!this.editor.canvasElement) {
+      console.warn('Canvas元素不存在，无法设置视口尺寸');
+      return;
+    }
+
     const dpr = getDevicePixelRatio();
 
-    this.editor.canvasElement.width = width * dpr;
-    this.editor.canvasElement.style.width = width + 'px';
+    try {
+      this.editor.canvasElement.width = width * dpr;
+      this.editor.canvasElement.style.width = width + 'px';
 
-    this.editor.canvasElement.height = height * dpr;
-    this.editor.canvasElement.style.height = height + 'px';
+      this.editor.canvasElement.height = height * dpr;
+      this.editor.canvasElement.style.height = height + 'px';
+    } catch (error) {
+      console.error('设置视口尺寸时出错:', error);
+    }
   }
   getSceneCenter() {
     const size = this.getPageSize();

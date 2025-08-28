@@ -2,7 +2,7 @@ import { EventEmitter, isSameArray } from '@g-asset-forge/common';
 import { boxToRect, type IRect, mergeBoxes } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from './editor';
-import { isFrameGraphics, type GAssetForgeGraphics } from './graphics';
+import { type GAssetForgeGraphics, isFrameGraphics } from './graphics';
 import { removeGraphicsAndRecord } from './service/remove_service';
 import { getParentIdSet } from './utils';
 
@@ -160,6 +160,11 @@ export class SelectedElements {
     // 如果不是，不做任何操作。
     const parent =
       this.items[0]?.getParent?.() ?? this.editor.doc.getCurrentCanvas();
+
+    if (!parent) {
+      console.warn('无法获取父级元素，无法执行全选操作');
+      return;
+    }
 
     for (let i = 1; i < this.items.length; i++) {
       if (parent !== this.items[i].getParent()) {

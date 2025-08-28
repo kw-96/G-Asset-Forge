@@ -6,9 +6,6 @@ import { ProjectTabs } from '../ProjectLibraryPanel/ProjectTabs';
 import { type IProjectTab } from '../ProjectLibraryPanel/types';
 import { SvgIcon } from '../SvgIcon/SvgIcon';
 import { WindowControls } from '../WindowControls';
-// import { LocaleSelector } from '../LocaleSelector'; // 暂时不使用国际化组件
-// import { ZoomActions } from '../ZoomActions'; // 暂时不使用缩放组件
-import Title from './components/Title';
 import { Menu } from './components/Toolbar/menu';
 
 interface IProps {
@@ -25,7 +22,6 @@ interface IProps {
 }
 
 export const Header: FC<IProps> = ({
-  title,
   projectTabs = [],
   activeTabId,
   onTabSelect,

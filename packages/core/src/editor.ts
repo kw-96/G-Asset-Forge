@@ -194,17 +194,40 @@ export class GAssetForgeEditor {
   }
 
   destroy() {
-    this.containerElement.removeChild(this.canvasElement);
-    this.textEditor.destroy();
-    this.keybindingManager.destroy();
-    this.hostEventManager.destroy();
-    this.clipboard.destroy();
-    this.canvasDragger.destroy();
-    this.toolManager.unbindEvent();
-    this.toolManager.destroy();
-    this.perfMonitor.destroy();
-    this.controlHandleManager.unbindEvents();
-    this.emitter.emit('destroy');
+    try {
+      // 检查是否已经被销毁
+      if (!this.containerElement || !this.canvasElement) {
+        console.warn('编辑器已经被销毁或未正确初始化');
+        return;
+      }
+
+      // 检查canvasElement是否还在containerElement中
+      if (this.containerElement.contains(this.canvasElement)) {
+        this.containerElement.removeChild(this.canvasElement);
+      } else {
+        console.warn('canvasElement不在containerElement中，可能已经被移除');
+      }
+
+      // 清理其他资源
+      this.textEditor.destroy();
+      this.keybindingManager.destroy();
+      this.hostEventManager.destroy();
+      this.clipboard.destroy();
+      this.canvasDragger.destroy();
+      this.toolManager.unbindEvent();
+      this.toolManager.destroy();
+      this.perfMonitor.destroy();
+      this.controlHandleManager.unbindEvents();
+
+      // 发出销毁事件
+      this.emitter.emit('destroy');
+
+      // 清理引用
+      this.canvasElement = null as any;
+      this.ctx = null as any;
+    } catch (error) {
+      console.error('编辑器销毁过程中出现错误:', error);
+    }
   }
   setCursor(cursor: ICursor) {
     this.cursorManager.setCursor(cursor);

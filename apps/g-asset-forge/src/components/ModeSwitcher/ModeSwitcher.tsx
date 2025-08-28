@@ -40,7 +40,7 @@ export const ModeSwitcher: React.FC<ModeSwitcherProps> = ({
         onClick={() => onModeChange('h5')}
         title="H5模式"
       >
-        <SvgIcon name="icon.24.plus" size={16} />
+        <SvgIcon name="icon.24.file.H5" size={16} />
         <span>H5模式</span>
       </button>
     </div>

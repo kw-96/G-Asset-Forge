@@ -114,7 +114,12 @@ export const Menu: FC = () => {
   };
 
   return (
-    <Dropdown items={items} onClick={handleClick}>
+    <Dropdown
+      items={items}
+      onClick={handleClick}
+      placement="bottom-end"
+      offset={{ mainAxis: 0, crossAxis: -4 }} // 减少mainAxis偏移，让菜单贴近Header底部
+    >
       <button
         type="button"
         className="sk-ed-menu-btn"
