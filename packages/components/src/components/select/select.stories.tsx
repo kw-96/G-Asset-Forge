@@ -3,11 +3,11 @@ import { useState } from 'react';
 
 import { Select } from './select';
 
-const meta = {
+const meta: Meta<typeof Select> = {
   title: 'Select',
   component: Select,
   tags: ['autodocs'],
-} satisfies Meta<typeof Select>;
+};
 
 export default meta;
 

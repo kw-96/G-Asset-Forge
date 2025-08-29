@@ -1,3 +1,10 @@
+/**
+ * 剪贴板管理器
+ * 实现剪贴板管理器的逻辑
+ * 提供了剪贴板管理器的初始化、激活、禁用、移动、结束等功能
+ * 提供了剪贴板管理器的性能监控、调试工具等功能
+ */
+
 import { genUuid, increaseIdGenerator, noop } from '@g-asset-forge/common';
 import {
   boxToRect,
@@ -21,6 +28,10 @@ import { toSVG } from './to_svg';
 import { Transaction } from './transaction';
 import { type IEditorPaperData } from './type';
 import { getChildNodeSet } from './utils';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from './utils/canvasStateManager';
 
 /**
  * Clipboard Manager
@@ -30,7 +41,15 @@ import { getChildNodeSet } from './utils';
 export class ClipboardManager {
   private unbindEvents = noop;
   private hasBindEvents = false;
-  constructor(private editor: GAssetForgeEditor) {}
+
+  // 画布状态管理器
+  private canvasStateManager: CanvasStateManager;
+
+  constructor(private editor: GAssetForgeEditor) {
+    // 初始化画布状态管理器
+    this.canvasStateManager = createCanvasStateManager();
+    this.canvasStateManager.setEditor(editor);
+  }
 
   bindEvents() {
     if (this.hasBindEvents) {
@@ -110,7 +129,7 @@ export class ClipboardManager {
         },
       );
       editor.sceneGraph.addItems([rectGraphics]);
-      const currentCanvas = editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(rectGraphics);
       } else {
@@ -213,7 +232,7 @@ export class ClipboardManager {
      */
     let left: string | null = null;
     let right: string | null = null;
-    const currentCanvas = this.editor.doc.getCurrentCanvas();
+    const currentCanvas = this.canvasStateManager.getCurrentCanvas();
     if (!currentCanvas) {
       console.error('无法获取当前画布，无法粘贴');
       return 0;

@@ -5,8 +5,8 @@ import {
   CreateAssetParams,
   UpdateAssetParams,
 } from '../types';
-import { IndexedDBUtils } from '../utils/indexeddb_utils';
 import { ImageProcessor } from '../utils/image_processor';
+import { IndexedDBUtils } from '../utils/indexeddb_utils';
 
 /**
  * 素材管理器 - 负责素材的增删改查操作

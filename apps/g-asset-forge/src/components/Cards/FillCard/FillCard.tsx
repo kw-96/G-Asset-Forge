@@ -1,8 +1,8 @@
 import { cloneDeep, isEqual } from '@g-asset-forge/common';
 import {
+  type GAssetForgeGraphics,
   type IPaint,
   SetGraphsAttrsCmd,
-  type GAssetForgeGraphics,
 } from '@g-asset-forge/core';
 import { type FC, useContext, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
@@ -20,17 +20,17 @@ export const FillCard: FC = () => {
   /**
    * update fill and return a new fill
    */
-  const updateSelectedFill = (newPaint: IPaint, index: number) => {
-    if (!editor) return;
+  const updateFill = (index: number, newPaint: IPaint) => {
+    if (!editor?.editor) return;
 
     const newFills = [...fill];
 
     newFills[index] = newPaint;
     setFill(newFills);
 
-    const selectItems = editor.selectedElements.getItems();
+    const selectItems = editor.editor.selectedElements.getItems();
 
-    selectItems.forEach((item) => {
+    selectItems.forEach((item: any) => {
       item.updateAttrs({
         fill: cloneDeep(newFills),
       });
@@ -40,42 +40,42 @@ export const FillCard: FC = () => {
   };
 
   const addFill = () => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const newPaint = cloneDeep(
-      editor.setting.get(fill.length ? 'addedPaint' : 'firstFill'),
+      editor.editor.setting.get(fill.length ? 'addedPaint' : 'firstFill'),
     );
     const newFills = [...fill, newPaint];
     setFill(newFills);
 
-    const selectItems = editor.selectedElements.getItems();
-    selectItems.forEach((item) => {
+    const selectItems = editor.editor.selectedElements.getItems();
+    selectItems.forEach((item: any) => {
       item.updateAttrs({
         fill: cloneDeep(newFills),
       });
     });
     pushToHistory('Add Fill', selectItems, newFills);
-    editor?.render();
+    editor.editor.render();
   };
 
   const deleteFill = (index: number) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const newFills = fill.filter((_, i) => i !== index);
     setFill(newFills);
 
-    const selectItems = editor.selectedElements.getItems();
-    selectItems.forEach((item) => {
+    const selectItems = editor.editor.selectedElements.getItems();
+    selectItems.forEach((item: any) => {
       item.updateAttrs({
         fill: cloneDeep(newFills),
       });
     });
     pushToHistory('Update Fill', selectItems, newFills);
-    editor.render();
+    editor.editor.render();
   };
 
   const toggleVisible = (index: number) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const newFills = fill.map((paint, i) => {
       if (i === index) {
@@ -88,14 +88,14 @@ export const FillCard: FC = () => {
     });
     setFill(newFills);
 
-    const selectItems = editor.selectedElements.getItems();
-    selectItems.forEach((item) => {
+    const selectItems = editor.editor.selectedElements.getItems();
+    selectItems.forEach((item: any) => {
       item.updateAttrs({
         fill: cloneDeep(newFills),
       });
     });
     pushToHistory('Update Fill', selectItems, newFills);
-    editor.render();
+    editor.editor.render();
   };
 
   const pushToHistory = (
@@ -103,9 +103,9 @@ export const FillCard: FC = () => {
     selectedElements: GAssetForgeGraphics[],
     newPaints: IPaint[],
   ) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
-    editor.commandManager.pushCommand(
+    editor.editor.commandManager.pushCommand(
       new SetGraphsAttrsCmd(
         cmdDesc,
         selectedElements,
@@ -123,23 +123,24 @@ export const FillCard: FC = () => {
   };
 
   useEffect(() => {
-    if (editor) {
+    if (editor?.editor) {
       const updatePrevFill = (els: GAssetForgeGraphics[]) => {
         prevFills.current = els.map((el) => cloneDeep(el.attrs.fill ?? []));
       };
       const updateInfo = () => {
-        const selectedElements = editor.selectedElements.getItems();
+        if (!editor?.editor) return;
+        const selectedElements = editor.editor.selectedElements.getItems();
         if (selectedElements.length > 0) {
           /**
-           * 目前一个图形只支持一�?fill
-           * 显示 fill 值时，如果有的图形没�?fill，将其排除�?
-           * 添加颜色时，如果有的图形不存�?fill，赋值给它�?
+           * 目前一个图形只支持一个fill
+           * 显示 fill 值时，如果有的图形没有fill，将其排除掉
+           * 添加颜色时，如果有的图形不存在fill，赋值给它
            */
           let newFill = selectedElements[0].attrs.fill ?? [];
           for (let i = 1, len = selectedElements.length; i < len; i++) {
             const currentFill = selectedElements[i].attrs.fill;
             if (!isEqual(newFill, currentFill)) {
-              // TODO: 标记为不相同，作为文案提�?
+              // TODO: 标记为不相同，作为文案提示
               newFill = [];
               break;
             }
@@ -149,14 +150,16 @@ export const FillCard: FC = () => {
       };
 
       // init
-      updatePrevFill(editor.selectedElements.getItems());
+      updatePrevFill(editor.editor.selectedElements.getItems());
       updateInfo();
 
-      editor.sceneGraph.on('render', updateInfo);
-      editor.selectedElements.on('itemsChange', updatePrevFill);
+      editor.editor.sceneGraph.on('render', updateInfo);
+      editor.editor.selectedElements.on('itemsChange', updatePrevFill);
       return () => {
-        editor.sceneGraph.off('render', updateInfo);
-        editor.selectedElements.off('itemsChange', updatePrevFill);
+        if (editor?.editor) {
+          editor.editor.sceneGraph.off('render', updateInfo);
+          editor.editor.selectedElements.off('itemsChange', updatePrevFill);
+        }
       };
     }
   }, [editor]);
@@ -166,21 +169,21 @@ export const FillCard: FC = () => {
       title={intl.formatMessage({ id: 'fill' })}
       paints={fill}
       onChange={(newPaint, i) => {
-        if (!editor) return;
-        updateSelectedFill(newPaint, i);
-        editor.render();
+        if (!editor?.editor) return;
+        updateFill(i, newPaint);
+        editor.editor.render();
       }}
       onChangeComplete={(newPaint, i) => {
-        if (!editor) return;
-        const newFill = updateSelectedFill(newPaint, i);
+        if (!editor?.editor) return;
+        const newFill = updateFill(i, newPaint);
 
         pushToHistory(
           'Update fill',
-          editor.selectedElements.getItems(),
+          editor.editor.selectedElements.getItems(),
           newFill!,
         );
 
-        editor.render();
+        editor.editor.render();
       }}
       onAdd={addFill}
       onDelete={deleteFill}

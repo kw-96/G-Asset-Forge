@@ -1,11 +1,18 @@
+/**
+ * 工具绘制椭圆工具
+ * 实现绘制椭圆工具的逻辑
+ * 提供了绘制椭圆工具的初始化、激活、禁用、移动、结束等功能
+ * 提供了绘制椭圆工具的性能监控、调试工具等功能
+ */
+
 import { cloneDeep } from '@g-asset-forge/common';
 import { type IRect, normalizeRect } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../editor';
 import {
-  GraphicsObjectSuffix,
   GAssetForgeEllipse,
   type GAssetForgeGraphics,
+  GraphicsObjectSuffix,
 } from '../graphics';
 import { getNoConflictObjectName } from '../utils';
 import { DrawGraphicsTool } from './tool_draw_graphics';

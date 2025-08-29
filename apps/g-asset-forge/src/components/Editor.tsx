@@ -1,3 +1,11 @@
+/**
+ * Editor 组件
+ * 包含 Editor 的核心功能
+ * 提供了 Editor 的初始化、销毁、切换模式、健康检查等功能
+ * 提供了 Editor 的上下文、状态管理、事件处理等功能
+ * 提供了 Editor 的性能监控、调试工具等功能
+ */
+
 import './Editor.scss';
 
 import { pick, throttle } from '@g-asset-forge/common';
@@ -7,6 +15,15 @@ import { type FC, useCallback, useEffect, useRef, useState } from 'react';
 import { EditorContext } from '../context';
 import { useProjectManagement } from '../hooks/useProjectManagement';
 import { AutoSaveGraphics } from '../store/auto-save-graphs';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from '../utils/canvasStateManager';
+import {
+  createEditorHealthChecker,
+  diagnoseEditorState,
+  initializeEditorSafely,
+} from '../utils/editorInitializer';
 import { AssetLibraryPanel } from './AssetLibraryPanel/index';
 import { ContextMenu } from './ContextMenu/ContextMenu';
 import { FloatingActionButtons } from './FloatingActionButtons/FloatingActionButtons';
@@ -64,12 +81,15 @@ const Editor: FC<EditorProps> = ({
   const [editor, setEditor] = useState<GAssetForgeEditor | null>(null);
   const [editorMode, setEditorMode] = useState<'design' | 'h5'>(initialMode);
 
+  // 画布状态管理器
+  const canvasStateManagerRef = useRef<CanvasStateManager | null>(null);
+
   // 弹窗状态管理
   const [showAssetLibrary, setShowAssetLibrary] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showProjectLibrary, setShowProjectLibrary] = useState(false);
 
-  // 项目管理Hook - 如果传入了项目管理服务，则使用它，否则创建新的
+  // 项目管理Hook - 统一状态管理
   const {
     openTabs,
     activeTabId,
@@ -90,7 +110,19 @@ const Editor: FC<EditorProps> = ({
   } = useProjectManagement(projectManagementService);
 
   useEffect(() => {
-    if (containerRef.current) {
+    if (!containerRef.current) {
+      console.warn('容器元素不存在，跳过编辑器初始化');
+      return;
+    }
+
+    // 使用安全的编辑器初始化函数
+    const initializeEditor = async () => {
+      const container = containerRef.current;
+      if (!container) {
+        console.warn('容器元素在初始化时丢失');
+        return;
+      }
+
       const userPreferenceEncoded = localStorage.getItem(USER_PREFERENCE_KEY);
       const userPreference = userPreferenceEncoded
         ? (JSON.parse(userPreferenceEncoded) as Partial<SettingValue>)
@@ -105,18 +137,29 @@ const Editor: FC<EditorProps> = ({
         containerWidth = Math.max(window.innerWidth - leftRightMargin, 800);
         containerHeight = Math.max(window.innerHeight - topMargin, 600);
       } else {
-        // Web环境：使用body尺寸
-        containerWidth = Math.max(
-          document.body.clientWidth - leftRightMargin,
-          800,
-        );
-        containerHeight = Math.max(document.body.clientHeight - topMargin, 600);
+        // Web环境：使用容器的实际尺寸
+        const containerRect = container.getBoundingClientRect();
+        containerWidth = Math.max(containerRect.width || 800, 800);
+        containerHeight = Math.max(containerRect.height || 600, 600);
+
+        // 如果容器尺寸为0，使用body尺寸作为后备
+        if (containerWidth === 800 && containerHeight === 600) {
+          containerWidth = Math.max(
+            document.body.clientWidth - leftRightMargin,
+            800,
+          );
+          containerHeight = Math.max(
+            document.body.clientHeight - topMargin,
+            600,
+          );
+        }
       }
 
       console.log('Editor 初始化尺寸:', {
         containerWidth,
         containerHeight,
         isElectron,
+        containerRect: container.getBoundingClientRect(),
         windowSize: { width: window.innerWidth, height: window.innerHeight },
         bodySize: {
           width: document.body.clientWidth,
@@ -124,8 +167,9 @@ const Editor: FC<EditorProps> = ({
         },
       });
 
-      const editor = new GAssetForgeEditor({
-        containerElement: containerRef.current,
+      // 使用安全的初始化函数
+      const initResult = await initializeEditorSafely({
+        containerElement: container,
         width: containerWidth,
         height: containerHeight,
         offsetY: 48,
@@ -134,43 +178,12 @@ const Editor: FC<EditorProps> = ({
         userPreference: userPreference,
       });
 
-      // 等待编辑器完全初始化
-      setTimeout(() => {
-        try {
-          // 验证编辑器核心组件是否正确初始化
-          if (!editor.doc) {
-            console.error('编辑器文档未初始化');
-            return;
-          }
+      if (!initResult.success || !initResult.editor) {
+        console.error('编辑器初始化失败:', initResult.error);
+        return;
+      }
 
-          if (!editor.sceneGraph) {
-            console.error('场景图未初始化');
-            return;
-          }
-
-          if (!editor.viewportManager) {
-            console.error('视口管理器未初始化');
-            return;
-          }
-
-          // 确保有默认画布
-          const currentCanvas = editor.doc.getCurrentCanvas();
-          if (!currentCanvas) {
-            console.warn('没有当前画布，尝试创建默认画布');
-            // 这里可能需要创建默认画布的逻辑
-          }
-
-          console.log('编辑器核心组件验证完成:', {
-            hasDoc: !!editor.doc,
-            hasSceneGraph: !!editor.sceneGraph,
-            hasViewportManager: !!editor.viewportManager,
-            hasCurrentCanvas: !!currentCanvas,
-            canvasAttrs: currentCanvas?.attrs,
-          });
-        } catch (error) {
-          console.error('编辑器初始化验证失败:', error);
-        }
-      }, 100);
+      const editor = initResult.editor;
 
       editor.setting.on(
         'update',
@@ -191,37 +204,42 @@ const Editor: FC<EditorProps> = ({
       // 设置项目管理的编辑器实例
       setProjectEditor(editor);
 
+      // 确保项目管理服务在全局可用，供其他组件使用
+      if (projectManagementService) {
+        (window as any).__PROJECT_MANAGEMENT_SERVICE__ =
+          projectManagementService;
+        console.log('项目管理服务已设置为全局可用');
+      }
+
       // 如果有当前项目ID，加载项目数据
       if (currentProjectId && projectManagementService) {
-        // 延迟加载项目数据，确保编辑器完全初始化
-        setTimeout(() => {
-          projectManagementService
-            .getProjectData(currentProjectId)
-            .then((projectData: any) => {
-              if (projectData && projectData.editorData) {
-                try {
-                  // 验证编辑器状态
-                  if (!editor.doc || !editor.sceneGraph) {
-                    console.error('编辑器未完全初始化，无法加载项目数据');
-                    return;
-                  }
-
-                  editor.setContents(projectData.editorData);
-                  console.log('已加载项目数据到编辑器:', projectData.name);
-
-                  // 触发一次渲染确保数据正确显示
-                  editor.render();
-                } catch (error) {
-                  console.error('加载项目数据到编辑器失败:', error);
-                }
-              } else {
-                console.log('项目数据为空或无效，使用默认状态');
+        const loadProjectData = async () => {
+          try {
+            const projectData = await projectManagementService.getProjectData(
+              currentProjectId,
+            );
+            if (projectData && projectData.editorData) {
+              // 再次验证编辑器状态
+              if (!editor.doc || !editor.sceneGraph || !editor.canvasElement) {
+                console.error('编辑器状态异常，无法加载项目数据');
+                return;
               }
-            })
-            .catch((error: any) => {
-              console.error('获取项目数据失败:', error);
-            });
-        }, 200);
+
+              editor.setContents(projectData.editorData);
+              console.log('已加载项目数据到编辑器:', projectData.name);
+
+              // 触发一次渲染确保数据正确显示
+              editor.render();
+            } else {
+              console.log('项目数据为空或无效，使用默认状态');
+            }
+          } catch (error) {
+            console.error('加载项目数据失败:', error);
+          }
+        };
+
+        // 使用Promise.resolve确保在下一个事件循环中执行
+        Promise.resolve().then(loadProjectData);
       }
 
       // 尝试手动配置编辑器设置
@@ -358,10 +376,36 @@ const Editor: FC<EditorProps> = ({
 
       // 使用 passive: true 来避免滚轮事件冲突
       window.addEventListener('resize', changeViewport, { passive: true });
+
+      // 初始化画布状态管理器
+      if (!canvasStateManagerRef.current) {
+        canvasStateManagerRef.current = createCanvasStateManager();
+      }
+      canvasStateManagerRef.current.setEditor(editor);
+
+      // 启动编辑器健康检查
+      const stopHealthCheck = createEditorHealthChecker(editor);
+
+      // 输出诊断信息（仅在开发环境）
+      if (import.meta.env?.DEV) {
+        setTimeout(() => {
+          diagnoseEditorState(editor);
+        }, 1000);
+      }
+
       setEditor(editor);
 
       return () => {
         try {
+          // 停止健康检查
+          stopHealthCheck();
+
+          // 销毁画布状态管理器
+          if (canvasStateManagerRef.current) {
+            canvasStateManagerRef.current.destroy();
+            canvasStateManagerRef.current = null;
+          }
+
           // 移除滚轮事件监听器
           if (containerRef.current && wheelHandler) {
             containerRef.current.removeEventListener('wheel', wheelHandler);
@@ -369,7 +413,7 @@ const Editor: FC<EditorProps> = ({
 
           // 安全检查编辑器是否存在且未被销毁
           if (editor && editor.containerElement) {
-            editor.destroy(); // 注销事件
+            editor.destroy();
           }
 
           window.removeEventListener('resize', changeViewport);
@@ -380,8 +424,25 @@ const Editor: FC<EditorProps> = ({
           console.warn('Editor组件清理过程中出现警告:', error);
         }
       };
-    }
-  }, [containerRef, setProjectEditor]);
+    };
+
+    // 使用requestAnimationFrame确保DOM完全渲染后再初始化
+    const rafId = requestAnimationFrame(async () => {
+      // 再次检查容器是否存在
+      if (containerRef.current) {
+        await initializeEditor();
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [
+    containerRef,
+    setProjectEditor,
+    currentProjectId,
+    projectManagementService,
+  ]);
 
   const handleModeSwitch = (mode: 'design' | 'h5') => {
     setEditorMode(mode);
@@ -488,16 +549,30 @@ const Editor: FC<EditorProps> = ({
         });
 
         if (projectResult) {
+          console.log('项目创建成功:', projectResult);
+
           // 打开创建的项目
           const success = await openProject(projectResult.id);
           if (success) {
             console.log('创建并打开新项目:', projectResult.name);
 
-            // 加载项目数据到编辑器
-            const projectData = await getActiveProject();
-            if (projectData && editor) {
-              editor.setContents(projectData.editorData);
-            }
+            // 等待一小段时间确保状态更新
+            setTimeout(async () => {
+              // 加载项目数据到编辑器
+              const projectData = await getActiveProject();
+              if (projectData && editor) {
+                try {
+                  editor.setContents(projectData.editorData);
+                  console.log('项目数据已加载到编辑器');
+                } catch (error) {
+                  console.error('加载项目数据到编辑器失败:', error);
+                }
+              }
+
+              // 调试信息：检查标签页状态
+              console.log('当前打开的标签页:', openTabs);
+              console.log('当前活动标签页ID:', activeTabId);
+            }, 100);
           } else {
             console.error('打开新创建的项目失败');
           }
@@ -516,6 +591,8 @@ const Editor: FC<EditorProps> = ({
     editor,
     projectManagementService,
     getActiveProject,
+    openTabs,
+    activeTabId,
   ]);
 
   const handleProjectRename = useCallback(
@@ -569,40 +646,37 @@ const Editor: FC<EditorProps> = ({
   // 监听当前项目ID变化，加载项目数据
   useEffect(() => {
     if (currentProjectId && editor && projectManagementService) {
-      // 验证编辑器状态
-      if (!editor.doc || !editor.sceneGraph) {
-        console.warn('编辑器未完全初始化，延迟加载项目数据');
-        setTimeout(() => {
-          if (editor.doc && editor.sceneGraph) {
-            // 重新尝试加载
-            loadProjectData();
+      const loadProjectData = async () => {
+        try {
+          // 验证编辑器状态
+          if (!editor.doc || !editor.sceneGraph || !editor.canvasElement) {
+            console.warn('编辑器未完全初始化，跳过项目数据加载');
+            return;
           }
-        }, 500);
-        return;
-      }
 
-      const loadProjectData = () => {
-        projectManagementService
-          .getProjectData(currentProjectId)
-          .then((projectData: any) => {
-            if (projectData && projectData.editorData) {
-              try {
-                editor.setContents(projectData.editorData);
-                editor.render();
-                console.log('项目数据已更新到编辑器:', projectData.name);
-              } catch (error) {
-                console.error('更新项目数据到编辑器失败:', error);
-              }
-            } else {
-              console.log('项目数据为空，保持当前状态');
+          const projectData = await projectManagementService.getProjectData(
+            currentProjectId,
+          );
+          if (projectData && projectData.editorData) {
+            // 再次验证编辑器状态（异步操作后可能发生变化）
+            if (!editor.doc || !editor.sceneGraph || !editor.canvasElement) {
+              console.warn('编辑器状态在异步操作后发生变化，跳过数据加载');
+              return;
             }
-          })
-          .catch((error: any) => {
-            console.error('获取项目数据失败:', error);
-          });
+
+            editor.setContents(projectData.editorData);
+            editor.render();
+            console.log('项目数据已更新到编辑器:', projectData.name);
+          } else {
+            console.log('项目数据为空，保持当前状态');
+          }
+        } catch (error) {
+          console.error('加载项目数据失败:', error);
+        }
       };
 
-      loadProjectData();
+      // 使用微任务确保在下一个事件循环中执行
+      Promise.resolve().then(loadProjectData);
     }
   }, [currentProjectId, editor, projectManagementService]);
 
@@ -617,8 +691,40 @@ const Editor: FC<EditorProps> = ({
     // 监听编辑器的内容变化事件
     editor.commandManager.on('change', handleContentChange);
 
+    // 额外监听画布渲染事件，确保能捕获到内容变化
+    try {
+      if (editor.sceneGraph && editor.sceneGraph.on) {
+        const handleRender = () => {
+          console.log('画布渲染事件触发，可能表示内容变化');
+          // 延迟标记，避免频繁更新
+          setTimeout(() => {
+            markProjectDirty(activeTabId);
+          }, 1000);
+        };
+
+        editor.sceneGraph.on('render', handleRender);
+        console.log('已监听编辑器sceneGraph.render事件');
+
+        // 保存引用以便清理
+        (editor.sceneGraph as any)._renderHandler = handleRender;
+      }
+    } catch (error) {
+      console.warn('监听编辑器render事件失败:', error);
+    }
+
     return () => {
-      editor.commandManager.off('change', handleContentChange);
+      try {
+        editor.commandManager.off('change', handleContentChange);
+        if (editor.sceneGraph && editor.sceneGraph.off) {
+          const renderHandler = (editor.sceneGraph as any)._renderHandler;
+          if (renderHandler) {
+            editor.sceneGraph.off('render', renderHandler);
+          }
+        }
+        console.log('已清理编辑器事件监听器');
+      } catch (error) {
+        console.warn('清理编辑器事件监听器失败:', error);
+      }
     };
   }, [editor, activeTabId, markProjectDirty]);
 
@@ -649,7 +755,15 @@ const Editor: FC<EditorProps> = ({
 
   return (
     <div>
-      <EditorContext.Provider value={editor}>
+      <EditorContext.Provider
+        value={{
+          editor,
+          projectTabs: openTabs,
+          activeTabId,
+          onTabSelect: handleTabSelect,
+          onTabClose: handleTabClose,
+        }}
+      >
         {/* 统一的Header - 两个模式共用，集成项目标签页 */}
         {showHeader && (
           <Header

@@ -2,7 +2,6 @@
   display: flex;
   position: relative;
   z-index: 1001; // 确保 Header 在 WindowControls 之上
-
   box-sizing: border-box;
   border-bottom: 1px solid #e6e6e6;
   height: 48px;
@@ -14,6 +13,8 @@
     align-items: center;
     padding: 0 8px;
     position: relative; // 为分隔线定位提供参考
+    -webkit-app-region: no-drag !important;
+    app-region: no-drag !important;
 
     .home-btn {
       height: 48px;
@@ -23,6 +24,8 @@
       position: relative;
       border: none;
       background: transparent;
+      -webkit-app-region: no-drag !important;
+      app-region: no-drag !important;
 
       &:hover {
         background: rgba(0, 0, 0, 0.1);
@@ -49,7 +52,19 @@
     display: flex;
     align-items: center;
     min-width: 0; // 允许收缩
-    margin-left: 16px;
+
+    .no-tabs-placeholder {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      padding: 0 12px;
+
+      .no-tabs-text {
+        color: #666;
+        font-size: 12px;
+        font-style: italic;
+      }
+    }
   }
 
   // 新建项目按钮 - 独立定位
@@ -64,6 +79,8 @@
     margin-left: 8px; // 与标签页区域保持间距
     border-radius: 4px;
     transition: all 0.2s ease;
+    -webkit-app-region: no-drag !important;
+    app-region: no-drag !important;
 
     &:hover {
       background: rgba(0, 0, 0, 0.1);
@@ -82,6 +99,8 @@
     gap: 8px; // 添加间距
     padding: 0 8px;
     margin-left: auto;
+    -webkit-app-region: no-drag !important;
+    app-region: no-drag !important;
   }
 
   // 头部控制区域样式
@@ -121,12 +140,6 @@
     align-items: center;
     height: 100%;
     overflow-x: auto;
-    scrollbar-width: none; // Firefox
-    -ms-overflow-style: none; // IE/Edge
-
-    &::-webkit-scrollbar {
-      display: none; // Chrome/Safari
-    }
 
     .project-tab {
       display: flex;
@@ -141,7 +154,7 @@
       transition: all 0.2s;
       white-space: nowrap;
       -webkit-user-select: none;
-
+      user-select: none;
       &:hover {
         background: #e9ecef;
       }

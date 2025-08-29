@@ -1,30 +1,77 @@
+/**
+ * 工具选择工具的辅助函数
+ * 提供命中测试、选择操作等功能
+ * 使用统一的画布状态管理器
+ */
+
 import { type IBox, type IPoint, rectToBox } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../../editor';
-import { type IHitOptions, type GAssetForgeGraphics } from '../../graphics';
+import { type GAssetForgeGraphics, type IHitOptions } from '../../graphics';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from '../../utils/canvasStateManager';
+
+// 创建全局画布状态管理器实例
+let globalCanvasStateManager: CanvasStateManager | null = null;
+
+/**
+ * 初始化画布状态管理器
+ */
+const initCanvasStateManager = (): CanvasStateManager => {
+  if (!globalCanvasStateManager) {
+    globalCanvasStateManager = createCanvasStateManager();
+  }
+  return globalCanvasStateManager;
+};
+
+/**
+ * 获取有效的画布对象 - 使用统一的画布状态管理器
+ */
+const getValidCanvas = (
+  editor: GAssetForgeEditor,
+): GAssetForgeGraphics | null => {
+  const canvasStateManager = initCanvasStateManager();
+  canvasStateManager.setEditor(editor);
+
+  // 使用画布状态管理器获取当前画布
+  return canvasStateManager.getCurrentCanvas();
+};
 
 /********* get top hit element ********/
 export const getTopHitElement = (
   editor: GAssetForgeEditor,
   point: IPoint,
 ): GAssetForgeGraphics | null => {
+  // 验证编辑器状态
+  if (!editor || !editor.doc || !editor.viewportManager || !editor.setting) {
+    console.warn('编辑器状态异常，无法执行命中测试');
+    return null;
+  }
+
   const zoom = editor.viewportManager.getZoom();
   const tol = editor.setting.get('selectionHitPadding') / zoom;
-  const canvasGraphics = editor.doc.getCurrentCanvas();
+
+  // 使用增强的画布获取逻辑
+  const canvasGraphics = getValidCanvas(editor);
   if (!canvasGraphics) {
-    console.warn('无法获取当前画布，返回空的命中结果');
     return null;
   }
 
   const parentIdSet = editor.selectedElements.getParentIdSet();
-
   const hitOptions: IHitOptions = {
     tol,
     parentIdSet,
     zoom,
   };
 
-  return canvasGraphics.getHitGraphics(point, hitOptions);
+  try {
+    return canvasGraphics.getHitGraphics(point, hitOptions);
+  } catch (error) {
+    console.error('执行命中测试时出错:', error);
+    return null;
+  }
 };
 
 /****** get elements in selection ******/
@@ -32,6 +79,12 @@ export const getElementsInSelection = (
   editor: GAssetForgeEditor,
   parentIdSet: Set<string> = new Set(),
 ): GAssetForgeGraphics[] => {
+  // 验证编辑器状态
+  if (!editor || !editor.sceneGraph || !editor.doc) {
+    console.warn('编辑器状态异常，无法执行选择操作');
+    return [];
+  }
+
   const selection = editor.sceneGraph.selection;
   if (selection === null) {
     console.warn('selection 为 null，请确认在正确的时机调用当前方法');
@@ -39,20 +92,23 @@ export const getElementsInSelection = (
   }
   const selectionBox = rectToBox(selection);
 
-  const currentCanvas = editor.doc.getCurrentCanvas();
+  // 使用增强的画布获取逻辑
+  const currentCanvas = getValidCanvas(editor);
   if (!currentCanvas) {
-    console.warn('无法获取当前画布，返回空的选择结果');
     return [];
   }
 
-  const graphicsArr = getElementsInSelectionDFS(
-    editor,
-    selectionBox,
-    currentCanvas,
-    parentIdSet,
-  );
-
-  return graphicsArr;
+  try {
+    return getElementsInSelectionDFS(
+      editor,
+      selectionBox,
+      currentCanvas,
+      parentIdSet,
+    );
+  } catch (error) {
+    console.error('执行选择操作时出错:', error);
+    return [];
+  }
 };
 
 const getElementsInSelectionDFS = (

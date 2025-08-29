@@ -11,12 +11,13 @@
 
     font-size: 12px;
     background-color: #fff;
+    -webkit-user-select: none;
     user-select: none;
 
     .empty-text {
       color: #b3b3b3;
       padding: 16px;
     }
-  
+
   }
 }

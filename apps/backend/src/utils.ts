@@ -1,12 +1,10 @@
 import * as Y from 'yjs';
-
 let initialDocBuffer: Buffer | null = null;
-
 export const generateInitialDoc = () => {
   if (initialDocBuffer) {
     return initialDocBuffer;
   }
-  const g-asset-forgeDoc = {
+  const gAssetForgeDoc = {
     objectName: 'Document',
     width: 0,
     height: 0,
@@ -15,7 +13,7 @@ export const generateInitialDoc = () => {
     transform: [1, 0, 0, 1, 0, 0],
     strokeWidth: 1,
   };
-  const g-asset-forgeCanvas = {
+  const gAssetForgeCanvas = {
     objectName: 'Page 1',
     width: 0,
     height: 0,
@@ -27,8 +25,8 @@ export const generateInitialDoc = () => {
 
   const yDoc = new Y.Doc();
   const yMap = yDoc.getMap('nodes');
-  yMap.set(g-asset-forgeDoc.id, g-asset-forgeDoc);
-  yMap.set(g-asset-forgeCanvas.id, g-asset-forgeCanvas);
+  yMap.set(gAssetForgeDoc.id, gAssetForgeDoc);
+  yMap.set(gAssetForgeCanvas.id, gAssetForgeCanvas);
 
   initialDocBuffer = Buffer.from(Y.encodeStateAsUpdate(yDoc));
   return initialDocBuffer;

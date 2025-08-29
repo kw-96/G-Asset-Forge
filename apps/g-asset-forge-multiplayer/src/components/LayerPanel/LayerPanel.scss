@@ -9,6 +9,7 @@
     width: 240px;
     height: calc(100vh - 48px);
     overflow: auto;
+    -webkit-user-select: none;
     user-select: none;
   }
 }

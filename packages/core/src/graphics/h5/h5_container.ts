@@ -249,7 +249,6 @@ export class H5Container extends GAssetForgeFrame {
       case 'text': {
         // 文本块高度基于内容和字体大小
         const fontSize = child.attrs.fontSize || 16;
-        const lineHeight = child.attrs.lineHeight || fontSize * 1.2;
         const content = child.attrs.content || '';
         const lines = Math.ceil(content.length / 30); // 估算每行30个字符
         return Math.max(fontSize * lines, 40) + contentPadding;

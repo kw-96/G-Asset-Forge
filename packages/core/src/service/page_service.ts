@@ -1,8 +1,16 @@
+/**
+ * 页面服务
+ * 实现页面服务的逻辑
+ * 提供了页面服务的初始化、激活、禁用、移动、结束等功能
+ * 提供了页面服务的性能监控、调试工具等功能
+ */
+
 import { SwitchCurrentCanvasCmd } from '../commands';
 import { type GAssetForgeEditor } from '../editor';
 import { GAssetForgeCanvas } from '../graphics';
 import { Transaction } from '../transaction';
 import { getNoConflictObjectName } from '../utils';
+import { createCanvasStateManager } from '../utils/canvasStateManager';
 
 export const addAndSwitchCanvasRecord = (
   editor: GAssetForgeEditor,
@@ -44,7 +52,11 @@ export const switchCanvasRecord = (
   editor: GAssetForgeEditor,
   canvasId: string,
 ) => {
-  const currentCanvas = editor.doc.getCurrentCanvas();
+  // 创建画布状态管理器实例
+  const canvasStateManager = createCanvasStateManager();
+  canvasStateManager.setEditor(editor);
+
+  const currentCanvas = canvasStateManager.getCurrentCanvas();
   if (!currentCanvas) {
     console.error('无法获取当前画布');
     return;

@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react';
 
 import { Popover } from './popover';
 
-const meta = {
+const meta: Meta<typeof Popover> = {
   title: 'Popover',
   component: Popover,
   tags: ['autodocs'],
-} satisfies Meta<typeof Popover>;
+};
 
 export default meta;
 

@@ -2,6 +2,7 @@
  * 素材拖拽服务 - 处理素材拖拽到画布的逻辑
  */
 import { IAssetMetadata } from '../components/AssetLibraryPanel/types';
+import { createCanvasStateManager } from '../utils/canvasStateManager';
 import { assetLibraryService } from './AssetLibraryService';
 
 /**
@@ -20,6 +21,7 @@ export interface AssetDragData {
  */
 export class AssetDragDropService {
   private static instance: AssetDragDropService;
+  private canvasStateManager = createCanvasStateManager();
 
   static getInstance(): AssetDragDropService {
     if (!AssetDragDropService.instance) {
@@ -101,6 +103,20 @@ export class AssetDragDropService {
 
       // 如果有编辑器实例，直接添加到画布
       if (editor) {
+        // 设置编辑器到画布状态管理器
+        this.canvasStateManager.setEditor(editor);
+
+        // 验证画布状态
+        if (!this.canvasStateManager.validateEditorState()) {
+          console.warn('编辑器状态异常，尝试恢复');
+          const recovered =
+            await this.canvasStateManager.attemptCanvasRecovery();
+          if (!recovered) {
+            console.error('编辑器状态恢复失败，无法添加素材');
+            return false;
+          }
+        }
+
         await this.addImageToCanvas(
           editor,
           imageUrl,
@@ -169,11 +185,17 @@ export class AssetDragDropService {
             });
 
             if (imageGraphics) {
-              // 添加到当前画布
-              const currentCanvas = editor.doc.getCurrentCanvas();
-              if (currentCanvas) {
-                currentCanvas.insertChild(imageGraphics);
-                editor.render();
+              // 确保有有效画布并添加图形对象
+              const hasValidCanvas =
+                this.canvasStateManager.ensureValidCanvas();
+              if (hasValidCanvas) {
+                const currentCanvas = editor.doc.getCurrentCanvas();
+                if (currentCanvas) {
+                  currentCanvas.insertChild(imageGraphics);
+                  editor.render();
+                }
+              } else {
+                console.error('无法获取有效画布，无法添加图形对象');
               }
             }
           }

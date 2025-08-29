@@ -1,3 +1,10 @@
+/**
+ * 工具铅笔锚点添加工具
+ * 实现铅笔锚点添加工具的逻辑
+ * 提供了铅笔锚点添加工具的初始化、激活、禁用、移动、结束等功能
+ * 提供了铅笔锚点添加工具的性能监控、调试工具等功能
+ */
+
 import { cloneDeep } from '@g-asset-forge/common';
 
 import { SetGraphsAttrsCmd } from '../../commands';

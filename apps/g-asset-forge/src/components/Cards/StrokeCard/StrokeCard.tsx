@@ -1,9 +1,9 @@
 import { arrMap, cloneDeep, forEach, isEqual } from '@g-asset-forge/common';
 import {
+  type GAssetForgeGraphics,
   type IPaint,
   type ISetElementsAttrsType,
   SetGraphsAttrsCmd,
-  type GAssetForgeGraphics,
 } from '@g-asset-forge/core';
 import { LineWidthOutlined } from '@g-asset-forge/icons';
 import { type FC, useContext, useEffect, useRef, useState } from 'react';
@@ -22,23 +22,23 @@ export const StrokeCard: FC = () => {
   const prevStrokes = useRef<IPaint[][]>([]);
 
   useEffect(() => {
-    if (editor) {
+    if (editor?.editor) {
       const updatePrevStroke = (els: GAssetForgeGraphics[]) => {
         prevStrokes.current = els.map((el) => cloneDeep(el.attrs.stroke ?? []));
       };
 
       const updateInfo = () => {
-        const selectedElements = editor.selectedElements.getItems();
-        if (selectedElements.length > 0) {
+        const selectedElements = editor?.editor?.selectedElements?.getItems();
+        if (selectedElements && selectedElements.length > 0) {
           /**
-           * 显示 stroke 值时，如果有的图形没�?stroke，将其排除�?
-           * 添加颜色时，如果有的图形不存�?stroke，赋值给它�?
+           * 显示 stroke 值时，如果有的图形没有stroke，将其排除掉
+           * 添加颜色时，如果有的图形不存在stroke，赋值给它
            */
           let strokes = selectedElements[0].attrs.stroke ?? [];
           for (let i = 1, len = selectedElements.length; i < len; i++) {
             const currentStrokes = selectedElements[i].attrs.stroke;
             if (!isEqual(strokes, currentStrokes)) {
-              // TODO: 标记为不相同，作为文案提�?
+              // TODO: 标记为不相同，作为文案提示
               strokes = [];
               break;
             }
@@ -61,13 +61,13 @@ export const StrokeCard: FC = () => {
 
       // init
       updateInfo();
-      updatePrevStroke(editor.selectedElements.getItems());
+      updatePrevStroke(editor?.editor?.selectedElements?.getItems());
 
-      editor.sceneGraph.on('render', updateInfo);
-      editor.selectedElements.on('itemsChange', updatePrevStroke);
+      editor?.editor?.sceneGraph.on('render', updateInfo);
+      editor?.editor?.selectedElements.on('itemsChange', updatePrevStroke);
       return () => {
-        editor.sceneGraph.off('render', updateInfo);
-        editor.selectedElements.off('itemsChange', updatePrevStroke);
+        editor?.editor?.sceneGraph.off('render', updateInfo);
+        editor?.editor?.selectedElements.off('itemsChange', updatePrevStroke);
       };
     }
   }, [editor]);
@@ -76,14 +76,14 @@ export const StrokeCard: FC = () => {
    * update stroke and return a new stroke
    */
   const updateStrokeWithoutRecord = (newPaint: IPaint, index: number) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const newStrokes = [...strokes];
 
     newStrokes[index] = newPaint;
     setStrokes(newStrokes);
 
-    const selectItems = editor.selectedElements.getItems();
+    const selectItems = editor?.editor?.selectedElements?.getItems();
 
     selectItems.forEach((item) => {
       item.updateAttrs({
@@ -95,42 +95,42 @@ export const StrokeCard: FC = () => {
   };
 
   const addStroke = () => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const newPaint = cloneDeep(
-      editor.setting.get(strokes.length ? 'addedPaint' : 'firstStroke'),
+      editor?.editor?.setting.get(strokes.length ? 'addedPaint' : 'firstStroke'),
     );
     const newStrokes = [...strokes, newPaint];
     setStrokes(newStrokes);
 
-    const selectItems = editor.selectedElements.getItems();
+    const selectItems = editor?.editor?.selectedElements?.getItems();
     selectItems.forEach((item) => {
       item.updateAttrs({
         stroke: cloneDeep(newStrokes),
       });
     });
     pushToHistory('Add Stroke', selectItems, newStrokes, true);
-    editor.render();
+    editor?.editor?.render();
   };
 
   const deleteStroke = (index: number) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const newStrokes = strokes.filter((_, i) => i !== index);
     setStrokes(newStrokes);
 
-    const selectItems = editor.selectedElements.getItems();
-    for (const item of selectItems) {
+    const selectItems = editor?.editor?.selectedElements?.getItems();
+    for (const item of selectItems || []) {
       item.updateAttrs({
         stroke: cloneDeep(newStrokes),
       });
     }
     pushToHistory('Update Stroke', selectItems, newStrokes);
-    editor.render();
+    editor?.editor?.render();
   };
 
   const toggleVisible = (index: number) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const newStrokes = strokes.map((paint, i) => {
       if (i === index) {
@@ -143,14 +143,14 @@ export const StrokeCard: FC = () => {
     });
     setStrokes(newStrokes);
 
-    const selectItems = editor.selectedElements.getItems();
+    const selectItems = editor?.editor?.selectedElements?.getItems();
     selectItems.forEach((item) => {
       item.updateAttrs({
         stroke: cloneDeep(newStrokes),
       });
     });
     pushToHistory('Update Stroke', selectItems, newStrokes);
-    editor.render();
+    editor?.editor?.render();
   };
 
   const pushToHistory = (
@@ -159,7 +159,7 @@ export const StrokeCard: FC = () => {
     newStroke: IPaint[],
     isAddAction?: boolean,
   ) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const prevAttrs: ISetElementsAttrsType[] = selectedElements.map((_, i) => ({
       stroke: cloneDeep(prevStrokes.current[i]),
@@ -174,7 +174,7 @@ export const StrokeCard: FC = () => {
         prevAttrs[i].strokeWidth = el.attrs.strokeWidth;
       });
 
-      const defaultStrokeWidth = editor.setting.get('strokeWidth');
+      const defaultStrokeWidth = editor?.editor?.setting.get('strokeWidth');
       forEach(selectedElements, (el, i) => {
         el.updateAttrs({
           strokeWidth: defaultStrokeWidth,
@@ -183,7 +183,7 @@ export const StrokeCard: FC = () => {
       });
     }
 
-    editor.commandManager.pushCommand(
+    editor?.editor?.commandManager.pushCommand(
       new SetGraphsAttrsCmd(cmdDesc, selectedElements, attrs, prevAttrs),
     );
 
@@ -193,10 +193,10 @@ export const StrokeCard: FC = () => {
   };
 
   const updateStrokeWidth = (newStrokeWidth: number) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
-    const selectedElements = editor.selectedElements.getItems();
-    editor.commandManager.pushCommand(
+    const selectedElements = editor?.editor?.selectedElements?.getItems();
+    editor?.editor?.commandManager.pushCommand(
       new SetGraphsAttrsCmd(
         'update strokeWidth',
         selectedElements,
@@ -214,7 +214,7 @@ export const StrokeCard: FC = () => {
     });
     setStrokeWidth(newStrokeWidth);
 
-    editor.render();
+    editor?.editor?.render();
   };
 
   return (
@@ -242,20 +242,20 @@ export const StrokeCard: FC = () => {
         </div>
       }
       onChange={(newPaint, i) => {
-        if (!editor) return;
+        if (!editor?.editor) return;
         updateStrokeWithoutRecord(newPaint, i);
-        editor.render();
+        editor?.editor?.render();
       }}
       onChangeComplete={(newPaint, i) => {
-        if (!editor) return;
+        if (!editor?.editor) return;
         const newStrokes = updateStrokeWithoutRecord(newPaint, i);
 
         pushToHistory(
           'Change Stroke',
-          editor.selectedElements.getItems(),
+          editor?.editor?.selectedElements?.getItems(),
           newStrokes!,
         );
-        editor.render();
+        editor?.editor?.render();
       }}
       onAdd={addStroke}
       onDelete={deleteStroke}

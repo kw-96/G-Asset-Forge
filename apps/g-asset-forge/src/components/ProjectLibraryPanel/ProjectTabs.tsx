@@ -31,8 +31,17 @@ export const ProjectTabs: React.FC<IProjectTabsProps> = ({
   const [dragOverTab, setDragOverTab] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
 
+  // 添加调试信息
+  console.log('ProjectTabs 渲染:', {
+    tabsCount: tabs.length,
+    tabs,
+    activeTabId,
+    hasOnTabSelect: !!onTabSelect,
+  });
+
   const handleTabClick = useCallback(
     (tabId: string) => {
+      console.log('标签页被点击:', tabId);
       onTabSelect?.(tabId);
     },
     [onTabSelect],
@@ -161,32 +170,6 @@ export const ProjectTabs: React.FC<IProjectTabsProps> = ({
 
       {/* 标签页操作按钮 */}
       <div className="tabs-actions">
-        {/* 滚动按钮 - 当标签页过多时显示 */}
-        <button
-          type="button"
-          className="tab-scroll-btn"
-          onClick={() => {
-            if (tabsRef.current) {
-              tabsRef.current.scrollLeft -= 100;
-            }
-          }}
-          title="向左滚动"
-        >
-          <SvgIcon name="icon.24.chevron-left" size={14} />
-        </button>
-        <button
-          type="button"
-          className="tab-scroll-btn"
-          onClick={() => {
-            if (tabsRef.current) {
-              tabsRef.current.scrollLeft += 100;
-            }
-          }}
-          title="向右滚动"
-        >
-          <SvgIcon name="icon.24.chevron-right" size={14} />
-        </button>
-
         {/* 标签页菜单 */}
         <button type="button" className="tab-menu-btn" title="标签页菜单">
           <SvgIcon name="icon.24.more" size={14} />

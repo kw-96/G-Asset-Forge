@@ -1,3 +1,10 @@
+/**
+ * 工具选择工具的移动功能
+ * 实现工具选择工具的移动功能的逻辑
+ * 提供了工具选择工具的移动功能的初始化、激活、禁用、移动、结束等功能
+ * 提供了工具选择工具的移动功能的性能监控、调试工具等功能
+ */
+
 import { cloneDeep } from '@g-asset-forge/common';
 import {
   type IMatrixArr,
@@ -11,11 +18,13 @@ import {
   type GAssetForgeFrame,
   type GAssetForgeGraphics,
   type IParentIndex,
+  isCanvasGraphics,
   isFrameGraphics,
 } from '../../graphics';
 import { GuideLineManager } from '../../guide_lines/guide_line_manager';
 import { Transaction } from '../../transaction';
 import { getDeepFrameAtPoint } from '../../utils';
+import { createCanvasStateManager } from '../../utils/canvasStateManager';
 import { type IBaseTool } from '../type';
 import { getTopHitElement } from './utils';
 
@@ -38,8 +47,20 @@ export class SelectMoveTool implements IBaseTool {
   private dy = 0;
   private prevBBoxPos: IPoint = { x: -1, y: -1 };
 
+  // 画布状态管理器
+  private canvasStateManager = createCanvasStateManager();
+
   constructor(private editor: GAssetForgeEditor) {
     this.transaction = new Transaction(editor);
+  }
+
+  /**
+   * 类型检查：确保图形是Canvas类型
+   */
+  private isCanvasGraphics(
+    graphics: GAssetForgeGraphics,
+  ): graphics is GAssetForgeCanvas {
+    return isCanvasGraphics(graphics);
   }
   onActive() {
     // noop
@@ -73,7 +94,9 @@ export class SelectMoveTool implements IBaseTool {
       this.originParentIndexMap.set(id, cloneDeep(item.attrs.parentIndex!));
     }
 
-    const canvasGraphics = this.editor.doc.getCurrentCanvas();
+    // 设置编辑器并确保有有效画布
+    this.canvasStateManager.setEditor(this.editor);
+    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
     if (!canvasGraphics) {
       console.error('无法获取当前画布，无法执行移动操作');
       return;
@@ -84,7 +107,7 @@ export class SelectMoveTool implements IBaseTool {
       canvasGraphics.getChildren(),
       (node) => this.selectedFrameIdSet.has(node.attrs.id),
     );
-    this.prevParent = deepFrame ?? canvasGraphics;
+    this.prevParent = deepFrame ?? (canvasGraphics as GAssetForgeCanvas);
 
     const boundingRect = this.editor.selectedElements.getBoundingRect();
     if (!boundingRect) {
@@ -159,9 +182,16 @@ export class SelectMoveTool implements IBaseTool {
     const offset =
       this.editor.guideLineManager.getGraphicsSnapOffset(targetPoints);
 
-    const canvasGraphics = this.editor.doc.getCurrentCanvas();
+    // 使用画布状态管理器获取当前画布
+    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
     if (!canvasGraphics) {
       console.error('无法获取当前画布，无法执行移动操作');
+      return;
+    }
+
+    // 类型检查：确保canvasGraphics是Canvas类型
+    if (!this.isCanvasGraphics(canvasGraphics)) {
+      console.error('当前画布不是有效的Canvas类型，无法执行移动操作');
       return;
     }
 
@@ -170,7 +200,7 @@ export class SelectMoveTool implements IBaseTool {
       canvasGraphics.getChildren(),
       (node) => this.selectedFrameIdSet.has(node.attrs.id),
     );
-    const newParent = deepFrame ?? canvasGraphics;
+    const newParent = deepFrame ?? (canvasGraphics as GAssetForgeCanvas);
     const newParentId = newParent.attrs.id;
 
     // 2. snap to ref line

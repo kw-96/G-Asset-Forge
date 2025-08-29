@@ -77,63 +77,65 @@ export const H5EditorMode: FC<H5EditorModeProps> = () => {
     if (editor && containerRef.current) {
       try {
         // 初始化 H5 服务
-        h5ServiceRef.current = new H5Service(editor);
+        h5ServiceRef.current = editor?.editor && new H5Service(editor.editor);
 
         // 初始化 H5 编辑模式
-        const container = h5ServiceRef.current.initializeH5Mode();
+        if (h5ServiceRef.current) {
+          const container = h5ServiceRef.current.initializeH5Mode();
 
-        console.log('H5 编辑模式已激活', container);
+          console.log('H5 编辑模式已激活', container);
 
-        // 等待一帧后更新内容块列表，确保容器已完全初始化
-        requestAnimationFrame(() => {
-          updateContentBlocksList();
+          // 等待一帧后更新内容块列表，确保容器已完全初始化
+          requestAnimationFrame(() => {
+            updateContentBlocksList();
 
-          // 强制重新渲染编辑器，确保H5容器可见
-          editor.render();
-        });
+            // 强制重新渲染编辑器，确保H5容器可见
+            editor?.editor?.render();
+          });
 
-        // 监听编辑器选择变化
-        const handleSelectionChange = () => {
-          const selectedElements = editor.selectedElements.getItems();
-          if (selectedElements.length === 1) {
-            const selectedElement = selectedElements[0];
-            if (
-              selectedElement.attrs.id &&
-              (selectedElement.attrs as any).blockType
-            ) {
-              setSelectedBlockId(selectedElement.attrs.id);
-              setShowPropertyPanel(true);
+          // 监听编辑器选择变化
+          const handleSelectionChange = () => {
+            const selectedElements = editor?.editor?.selectedElements?.getItems();
+            if (selectedElements && selectedElements.length === 1) {
+              const selectedElement = selectedElements[0];
+              if (
+                selectedElement.attrs.id &&
+                (selectedElement.attrs as any).blockType
+              ) {
+                setSelectedBlockId(selectedElement.attrs.id);
+                setShowPropertyPanel(true);
+              } else {
+                setSelectedBlockId('');
+                setShowPropertyPanel(false);
+              }
             } else {
               setSelectedBlockId('');
               setShowPropertyPanel(false);
             }
-          } else {
-            setSelectedBlockId('');
-            setShowPropertyPanel(false);
-          }
-        };
+          };
 
-        editor.selectedElements.on('itemsChange', handleSelectionChange);
+          editor?.editor?.selectedElements.on('itemsChange', handleSelectionChange);
 
-        return () => {
-          try {
-            // 清理事件监听器
-            editor.selectedElements.off('itemsChange', handleSelectionChange);
+          return () => {
+            try {
+              // 清理事件监听器
+              editor?.editor?.selectedElements.off('itemsChange', handleSelectionChange);
 
-            // 销毁H5服务
-            if (h5ServiceRef.current) {
-              h5ServiceRef.current.destroy();
-              h5ServiceRef.current = null;
+              // 销毁H5服务
+              if (h5ServiceRef.current) {
+                h5ServiceRef.current.destroy();
+                h5ServiceRef.current = null;
+              }
+
+              // 清理状态
+              setSelectedBlockId('');
+              setShowPropertyPanel(false);
+              setContentBlocks([]);
+            } catch (error) {
+              console.warn('H5EditorMode清理过程中出现警告:', error);
             }
-
-            // 清理状态
-            setSelectedBlockId('');
-            setShowPropertyPanel(false);
-            setContentBlocks([]);
-          } catch (error) {
-            console.warn('H5EditorMode清理过程中出现警告:', error);
-          }
-        };
+          };
+        }
       } catch (error) {
         console.error('H5EditorMode初始化失败:', error);
       }

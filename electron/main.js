@@ -1,4 +1,4 @@
-const { app, Menu } = require('electron');
+const { app, Menu, BrowserWindow } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 const { WindowManager } = require('./WindowManager.js');
@@ -17,8 +17,8 @@ function createWindow() {
     minWidth: 480,
     minHeight: 320,
     webPreferences: {
-    devTools: true,
-    }
+      devTools: true,
+    },
   });
 
   // 加载应用的 index.html
@@ -63,21 +63,21 @@ function createMenu() {
           accelerator: 'CmdOrCtrl+N',
           click: () => {
             mainWindow.webContents.send('menu-new');
-          }
+          },
         },
         {
           label: '打开',
           accelerator: 'CmdOrCtrl+O',
           click: () => {
             mainWindow.webContents.send('menu-open');
-          }
+          },
         },
         {
           label: '保存',
           accelerator: 'CmdOrCtrl+S',
           click: () => {
             mainWindow.webContents.send('menu-save');
-          }
+          },
         },
         { type: 'separator' },
         {
@@ -85,9 +85,9 @@ function createMenu() {
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
           click: () => {
             app.quit();
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       label: '编辑',
@@ -97,8 +97,8 @@ function createMenu() {
         { type: 'separator' },
         { role: 'cut', label: '剪切' },
         { role: 'copy', label: '复制' },
-        { role: 'paste', label: '粘贴' }
-      ]
+        { role: 'paste', label: '粘贴' },
+      ],
     },
     {
       label: '视图',
@@ -111,16 +111,16 @@ function createMenu() {
         { role: 'zoomIn', label: '放大' },
         { role: 'zoomOut', label: '缩小' },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: '切换全屏' }
-      ]
+        { role: 'togglefullscreen', label: '切换全屏' },
+      ],
     },
     {
       label: '窗口',
       submenu: [
         { role: 'minimize', label: '最小化' },
-        { role: 'close', label: '关闭' }
-      ]
-    }
+        { role: 'close', label: '关闭' },
+      ],
+    },
   ];
 
   const menu = Menu.buildFromTemplate(template);
@@ -130,35 +130,35 @@ function createMenu() {
 // 当 Electron 完成初始化并准备创建浏览器窗口时调用此方法
 app.whenReady().then(() => {
   createWindow();
-  
+
   // 设置 IPC 处理器
   const { ipcMain } = require('electron');
-  
+
   // 窗口控制 IPC 处理器
   ipcMain.handle('window:minimize', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.minimize();
     }
   });
-  
+
   ipcMain.handle('window:maximize', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.maximize();
     }
   });
-  
+
   ipcMain.handle('window:restore', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.restore();
     }
   });
-  
+
   ipcMain.handle('window:close', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.close();
     }
   });
-  
+
   ipcMain.handle('window:isMaximized', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       return { success: true, data: mainWindow.isMaximized() };
@@ -167,16 +167,19 @@ app.whenReady().then(() => {
   });
 
   // 窗口尺寸调整 IPC 处理器
-  ipcMain.handle('window:resize', (event, { width, height, resizable = true }) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.setSize(width, height);
-      mainWindow.setResizable(resizable);
-      mainWindow.setMaximizable(resizable);
-      mainWindow.setFullScreenable(resizable);
-      return { success: true };
-    }
-    return { success: false };
-  });
+  ipcMain.handle(
+    'window:resize',
+    (event, { width, height, resizable = true }) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setSize(width, height);
+        mainWindow.setResizable(resizable);
+        mainWindow.setMaximizable(resizable);
+        mainWindow.setFullScreenable(resizable);
+        return { success: true };
+      }
+      return { success: false };
+    },
+  );
 });
 
 // 当所有窗口都被关闭后退出

@@ -310,10 +310,12 @@ export class SelectedControl {
     return cloneDeep(this.normalControls);
   }
 
-  drawControlHandles = throttle((addedControlHandles: ControlHandle[] = []) => {
-    addedControlHandles = this.generateControls().concat(addedControlHandles);
+  drawControlHandles: (addedControlHandles: ControlHandle[]) => void = throttle(
+    (addedControlHandles: ControlHandle[] = []) => {
+      addedControlHandles = this.generateControls().concat(addedControlHandles);
 
-    this.editor.controlHandleManager.setCustomHandles(addedControlHandles);
-    this.editor.controlHandleManager.showCustomHandles();
-  });
+      this.editor.controlHandleManager.setCustomHandles(addedControlHandles);
+      this.editor.controlHandleManager.showCustomHandles();
+    },
+  );
 }

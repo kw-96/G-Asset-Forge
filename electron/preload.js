@@ -49,37 +49,35 @@ window.addEventListener('DOMContentLoaded', () => {
   style.textContent = `
     /* 桌面应用特有的样式 */
     body {
+      -webkit-user-select: none;
       user-select: none; /* 防止文本选择 */
     }
-    
-    /* 只有标题栏区域允许拖动窗口 */
+
+    /* 标题栏区域允许拖动窗口，但标签页区域除外 */
     .sk-header {
       -webkit-app-region: drag; /* 允许拖动窗口 */
     }
-    
-    /* 允许交互的元素和编辑器区域 */
-    button, input, textarea, select, [contenteditable], 
-    canvas, .g-asset-forge-editor-left-area, .floating-toolbar-container,
-    .window-controls, .sk-right-area {
-      -webkit-app-region: no-drag; /* 不允许拖动 */
-      user-select: text; /* 允许文本选择 */
+
+    .project-tab {
+      -webkit-app-region: no-drag !important;
+      app-region: no-drag !important;
     }
-    
+
     /* 自定义滚动条 */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
-    
+
     ::-webkit-scrollbar-track {
       background: #f1f1f1;
     }
-    
+
     ::-webkit-scrollbar-thumb {
       background: #c1c1c1;
       border-radius: 4px;
     }
-    
+
     ::-webkit-scrollbar-thumb:hover {
       background: #a8a8a8;
     }

@@ -54,6 +54,7 @@ pnpm run dev
 # 桌面应用开发
 $env:PATH += ";$env:APPDATA\npm"
 pnpm run electron:dev
+pnpm -w run electron:dev
 
 # 停止开发服务器
 taskkill /F /IM node.exe
@@ -67,9 +68,11 @@ npx tsc --noEmit
 ```bash
 # 构建 Web 应用
 pnpm run app:build
+pnpm -w run app:build
 
 # 构建桌面应用
 pnpm run electron:build
+pnpm -w run electron:build
 
 # 预览桌面应用
 pnpm run electron:preview

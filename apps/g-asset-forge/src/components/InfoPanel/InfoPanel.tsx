@@ -25,14 +25,14 @@ export const InfoPanel: FC = () => {
   const showDebugPanel = localStorage.getItem('g-asset-forge-debug-panel') === 'true';
 
   useEffect(() => {
-    if (editor) {
+    if (editor?.editor) {
       const handler = (items: GAssetForgeGraphics[]) => {
         setType(items.length ? PanelType.SelectedElements : PanelType.Global);
       };
-      editor.selectedElements.on('itemsChange', handler);
+      editor?.editor?.selectedElements.on('itemsChange', handler);
 
       return () => {
-        editor.selectedElements.off('itemsChange', handler);
+        editor?.editor?.selectedElements.off('itemsChange', handler);
       };
     }
   }, [editor]);

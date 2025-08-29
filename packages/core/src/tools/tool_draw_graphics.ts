@@ -1,3 +1,10 @@
+/**
+ * 工具绘制图形工具
+ * 实现绘制图形工具的逻辑
+ * 提供了绘制图形工具的初始化、激活、禁用、移动、结束等功能
+ * 提供了绘制图形工具的性能监控、调试工具等功能
+ */
+
 import { noop } from '@g-asset-forge/common';
 import {
   applyInverseMatrix,
@@ -14,10 +21,11 @@ import { type GAssetForgeEditor } from '../editor';
 import { type GAssetForgeGraphics, isFrameGraphics } from '../graphics';
 import { SnapHelper } from '../snap';
 import { getDeepFrameAtPoint } from '../utils';
+import { createCanvasStateManager } from '../utils/canvasStateManager';
 import { type ITool } from './type';
 
 /**
- * Draw Graph Tool
+ * Draw Graph 绘制图形工具
  * reference: https://mp.weixin.qq.com/s/lD1qlGus3pRvT5ZfdH0_lg
  */
 export abstract class DrawGraphicsTool implements ITool {
@@ -44,7 +52,12 @@ export abstract class DrawGraphicsTool implements ITool {
   private isDragging = false;
   private unbindEvent: () => void = noop;
 
-  constructor(protected editor: GAssetForgeEditor) {}
+  // 画布状态管理器
+  protected canvasStateManager = createCanvasStateManager();
+
+  constructor(protected editor: GAssetForgeEditor) {
+    this.canvasStateManager.setEditor(editor);
+  }
 
   onActive() {
     const editor = this.editor;
@@ -285,7 +298,7 @@ export abstract class DrawGraphicsTool implements ITool {
     if (this.drawingGraphics) {
       this.updateGraphics(rect);
     } else {
-      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (!currentCanvas) {
         console.error('无法获取当前画布，无法创建图形');
         return;
@@ -344,7 +357,7 @@ export abstract class DrawGraphicsTool implements ITool {
       const width = this.editor.setting.get('drawGraphDefaultWidth');
       const height = this.editor.setting.get('drawGraphDefaultHeight');
 
-      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (!currentCanvas) {
         console.error('无法获取当前画布，无法创建图形');
         return;

@@ -19,10 +19,10 @@ export const ToolBar = () => {
   const [isPathEditorActive, setIsPathEditorActive] = useState(false);
 
   useEffect(() => {
-    if (editor) {
-      setCurrTool(editor.toolManager.getActiveToolName() || '');
-      setEnableTools(editor.toolManager.getEnableTools());
-      setIsPathEditorActive(editor.pathEditor.isActive());
+    if (editor?.editor) {
+      setCurrTool(editor?.editor?.toolManager?.getActiveToolName() || '');
+      setEnableTools(editor?.editor?.toolManager?.getEnableTools());
+      setIsPathEditorActive(editor?.editor?.pathEditor?.isActive());
 
       const onTogglePathEditor = (active: boolean) => {
         setIsPathEditorActive(active);
@@ -34,13 +34,13 @@ export const ToolBar = () => {
         setEnableTools(tools);
       };
 
-      editor.toolManager.on('switchTool', onSwitchTool);
-      editor.toolManager.on('changeEnableTools', onChangeEnableTools);
-      editor.pathEditor.on('toggle', onTogglePathEditor);
+      editor?.editor?.toolManager.on('switchTool', onSwitchTool);
+      editor?.editor?.toolManager.on('changeEnableTools', onChangeEnableTools);
+      editor?.editor?.pathEditor.on('toggle', onTogglePathEditor);
       return () => {
-        editor.toolManager.off('switchTool', onSwitchTool);
-        editor.toolManager.off('changeEnableTools', onChangeEnableTools);
-        editor.pathEditor.off('toggle', onTogglePathEditor);
+        editor?.editor?.toolManager.off('switchTool', onSwitchTool);
+        editor?.editor?.toolManager.off('changeEnableTools', onChangeEnableTools);
+        editor?.editor?.pathEditor.off('toggle', onTogglePathEditor);
       };
     }
   }, [editor]);
@@ -140,7 +140,7 @@ export const ToolBar = () => {
             tooltipContent={intl.formatMessage({ id: tool.intlId })}
             hotkey={tool.hotkey}
             onMouseDown={() => {
-              editor?.toolManager.setActiveTool(tool.name);
+              editor?.editor?.toolManager.setActiveTool(tool.name);
             }}
           >
             {tool.icon}
@@ -155,8 +155,8 @@ export const ToolBar = () => {
             userSelect: 'none',
           }}
           onClick={() => {
-            if (editor) {
-              editor.pathEditor.inactive();
+            if (editor?.editor) {
+              editor?.editor?.pathEditor?.inactive();
             }
           }}
         >

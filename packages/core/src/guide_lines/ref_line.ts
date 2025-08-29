@@ -1,3 +1,10 @@
+/**
+ * 参考线管理器
+ * 实现参考线管理器的逻辑
+ * 提供了参考线管理器的初始化、激活、禁用、移动、结束等功能
+ * 提供了参考线管理器的性能监控、调试工具等功能
+ */
+
 import {
   arrMap,
   forEach,
@@ -27,6 +34,10 @@ import {
   pointsToHLines,
   pointsToVLines,
 } from '../utils';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from '../utils/canvasStateManager';
 
 /**
  * reference line
@@ -49,7 +60,14 @@ export class RefLine {
   private toDrawVLines: IVerticalLine[] = []; // 等待绘制的垂直参照线
   private toDrawHLines: IHorizontalLine[] = []; // 等待绘制的水平参照线
 
-  constructor(private editor: GAssetForgeEditor) {}
+  // 画布状态管理器
+  private canvasStateManager: CanvasStateManager;
+
+  constructor(private editor: GAssetForgeEditor) {
+    // 初始化画布状态管理器
+    this.canvasStateManager = createCanvasStateManager();
+    this.canvasStateManager.setEditor(editor);
+  }
 
   /**
    * cache reference line of graphics in viewport
@@ -71,7 +89,7 @@ export class RefLine {
     const viewportBbox = this.editor.viewportManager.getSceneBbox();
 
     const refGraphicsSet = new Set<GAssetForgeGraphics>();
-    const currentCanvas = this.editor.doc.getCurrentCanvas();
+    const currentCanvas = this.canvasStateManager.getCurrentCanvas();
     if (!currentCanvas) {
       console.warn('无法获取当前画布，跳过参考线计算');
       return;

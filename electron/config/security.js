@@ -10,23 +10,23 @@ const SecurityConfig = {
     contextIsolation: true, // 启用上下文隔离
     enableRemoteModule: false, // 禁用远程模块
     allowRunningInsecureContent: false, // 禁止运行不安全内容
-    webSecurity: false, // 临时禁用 web 安全以支持编辑器功能
+    webSecurity: true, // 启用 web 安全
     experimentalFeatures: false, // 禁用实验性功能
     // 内容安全策略
     webPreferences: {
       // 禁用危险的 API
       enableWebSQL: false,
-      // 禁用沙箱以支持编辑器功能
-      sandbox: false,
-      // 限制文件访问
-      webSecurity: false,
+      // 启用沙箱以提高安全性
+      sandbox: true,
+      // 启用 web 安全
+      webSecurity: true,
     },
   },
 
   // 内容安全策略
   contentSecurityPolicy: {
     'default-src': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'"],
+    'script-src': ["'self'"],
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'https:'],
     'font-src': ["'self'", 'https:'],

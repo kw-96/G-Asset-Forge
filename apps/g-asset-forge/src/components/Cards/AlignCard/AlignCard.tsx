@@ -1,6 +1,10 @@
 import './AlignCard.scss';
 
-import { alignAndRecord, AlignType, type GAssetForgeGraphics } from '@g-asset-forge/core';
+import {
+  alignAndRecord,
+  AlignType,
+  type GAssetForgeGraphics,
+} from '@g-asset-forge/core';
 import {
   AlignHCenter,
   AlignLeft,
@@ -20,18 +24,22 @@ export const AlignCard: FC = () => {
   const [disabled, setDisable] = useState(true);
 
   useEffect(() => {
-    if (editor) {
-      const selectedEls = editor.selectedElements.getItems();
+    if (editor?.editor) {
+      const selectedEls = editor.editor.selectedElements.getItems();
       setDisable(selectedEls.length < 2);
 
       const handler = (items: GAssetForgeGraphics[]) => {
         setDisable(items.length < 2);
       };
 
-      editor.selectedElements.on('itemsChange', handler);
-      return () => {
-        editor.selectedElements.off('itemsChange', handler);
-      };
+      if (editor.editor) {
+        editor.editor.selectedElements.on('itemsChange', handler);
+        return () => {
+          if (editor.editor) {
+            editor.editor.selectedElements.off('itemsChange', handler);
+          }
+        };
+      }
     }
   }, [editor]);
 
@@ -41,7 +49,7 @@ export const AlignCard: FC = () => {
         <div
           className="align-item"
           onClick={() => {
-            editor && alignAndRecord(editor, AlignType.Left);
+            editor?.editor && alignAndRecord(editor.editor, AlignType.Left);
           }}
         >
           <AlignLeft />
@@ -49,7 +57,7 @@ export const AlignCard: FC = () => {
         <div
           className="align-item"
           onClick={() => {
-            editor && alignAndRecord(editor, AlignType.HCenter);
+            editor?.editor && alignAndRecord(editor.editor, AlignType.HCenter);
           }}
         >
           <AlignHCenter />
@@ -57,7 +65,7 @@ export const AlignCard: FC = () => {
         <div
           className="align-item"
           onClick={() => {
-            editor && alignAndRecord(editor, AlignType.Right);
+            editor?.editor && alignAndRecord(editor.editor, AlignType.Right);
           }}
         >
           <AlignRight />
@@ -65,7 +73,7 @@ export const AlignCard: FC = () => {
         <div
           className="align-item"
           onClick={() => {
-            editor && alignAndRecord(editor, AlignType.Top);
+            editor?.editor && alignAndRecord(editor.editor, AlignType.Top);
           }}
         >
           <AlignTop />
@@ -73,7 +81,7 @@ export const AlignCard: FC = () => {
         <div
           className="align-item"
           onClick={() => {
-            editor && alignAndRecord(editor, AlignType.VCenter);
+            editor?.editor && alignAndRecord(editor.editor, AlignType.VCenter);
           }}
         >
           <AlignVCenter />
@@ -81,7 +89,7 @@ export const AlignCard: FC = () => {
         <div
           className="align-item"
           onClick={() => {
-            editor && alignAndRecord(editor, AlignType.Bottom);
+            editor?.editor && alignAndRecord(editor.editor, AlignType.Bottom);
           }}
         >
           <IconAlignBottom />

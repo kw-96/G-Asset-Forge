@@ -1,3 +1,10 @@
+/**
+ * 场景图
+ * 实现场景图的逻辑
+ * 提供了场景图的初始化、激活、禁用、移动、结束等功能
+ * 提供了场景图的性能监控、调试工具等功能
+ */
+
 import { EventEmitter, getDevicePixelRatio } from '@g-asset-forge/common';
 import { type IRect, Matrix } from '@g-asset-forge/geo';
 
@@ -15,11 +22,16 @@ import {
   GAssetForgeStar,
   GAssetForgeText,
   type GraphicsAttrs,
+  type IDrawInfo,
   isFrameGraphics,
 } from '../graphics';
 import { Grid } from '../grid';
 import { GraphicsType, type IEditorPaperData } from '../type';
 import { rafThrottle } from '../utils';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from '../utils/canvasStateManager';
 
 const graphCtorMap = {
   [GraphicsType.Graph]: GAssetForgeGraphics,
@@ -47,8 +59,15 @@ export class SceneGraph {
   showSelectedGraphsOutline = true;
   highlightLayersOnHover = true;
 
+  // 画布状态管理器
+  private canvasStateManager: CanvasStateManager;
+
   constructor(private editor: GAssetForgeEditor) {
     this.grid = new Grid(editor);
+
+    // 初始化画布状态管理器
+    this.canvasStateManager = createCanvasStateManager();
+    this.canvasStateManager.setEditor(editor);
   }
 
   addItems(graphicsArr: GAssetForgeGraphics[]) {
@@ -65,6 +84,18 @@ export class SceneGraph {
     // 安全检查：确保ctx和canvas存在
     if (!ctx || !canvas) {
       console.warn('SceneGraph.render: ctx或canvas不存在，跳过渲染');
+      return;
+    }
+
+    // 检查canvas是否已被移除或损坏
+    if (!canvas.parentElement) {
+      console.warn('SceneGraph.render: canvas已从DOM中移除，跳过渲染');
+      return;
+    }
+
+    // 检查canvas尺寸是否有效
+    if (canvas.width === 0 || canvas.height === 0) {
+      console.warn('SceneGraph.render: canvas尺寸无效，跳过渲染');
       return;
     }
 
@@ -92,12 +123,20 @@ export class SceneGraph {
 
     const imgManager = this.editor.imgManager;
 
-    const canvasGraphics = this.editor.doc.getCurrentCanvas();
+    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
     const smooth = zoom <= 1;
     if (canvasGraphics) {
       const viewportArea = this.editor.viewportManager.getSceneBbox();
       ctx.save();
-      canvasGraphics.draw({ ctx, imgManager, smooth, viewportArea });
+
+      // 只渲染当前画布及其子元素，确保画布隔离
+      this.drawCanvasContent(canvasGraphics, {
+        ctx,
+        imgManager,
+        smooth,
+        viewportArea,
+      });
+
       ctx.restore();
     }
 
@@ -118,11 +157,14 @@ export class SceneGraph {
     if (this.highlightLayersOnHover && setting.get('highlightLayersOnHover')) {
       const hlItem = selectedElements.getHighlightedItem();
       if (hlItem && !selectedElements.hasItem(hlItem)) {
-        this.drawGraphsOutline(
-          [hlItem],
-          setting.get('hoverOutlineStrokeWidth'),
-          this.editor.setting.get('hoverOutlineStroke'),
-        );
+        // 只高亮当前画布中的元素
+        if (this.isGraphicsInCurrentCanvas(hlItem)) {
+          this.drawGraphsOutline(
+            [hlItem],
+            setting.get('hoverOutlineStrokeWidth'),
+            this.editor.setting.get('hoverOutlineStroke'),
+          );
+        }
       }
     }
 
@@ -130,20 +172,27 @@ export class SceneGraph {
 
     /** draw selected elements outline */
     if (this.showSelectedGraphsOutline) {
-      this.drawGraphsOutline(
-        this.editor.selectedElements
-          .getItems()
-          .filter((item) => item.isVisible()),
-        setting.get('selectedOutlineStrokeWidth'),
-        this.editor.setting.get('hoverOutlineStroke'),
-      );
-      this.editor.selectedBox.draw();
+      // 只显示当前画布中选中的元素
+      const currentCanvasSelectedElements = this.editor.selectedElements
+        .getItems()
+        .filter(
+          (item) => item.isVisible() && this.isGraphicsInCurrentCanvas(item),
+        );
+
+      if (currentCanvasSelectedElements.length > 0) {
+        this.drawGraphsOutline(
+          currentCanvasSelectedElements,
+          setting.get('selectedOutlineStrokeWidth'),
+          this.editor.setting.get('hoverOutlineStroke'),
+        );
+        this.editor.selectedBox.draw();
+      }
     }
 
     // draw path editor path outline
     if (this.editor.pathEditor.isActive()) {
       const path = this.editor.pathEditor.getPath();
-      if (path) {
+      if (path && this.isGraphicsInCurrentCanvas(path)) {
         this.drawGraphsOutline(
           [path],
           setting.get('selectedOutlineStrokeWidth'),
@@ -160,8 +209,9 @@ export class SceneGraph {
         if (
           (isFrameGraphics(frame) && frame.isGroup()) ||
           frame.isDeleted() ||
-          // check canvas
-          !frame.hasAncestor(canvasGraphics.attrs.id)
+          // check canvas - 只显示当前画布中的frame
+          !frame.hasAncestor(canvasGraphics.attrs.id) ||
+          !this.isGraphicsInCurrentCanvas(frame)
         ) {
           continue;
         }
@@ -216,6 +266,37 @@ export class SceneGraph {
     this.eventEmitter.emit('render');
   });
 
+  /**
+   * 绘制画布内容，确保只渲染当前画布的元素
+   */
+  private drawCanvasContent(canvas: GAssetForgeGraphics, drawInfo: IDrawInfo) {
+    // 绘制画布本身
+    canvas.draw(drawInfo);
+
+    // 绘制画布的子元素
+    const children = canvas.getChildren();
+    for (const child of children) {
+      if (child.isVisible() && !child.isDeleted()) {
+        child.draw(drawInfo);
+      }
+    }
+  }
+
+  /**
+   * 检查图形是否属于当前画布
+   */
+  private isGraphicsInCurrentCanvas(graphics: GAssetForgeGraphics): boolean {
+    const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+    if (!currentCanvas) {
+      return false;
+    }
+
+    // 检查图形是否是当前画布的子元素，或者就是当前画布本身
+    return (
+      graphics === currentCanvas || graphics.hasAncestor(currentCanvas.attrs.id)
+    );
+  }
+
   private drawGraphsOutline(
     graphicsArr: GAssetForgeGraphics[],
     strokeWidth: number,
@@ -248,7 +329,7 @@ export class SceneGraph {
    * get tree data with simple info (for layer panel)
    */
   toObjects() {
-    const canvasGraphics = this.editor.doc.getCurrentCanvas();
+    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
     if (!canvasGraphics) {
       return [];
     }
@@ -289,6 +370,28 @@ export class SceneGraph {
       if (type === GraphicsType.Document) {
         continue;
       }
+
+      // 检查是否已经存在相同ID的图形，避免重复创建
+      const existingGraphics = this.editor.doc.getGraphicsById(attrs.id);
+      if (existingGraphics && !existingGraphics.isDeleted()) {
+        // 如果图形已存在且未删除，跳过创建
+        continue;
+      }
+
+      // 特殊处理：如果是画布类型，检查是否与现有画布冲突
+      if (type === GraphicsType.Canvas) {
+        const existingCanvases =
+          this.editor.doc.graphicsStoreManager.getCanvasItems();
+        const hasCanvasWithSameName = existingCanvases.some(
+          (canvas) =>
+            canvas.attrs.objectName === attrs.objectName && !canvas.isDeleted(),
+        );
+        if (hasCanvasWithSameName) {
+          // 如果存在同名画布，跳过创建
+          continue;
+        }
+      }
+
       const Ctor = graphCtorMap[type!];
       if (!Ctor) {
         console.error(`Unsupported graphics type "${attrs.type}", ignore it`);
@@ -309,12 +412,47 @@ export class SceneGraph {
   }
 
   load(info: GraphicsAttrs[], isApplyChanges?: boolean) {
+    // 保存现有的画布引用，在清空前先保存
+    const existingCanvases =
+      this.editor.doc.graphicsStoreManager.getCanvasItems();
+    // const existingCanvasIds = new Set(
+    //   existingCanvases.map((canvas) => canvas.attrs.id),
+    // );
+
     const graphicsArr = this.createGraphicsArr(info);
+
+    // 只有在不是应用变更时才清空文档
     if (!isApplyChanges) {
+      // 清空文档
       this.editor.doc.clear();
+
+      // 重新添加现有的画布到存储管理器
+      for (const canvas of existingCanvases) {
+        if (canvas && !canvas.isDeleted()) {
+          this.editor.doc.graphicsStoreManager.add(canvas);
+          // 确保画布也被添加到场景图中
+          this.editor.sceneGraph.addItems([canvas]);
+        }
+      }
     }
+
+    // 添加新的图形项目
     this.addItems(graphicsArr);
     this.initGraphicsTree(graphicsArr);
+
+    // 如果数据中没有画布，但我们需要保持现有画布
+    if (!isApplyChanges && existingCanvases.length > 0) {
+      // 确保现有画布在场景树中正确设置
+      for (const canvas of existingCanvases) {
+        if (canvas && !canvas.isDeleted()) {
+          // 检查画布是否已经在文档的子节点中
+          const children = this.editor.doc.getChildren();
+          if (!children.includes(canvas)) {
+            this.editor.doc.insertChild(canvas);
+          }
+        }
+      }
+    }
   }
 
   on<K extends keyof Events>(eventName: K, handler: Events[K]) {

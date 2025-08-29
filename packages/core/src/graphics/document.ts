@@ -76,21 +76,46 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
   }
 
   getCurrentCanvas(): GAssetForgeCanvas | null {
-    const canvasItems = this.graphicsStoreManager.getCanvasItems();
-    const canvas = canvasItems.find(
-      (canvas) => canvas.attrs.id === this.currentCanvasId,
-    );
+    try {
+      const canvasItems = this.graphicsStoreManager.getCanvasItems();
 
-    // 如果找不到当前画布，尝试返回第一个画布
-    if (!canvas && canvasItems.length > 0) {
-      console.warn(
-        `当前画布ID "${this.currentCanvasId}" 不存在，使用第一个画布`,
+      // 如果没有画布项目，返回null
+      if (!canvasItems || canvasItems.length === 0) {
+        console.warn('没有可用的画布项目');
+        return null;
+      }
+
+      // 查找当前画布ID对应的画布
+      const canvas = canvasItems.find(
+        (canvas) =>
+          canvas && canvas.attrs && canvas.attrs.id === this.currentCanvasId,
       );
-      this.currentCanvasId = canvasItems[0].attrs.id;
-      return canvasItems[0];
-    }
 
-    return canvas || null;
+      // 如果找到了有效的画布，直接返回
+      if (canvas && canvas.attrs && !canvas.isDeleted()) {
+        return canvas;
+      }
+
+      // 如果当前画布无效，查找第一个有效的画布
+      const validCanvas = canvasItems.find(
+        (canvas) =>
+          canvas && canvas.attrs && canvas.attrs.id && !canvas.isDeleted(),
+      );
+
+      if (validCanvas) {
+        console.warn(
+          `当前画布ID "${this.currentCanvasId}" 无效，切换到有效画布: ${validCanvas.attrs.id}`,
+        );
+        this.currentCanvasId = validCanvas.attrs.id;
+        return validCanvas;
+      }
+
+      console.error('没有找到任何有效的画布');
+      return null;
+    } catch (error) {
+      console.error('获取当前画布时出错:', error);
+      return null;
+    }
   }
 
   setCurrentCanvas(canvasId: string) {
@@ -100,29 +125,147 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
     }
 
     const prevCanvasId = this.currentCanvasId;
-    // record selected elements on previous canvas
+
+    // 记录当前画布的选择状态和视口矩阵
     const prevCanvas = this.getCurrentCanvas();
     if (prevCanvas) {
-      prevCanvas.lastSelectedIds = this.editor.selectedElements.getIdSet();
-      prevCanvas.lastMatrix = this.editor.viewportManager.getViewMatrix();
-    }
+      try {
+        // 保存选择状态
+        const currentSelectedIds = this.editor.selectedElements.getIdSet();
+        prevCanvas.lastSelectedIds = new Set(currentSelectedIds);
+        console.log('画布切换：保存选择状态', Array.from(currentSelectedIds));
 
-    // switch to new canvas
-    this.currentCanvasId = canvasId;
-
-    // restore selected elements on current canvas
-    const currentCanvas = this.getCurrentCanvas();
-    if (currentCanvas) {
-      this.editor.selectedElements.setItemsById(currentCanvas.lastSelectedIds);
-      if (currentCanvas.lastMatrix) {
-        this.editor.viewportManager.setViewMatrix(currentCanvas.lastMatrix);
-      } else {
-        // for the first time to switch canvas, reset viewport
-        this.editor.viewportManager.resetViewport();
+        // 保存视口矩阵
+        const currentViewMatrix = this.editor.viewportManager.getViewMatrix();
+        prevCanvas.lastMatrix = currentViewMatrix.clone();
+        console.log('画布切换：保存视口状态', {
+          x: currentViewMatrix.tx,
+          y: currentViewMatrix.ty,
+          zoom: currentViewMatrix.a,
+        });
+      } catch (error) {
+        console.warn('画布切换：保存状态时出错', error);
       }
     }
 
+    // 切换到新画布
+    this.currentCanvasId = canvasId;
+    console.log('画布切换：已切换到画布', canvasId);
+
+    // 恢复新画布的选择状态和视口矩阵
+    const currentCanvas = this.getCurrentCanvas();
+    if (currentCanvas) {
+      try {
+        // 恢复选择状态
+        if (
+          currentCanvas.lastSelectedIds &&
+          currentCanvas.lastSelectedIds.size > 0
+        ) {
+          // 验证选择状态的有效性
+          const validSelectedIds = new Set<string>();
+          for (const id of currentCanvas.lastSelectedIds) {
+            const graphics = this.getGraphicsById(id);
+            if (
+              graphics &&
+              !graphics.isDeleted() &&
+              this.isGraphicsInCurrentCanvas(graphics)
+            ) {
+              validSelectedIds.add(id);
+            }
+          }
+
+          if (validSelectedIds.size > 0) {
+            this.editor.selectedElements.setItemsById(validSelectedIds);
+            console.log('画布切换：恢复选择状态', Array.from(validSelectedIds));
+          } else {
+            // 如果没有有效的选择状态，清空选择
+            this.editor.selectedElements.clear();
+            console.log('画布切换：清空选择状态（无有效选择）');
+          }
+        } else {
+          // 清空选择状态
+          this.editor.selectedElements.clear();
+          console.log('画布切换：清空选择状态（无保存状态）');
+        }
+
+        // 恢复视口矩阵
+        if (currentCanvas.lastMatrix) {
+          this.editor.viewportManager.setViewMatrix(currentCanvas.lastMatrix);
+          console.log('画布切换：恢复视口状态', {
+            x: currentCanvas.lastMatrix.tx,
+            y: currentCanvas.lastMatrix.ty,
+            zoom: currentCanvas.lastMatrix.a,
+          });
+        } else {
+          // 第一次切换到画布时，重置视口并聚焦到画布内容
+          this.editor.viewportManager.resetViewport();
+          console.log('画布切换：重置视口状态（首次切换）');
+
+          // 尝试聚焦到画布内容
+          this.focusCanvasContent(currentCanvas);
+        }
+
+        // 触发渲染更新
+        if (this.editor.render) {
+          this.editor.render();
+        }
+      } catch (error) {
+        console.error('画布切换：恢复状态时出错', error);
+
+        // 出错时的回退处理
+        try {
+          this.editor.selectedElements.clear();
+          this.editor.viewportManager.resetViewport();
+          console.log('画布切换：使用回退状态（清空选择，重置视口）');
+        } catch (fallbackError) {
+          console.error('画布切换：回退处理也失败', fallbackError);
+        }
+      }
+    } else {
+      console.error('画布切换：无法获取目标画布', canvasId);
+    }
+
     this.emitter.emit('currentCanvasChange', canvasId, prevCanvasId);
+  }
+
+  /**
+   * 聚焦到画布内容
+   */
+  private focusCanvasContent(canvas: GAssetForgeCanvas): void {
+    try {
+      const children = canvas.getChildren();
+      if (children.length > 0) {
+        // 计算画布内容的边界框
+        const bboxes = children
+          .filter((child) => child.isVisible() && !child.isDeleted())
+          .map((child) => child.getBbox());
+
+        if (bboxes.length > 0) {
+          // 使用视口管理器聚焦到内容
+          if (this.editor.viewportManager.zoomToFit) {
+            this.editor.viewportManager.zoomToFit(1);
+            console.log('画布切换：已聚焦到画布内容');
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('画布切换：聚焦到内容时出错', error);
+    }
+  }
+
+  /**
+   * 检查图形是否属于当前画布
+   */
+  private isGraphicsInCurrentCanvas(graphics: GAssetForgeGraphics): boolean {
+    const currentCanvas = this.getCurrentCanvas();
+    if (!currentCanvas) {
+      return false;
+    }
+
+    // 检查图形是否是当前画布的子元素，或者就是当前画布本身
+    return (
+      graphics === currentCanvas || graphics.hasAncestor(currentCanvas.attrs.id)
+    );
   }
 
   addGraphics(graphics: GAssetForgeGraphics) {

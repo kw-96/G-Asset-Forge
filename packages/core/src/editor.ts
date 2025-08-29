@@ -1,3 +1,10 @@
+/**
+ * 编辑器
+ * 实现编辑器的逻辑
+ * 提供了编辑器的初始化、激活、禁用、移动、结束等功能
+ * 提供了编辑器的性能监控、调试工具等功能
+ */
+
 import { EventEmitter, genUuid } from '@g-asset-forge/common';
 import { mergeBoxes } from '@g-asset-forge/geo';
 
@@ -22,6 +29,10 @@ import { Setting, type SettingValue } from './setting';
 import { TextEditor } from './text/text_editor';
 import { ToolManager } from './tools';
 import { type IChanges, type IEditorPaperData } from './type';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from './utils/canvasStateManager';
 import { ViewportManager } from './viewport_manager';
 
 interface IEditorOptions {
@@ -47,6 +58,9 @@ export class GAssetForgeEditor {
   paperId: string;
 
   private emitter = new EventEmitter<Events>();
+
+  // 画布状态管理器
+  private canvasStateManager: CanvasStateManager;
 
   doc: GAssetForgeDocument;
   sceneGraph: SceneGraph;
@@ -89,6 +103,10 @@ export class GAssetForgeEditor {
     if (options.offsetY) {
       this.setting.set('offsetY', options.offsetY);
     }
+
+    // 初始化画布状态管理器
+    this.canvasStateManager = createCanvasStateManager();
+    this.canvasStateManager.setEditor(this);
 
     this.mouseEventManager = new MouseEventManager(this);
     this.keybindingManager = new KeyBindingManager(this);
@@ -144,6 +162,11 @@ export class GAssetForgeEditor {
         doc: this.doc,
       },
     );
+
+    // 确保画布被正确添加到存储管理器
+    this.doc.graphicsStoreManager.add(canvas);
+    this.doc.graphicsStoreManager.add(this.doc);
+
     this.sceneGraph.addItems([this.doc, canvas]);
     this.doc.insertChild(canvas);
 
@@ -169,14 +192,28 @@ export class GAssetForgeEditor {
   }
 
   setContents(data: IEditorPaperData) {
+    // 检查编辑器是否已经完全初始化
+    if (!this.doc || !this.sceneGraph) {
+      console.warn('编辑器未完全初始化，延迟调用setContents');
+      // 延迟执行，等待编辑器完全初始化
+      setTimeout(() => this.setContents(data), 100);
+      return;
+    }
+
+    // 先加载数据
     this.sceneGraph.load(data.data);
     this.commandManager.clearRecords();
     this.paperId = data.paperId ?? genUuid();
 
-    const firstCanvas = this.doc.getChildren()[0];
-    this.doc.setCurrentCanvas(firstCanvas.attrs.id);
+    // 检查是否有可用的画布
+    const availableCanvases = this.doc.graphicsStoreManager.getCanvasItems();
 
-    if (!this.doc.getChildren().length) {
+    if (availableCanvases && availableCanvases.length > 0) {
+      // 使用第一个可用的画布
+      const firstCanvas = availableCanvases[0];
+      this.doc.setCurrentCanvas(firstCanvas.attrs.id);
+    } else if (!this.doc.getChildren().length) {
+      // 如果没有画布，创建一个新的
       const canvas = new GAssetForgeCanvas(
         {
           objectName: 'Page 1',
@@ -185,6 +222,10 @@ export class GAssetForgeEditor {
           doc: this.doc,
         },
       );
+
+      // 确保画布被正确添加到存储管理器
+      this.doc.graphicsStoreManager.add(canvas);
+
       this.sceneGraph.addItems([canvas]);
       this.doc.insertChild(canvas);
       this.doc.setCurrentCanvas(canvas.attrs.id);
@@ -265,7 +306,7 @@ export class GAssetForgeEditor {
   }
 
   getCanvasChildrenBbox() {
-    const canvasGraphics = this.doc.getCurrentCanvas();
+    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
     if (!canvasGraphics) {
       return null;
     }

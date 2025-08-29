@@ -70,32 +70,31 @@ export const ContextMenu: FC = () => {
   }, [visible]);
 
   useEffect(() => {
-    if (editor) {
+    if (editor?.editor) {
       // 监听 editor �?contextmenu 事件
       const handleContextmenu = (pos: IPoint) => {
         if (!visible) {
-          setShowCopy(
-            editor.selectedBox.hitTest(
-              editor.getSceneCursorXY({
-                clientX: pos.x,
-                clientY: pos.y,
-              }),
-            ),
+          const hitTestResult = editor?.editor?.selectedBox.hitTest(
+            editor?.editor?.getSceneCursorXY({
+              clientX: pos.x,
+              clientY: pos.y,
+            }),
           );
+          setShowCopy(!!hitTestResult);
           setVisible(true);
           setPos(pos);
         }
       };
-      editor.hostEventManager.on('contextmenu', handleContextmenu);
+      editor?.editor?.hostEventManager.on('contextmenu', handleContextmenu);
 
       const handleCommandChange = (status: IHistoryStatus) => {
         setCanRedo(status.canRedo);
         setCanUdo(status.canUndo);
       };
-      editor.commandManager.on('change', handleCommandChange);
+      editor?.editor?.commandManager.on('change', handleCommandChange);
       return () => {
-        editor.hostEventManager.off('contextmenu', handleContextmenu);
-        editor.commandManager.off('change', handleCommandChange);
+        editor?.editor?.hostEventManager.off('contextmenu', handleContextmenu);
+        editor?.editor?.commandManager.off('change', handleCommandChange);
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,8 +112,8 @@ export const ContextMenu: FC = () => {
               suffix={isWindows() ? 'Ctrl+C' : '⌘C'}
               onClick={() => {
                 setVisible(false);
-                if (editor) {
-                  editor.clipboard.copy();
+                if (editor?.editor) {
+                  editor?.editor?.clipboard?.copy();
                 }
               }}
             >
@@ -123,8 +122,8 @@ export const ContextMenu: FC = () => {
             <ContextMenuItem
               onClick={() => {
                 setVisible(false);
-                if (editor) {
-                  editor.clipboard.copyAsSVG();
+                if (editor?.editor) {
+                  editor?.editor?.clipboard?.copyAsSVG();
                 }
               }}
             >
@@ -135,15 +134,15 @@ export const ContextMenu: FC = () => {
         <ContextMenuItem
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              const scenePos = editor.getSceneCursorXY(
+            if (editor?.editor) {
+              const scenePos = editor?.editor?.getSceneCursorXY(
                 {
                   clientX: pos.x,
                   clientY: pos.y,
                 },
                 true,
               );
-              editor.clipboard.pasteAt(scenePos);
+              editor?.editor?.clipboard.pasteAt(scenePos);
             }
           }}
         >
@@ -155,8 +154,8 @@ export const ContextMenu: FC = () => {
           disabled={!canUndo}
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              editor.commandManager.undo();
+            if (editor?.editor) {
+              editor?.editor?.commandManager?.undo();
             }
           }}
         >
@@ -167,8 +166,8 @@ export const ContextMenu: FC = () => {
           disabled={!canRedo}
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              editor.commandManager.redo();
+            if (editor?.editor) {
+              editor?.editor?.commandManager?.redo();
             }
           }}
         >
@@ -179,9 +178,9 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Ctrl+A' : '⌘A'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              editor.selectedElements.selectAll();
-              editor.render();
+            if (editor?.editor) {
+              editor?.editor?.selectedElements?.selectAll();
+              editor?.editor?.render();
             }
           }}
         >
@@ -202,8 +201,11 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Ctrl+G' : '⌘G'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              groupAndRecord(editor.selectedElements.getItems(), editor);
+            if (editor?.editor) {
+              groupAndRecord(
+                editor?.editor?.selectedElements?.getItems(),
+                editor?.editor,
+              );
             }
           }}
         >
@@ -213,8 +215,11 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Ctrl+Backspace' : '⌘⌫'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              ungroupAndRecord(editor.selectedElements.getItems(), editor);
+            if (editor?.editor) {
+              ungroupAndRecord(
+                editor?.editor?.selectedElements?.getItems(),
+                editor?.editor,
+              );
             }
           }}
         >
@@ -225,7 +230,8 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Ctrl+]' : '⌘]'}
           onClick={() => {
             setVisible(false);
-            editor && arrangeAndRecord(editor, ArrangeType.Forward);
+            editor?.editor &&
+              arrangeAndRecord(editor.editor, ArrangeType.Forward);
           }}
         >
           <FormattedMessage id="arrange.forward" />
@@ -234,7 +240,8 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Ctrl+[' : '⌘['}
           onClick={() => {
             setVisible(false);
-            editor && arrangeAndRecord(editor, ArrangeType.Backward);
+            editor?.editor &&
+              arrangeAndRecord(editor.editor, ArrangeType.Backward);
           }}
         >
           <FormattedMessage id="arrange.backward" />
@@ -243,7 +250,8 @@ export const ContextMenu: FC = () => {
           suffix="]"
           onClick={() => {
             setVisible(false);
-            editor && arrangeAndRecord(editor, ArrangeType.Front);
+            editor?.editor &&
+              arrangeAndRecord(editor.editor, ArrangeType.Front);
           }}
         >
           <FormattedMessage id="arrange.front" />
@@ -252,7 +260,7 @@ export const ContextMenu: FC = () => {
           suffix="["
           onClick={() => {
             setVisible(false);
-            editor && arrangeAndRecord(editor, ArrangeType.Back);
+            editor?.editor && arrangeAndRecord(editor.editor, ArrangeType.Back);
           }}
         >
           <FormattedMessage id="arrange.back" />
@@ -263,12 +271,12 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Ctrl+Shift+H' : '⇧⌘H'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
+            if (editor?.editor) {
               MutateGraphsAndRecord.toggleVisible(
-                editor,
-                editor.selectedElements.getItems(),
+                editor?.editor,
+                editor?.editor?.selectedElements?.getItems(),
               );
-              editor.render();
+              editor?.editor?.render();
             }
           }}
         >
@@ -279,12 +287,12 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Ctrl+Shift+L' : '⇧⌘L'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
+            if (editor?.editor) {
               MutateGraphsAndRecord.toggleLock(
-                editor,
-                editor.selectedElements.getItems(),
+                editor?.editor,
+                editor?.editor?.selectedElements?.getItems(),
               );
-              editor.render();
+              editor?.editor?.render();
             }
           }}
         >
@@ -296,12 +304,12 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Shift+H' : '⇧H'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
+            if (editor?.editor) {
               flipHorizontalAndRecord(
-                editor,
-                editor.selectedElements.getItems(),
+                editor?.editor,
+                editor?.editor?.selectedElements?.getItems(),
               );
-              editor.render();
+              editor?.editor?.render();
             }
           }}
         >
@@ -312,9 +320,12 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Shift+V' : '⇧V'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              flipVerticalAndRecord(editor, editor.selectedElements.getItems());
-              editor.render();
+            if (editor?.editor) {
+              flipVerticalAndRecord(
+                editor?.editor,
+                editor?.editor?.selectedElements?.getItems(),
+              );
+              editor?.editor?.render();
             }
           }}
         >
@@ -325,8 +336,8 @@ export const ContextMenu: FC = () => {
           suffix={isWindows() ? 'Backspace' : '⌫'}
           onClick={() => {
             setVisible(false);
-            if (editor) {
-              editor.selectedElements.removeFromScene();
+            if (editor?.editor) {
+              editor?.editor?.selectedElements?.removeFromScene();
             }
           }}
         >
@@ -356,7 +367,7 @@ export const ContextMenu: FC = () => {
       >
         {renderNoSelectContextMenu()}
         {editor &&
-          !editor.selectedElements.isEmpty() &&
+          !editor?.editor?.selectedElements?.isEmpty() &&
           renderSelectContextMenu()}
       </div>
     </div>

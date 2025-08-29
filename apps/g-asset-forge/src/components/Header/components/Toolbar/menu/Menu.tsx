@@ -22,14 +22,14 @@ export const Menu: FC = () => {
   );
 
   useEffect(() => {
-    if (!editor) return;
-    setEditorSetting(editor.setting.getAttrs());
+    if (!editor?.editor) return;
+    setEditorSetting(editor?.editor?.setting?.getAttrs());
     const handler = (keys: SettingValue) => {
       setEditorSetting(keys);
     };
-    editor.setting.on('update', handler);
+    editor?.editor?.setting.on('update', handler);
     return () => {
-      editor.setting.off('update', handler);
+      editor?.editor?.setting.off('update', handler);
     };
   }, [editor]);
 
@@ -86,16 +86,16 @@ export const Menu: FC = () => {
   ];
 
   const handleClick = ({ key }: { key: string }) => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     let preventClose = false;
 
     switch (key) {
       case 'import':
-        importService.importOriginFile(editor);
+        importService.importOriginFile(editor?.editor);
         break;
       case 'export':
-        exportService.exportOriginFile(editor);
+        exportService.exportOriginFile(editor?.editor);
         break;
       case 'keepToolSelectedAfterUse':
       case 'invertZoomDirection':
@@ -103,7 +103,7 @@ export const Menu: FC = () => {
       case 'flipObjectsWhileResizing':
       case 'snapToObjects':
       case 'enableRuler':
-        editor.setting.toggle(key);
+        editor?.editor?.setting.toggle(key);
         preventClose = true;
         break;
       default:

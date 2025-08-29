@@ -8,6 +8,10 @@
   background: transparent;
   z-index: 1002; // 确保在Header之上
 
+  // 菜单按钮不允许拖拽
+  -webkit-app-region: no-drag !important;
+  app-region: no-drag !important;
+
   &:hover {
     background: rgba(0, 0, 0, 0.1);
     color: #333;

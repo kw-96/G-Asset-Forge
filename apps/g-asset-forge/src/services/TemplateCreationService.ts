@@ -3,12 +3,15 @@ import {
   TemplateIntegrationService,
 } from '@g-asset-forge/core';
 
+import { createCanvasStateManager } from '../utils/canvasStateManager';
+
 /**
  * 模板创建服务
  * 提供从编辑器创建模板的功能
  */
 export class TemplateCreationService {
   private templateService: TemplateIntegrationService;
+  private canvasStateManager = createCanvasStateManager();
 
   constructor() {
     this.templateService = TemplateIntegrationService.getInstance();
@@ -29,6 +32,20 @@ export class TemplateCreationService {
     },
   ) {
     try {
+      // 设置编辑器到画布状态管理器
+      this.canvasStateManager.setEditor(editor);
+
+      // 验证编辑器状态
+      if (!this.canvasStateManager.validateEditorState()) {
+        throw new Error('编辑器状态异常');
+      }
+
+      // 确保有有效画布
+      const hasValidCanvas = this.canvasStateManager.ensureValidCanvas();
+      if (!hasValidCanvas) {
+        throw new Error('无法获取有效画布');
+      }
+
       // 获取当前编辑器数据
       const editorData = this.getEditorData(editor);
 
@@ -56,7 +73,7 @@ export class TemplateCreationService {
    * 获取编辑器数据
    */
   private getEditorData(editor: GAssetForgeEditor) {
-    // 获取当前画布数据
+    // 获取当前画布数据（已通过画布状态管理器验证）
     const currentCanvas = editor.doc.getCurrentCanvas();
     if (!currentCanvas) {
       throw new Error('没有活动画布');
@@ -119,6 +136,12 @@ export class TemplateCreationService {
    */
   async generateTemplateThumbnail(editor: GAssetForgeEditor): Promise<string> {
     try {
+      // 设置编辑器到画布状态管理器并验证状态
+      this.canvasStateManager.setEditor(editor);
+      if (!this.canvasStateManager.validateEditorState()) {
+        throw new Error('编辑器状态异常');
+      }
+
       // 获取画布元素
       const canvas = editor.canvasElement;
       if (!canvas) {

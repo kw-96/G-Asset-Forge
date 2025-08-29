@@ -34,7 +34,7 @@ export const H5Canvas: FC<H5CanvasProps> = ({
   useEffect(() => {
     if (editor && canvasRef.current && h5Service) {
       // 强制重新渲染编辑器，确保H5容器可见
-      editor.render();
+      editor?.editor?.render();
 
       // 延迟调整视口，确保H5容器已完全初始化
       setTimeout(() => {
@@ -44,8 +44,8 @@ export const H5Canvas: FC<H5CanvasProps> = ({
           if (container) {
             console.log('H5Canvas: 通过H5Service找到H5容器', container);
             // 使用编辑器的视口管理聚焦到H5容器
-            editor.viewportManager.zoomToFit(1);
-            editor.render();
+            editor?.editor?.viewportManager.zoomToFit(1);
+            editor?.editor?.render();
           } else {
             console.warn('H5Canvas: H5Service中没有找到容器');
           }

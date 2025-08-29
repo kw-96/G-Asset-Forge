@@ -1,3 +1,10 @@
+/**
+ * 工具铅笔锚点添加工具
+ * 实现铅笔锚点添加工具的逻辑
+ * 提供了铅笔锚点添加工具的初始化、激活、禁用、移动、结束等功能
+ * 提供了铅笔锚点添加工具的性能监控、调试工具等功能
+ */
+
 import { cloneDeep, parseHexToRGBA } from '@g-asset-forge/common';
 import type {
   IMatrixArr,
@@ -8,9 +15,10 @@ import type {
 
 import { AddGraphCmd, SetGraphsAttrsCmd } from '../../commands';
 import { type GAssetForgeEditor } from '../../editor';
-import { GraphicsObjectSuffix, GAssetForgePath } from '../../graphics';
+import { GAssetForgePath,GraphicsObjectSuffix } from '../../graphics';
 import { PaintType } from '../../paint';
 import { getNoConflictObjectName } from '../../utils';
+import { createCanvasStateManager } from '../../utils/canvasStateManager';
 import { PathSelectTool } from '../tool_path_select';
 import { type IBaseTool } from '../type';
 import { type PenTool } from './tool_pen';
@@ -22,7 +30,12 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
     pathData: IPathItem[];
   } | null = null;
 
-  constructor(private editor: GAssetForgeEditor, private parentTool: PenTool) {}
+  // 画布状态管理器
+  private canvasStateManager = createCanvasStateManager();
+
+  constructor(private editor: GAssetForgeEditor, private parentTool: PenTool) {
+    this.canvasStateManager.setEditor(editor);
+  }
 
   onActive() {
     /* noop */
@@ -57,7 +70,7 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
         },
       ];
 
-      const currCanvas = this.editor.doc.getCurrentCanvas();
+      const currCanvas = this.canvasStateManager.getCurrentCanvas();
       const path = new GAssetForgePath(
         {
           objectName: getNoConflictObjectName(
@@ -83,7 +96,7 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
       this.parentTool.path = path;
 
       this.editor.sceneGraph.addItems([path]);
-      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(path);
       } else {

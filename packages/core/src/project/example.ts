@@ -144,11 +144,11 @@ export async function errorHandlingExample() {
   const projectStorage = new ProjectStorageService();
 
   // 监听错误事件
-  projectStorage.on('projectSaveError', ({ project, error }) => {
+  projectStorage.on('projectSaveError', ({ project, error }: { project: any; error: any }) => {
     console.error('项目保存失败:', project.name, error);
   });
 
-  projectStorage.on('projectLoadError', ({ projectId, error }) => {
+  projectStorage.on('projectLoadError', ({ projectId, error }: { projectId: string; error: any }) => {
     console.error('项目加载失败:', projectId, error);
   });
 

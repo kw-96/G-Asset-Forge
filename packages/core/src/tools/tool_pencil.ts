@@ -1,11 +1,19 @@
+/**
+ * Pencil 铅笔工具
+ * 实现铅笔工具的逻辑
+ * 提供了铅笔工具的初始化、激活、禁用、移动、结束等功能
+ * 提供了铅笔工具的性能监控、调试工具等功能
+ */
+
 import { cloneDeep, noop } from '@g-asset-forge/common';
 import { simplePath } from '@g-asset-forge/geo';
 
 import { AddGraphCmd } from '../commands';
 import { type ICursor } from '../cursor_manager';
 import { type GAssetForgeEditor } from '../editor';
-import { GraphicsObjectSuffix, GAssetForgePath } from '../graphics';
+import { GAssetForgePath,GraphicsObjectSuffix } from '../graphics';
 import { getNoConflictObjectName } from '../utils';
+import { createCanvasStateManager } from '../utils/canvasStateManager';
 import { type ITool } from './type';
 
 const TYPE = 'pencil';
@@ -23,7 +31,12 @@ export class PencilTool implements ITool {
   private path: GAssetForgePath | null = null;
   private isFirstDrag = true;
 
-  constructor(private editor: GAssetForgeEditor) {}
+  // 画布状态管理器
+  private canvasStateManager = createCanvasStateManager();
+
+  constructor(private editor: GAssetForgeEditor) {
+    this.canvasStateManager.setEditor(editor);
+  }
   onActive() {
     this.editor.selectedElements.clear();
   }
@@ -38,7 +51,7 @@ export class PencilTool implements ITool {
     this.path = new GAssetForgePath(
       {
         objectName: getNoConflictObjectName(
-          this.editor.doc.getCurrentCanvas()!,
+          this.canvasStateManager.getCurrentCanvas()!,
           GraphicsObjectSuffix.Path,
         ),
         width: 0,
@@ -76,7 +89,7 @@ export class PencilTool implements ITool {
 
     if (this.isFirstDrag) {
       this.editor.sceneGraph.addItems([path]);
-      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(path);
       } else {

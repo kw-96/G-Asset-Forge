@@ -35,14 +35,14 @@ export const ElementsInfoCards: FC = () => {
   const [attrs, setAttrs] = useState<IAttr[]>([]);
 
   useEffect(() => {
-    if (editor) {
+    if (editor?.editor) {
       const updateInfo = () => {
-        const items = editor.selectedElements.getItems();
+        const items = editor?.editor?.selectedElements?.getItems();
         // TODO: config attr order
         const map = new Map<string, IAttr>();
-        for (const el of items) {
+        for (const el of items || []) {
           const attrs = el.getInfoPanelAttrs();
-          for (const attr of attrs) {
+          for (const attr of attrs || []) {
             if (attr.uiType === 'number') {
               const precision = 2;
               attr.value = remainDecimal(attr.value, precision);
@@ -64,10 +64,10 @@ export const ElementsInfoCards: FC = () => {
 
       updateInfo(); // init
 
-      editor.sceneGraph.on('render', updateInfo);
+      editor?.editor?.sceneGraph.on('render', updateInfo);
 
       return () => {
-        editor.sceneGraph.off('render', updateInfo);
+        editor?.editor?.sceneGraph.off('render', updateInfo);
       };
     }
   }, [editor, MIXED]);
@@ -77,12 +77,12 @@ export const ElementsInfoCards: FC = () => {
     newVal: number,
     isDelta: boolean = false,
   ) => {
-    if (!editor) {
+    if (!editor?.editor) {
       return false;
     }
-    const elements = editor.selectedElements.getItems();
+    const elements = editor?.editor?.selectedElements?.getItems();
     const params = {
-      editor,
+      editor: editor?.editor,
       graphicsArr: elements,
       val: newVal,
       isDelta,
@@ -97,18 +97,18 @@ export const ElementsInfoCards: FC = () => {
       MutateGraphsAndRecord.setHeight(params);
     } else if (key === 'rotation') {
       MutateGraphsAndRecord.setRotation({
-        editor,
+        editor: editor?.editor,
         graphicsArr: elements,
         rotation: normalizeRadian(deg2Rad(newVal)),
         isDelta,
       });
     } else if (key === 'cornerRadius') {
-      // 特定图形特有属性要做特殊处理。。。遍历图形时需要判断当前图形是否支持某个属�?
+      // 特定图形特有属性要做特殊处理。。。遍历图形时需要判断当前图形是否支持某个属性
       MutateGraphsAndRecord.setCornerRadius(params);
     } else if (key === 'count') {
       /// count must to be integer
       MutateGraphsAndRecord.setCount({
-        editor,
+        editor: editor?.editor,
         graphicsArr: elements,
         val: Math.round(newVal),
         isDelta,
@@ -116,7 +116,7 @@ export const ElementsInfoCards: FC = () => {
     } else if (key === 'starInnerScale') {
       MutateGraphsAndRecord.setStarInnerScale(params);
     }
-    editor.render();
+    editor?.editor?.render();
   };
 
   const getEventHandlers = (key: string) => {
@@ -193,7 +193,9 @@ const NumAttrInput: FC<{
   if (props.uiType === 'percent') {
     return (
       <PercentInput
-        prefix={<span className="g-asset-forge-info-attrs-label">{props.label}</span>}
+        prefix={
+          <span className="g-asset-forge-info-attrs-label">{props.label}</span>
+        }
         value={props.value}
         min={props.min}
         max={props.max}
@@ -205,7 +207,9 @@ const NumAttrInput: FC<{
   } else {
     return (
       <NumberInput
-        prefix={<span className="g-asset-forge-info-attrs-label">{props.label}</span>}
+        prefix={
+          <span className="g-asset-forge-info-attrs-label">{props.label}</span>
+        }
         value={props.value}
         min={props.min}
         max={props.max}

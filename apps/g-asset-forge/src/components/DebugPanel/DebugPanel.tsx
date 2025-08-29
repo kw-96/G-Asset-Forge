@@ -13,7 +13,7 @@ export const DebugPanel: FC = () => {
   const [cursorPos, setCursorPos] = useState<IPoint | null>(null);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const handleSelectedBoxHover = (isHover: boolean) => {
       setIsSelectedBoxHover(isHover);
@@ -25,17 +25,17 @@ export const DebugPanel: FC = () => {
       setZoom(val);
     };
 
-    setZoom(editor.viewportManager.getZoom());
+    setZoom(editor?.editor?.viewportManager.getZoom());
 
-    editor.selectedBox.on('hoverChange', handleSelectedBoxHover);
-    editor.selectedElements.on('hoverItemChange', handleHoverItemChange);
-    editor.mouseEventManager.on('cursorPosUpdate', setCursorPos);
-    editor.viewportManager.on('zoomChange', updateZoom);
+    editor?.editor?.selectedBox.on('hoverChange', handleSelectedBoxHover);
+    editor?.editor?.selectedElements.on('hoverItemChange', handleHoverItemChange);
+    editor?.editor?.mouseEventManager.on('cursorPosUpdate', setCursorPos);
+    editor?.editor?.viewportManager.on('zoomChange', updateZoom);
 
     return () => {
-      editor.selectedBox.off('hoverChange', handleSelectedBoxHover);
-      editor.selectedElements.off('hoverItemChange', handleHoverItemChange);
-      editor.viewportManager.off('zoomChange', updateZoom);
+      editor?.editor?.selectedBox.off('hoverChange', handleSelectedBoxHover);
+      editor?.editor?.selectedElements.off('hoverItemChange', handleHoverItemChange);
+      editor?.editor?.viewportManager.off('zoomChange', updateZoom);
     };
   }, [editor]);
 

@@ -208,8 +208,19 @@ export class ViewportManager {
     }
 
     // 获取样式中的宽高，如果无效则使用默认值
-    const width = parseFloat(canvasStyle.width) || 800;
-    const height = parseFloat(canvasStyle.height) || 600;
+    let width = parseFloat(canvasStyle.width) || 0;
+    let height = parseFloat(canvasStyle.height) || 0;
+
+    // 如果样式中没有有效尺寸，尝试从canvas元素本身获取
+    if (width === 0 || height === 0) {
+      const canvas = this.editor.canvasElement;
+      width = canvas.clientWidth || canvas.offsetWidth || 800;
+      height = canvas.clientHeight || canvas.offsetHeight || 600;
+    }
+
+    // 确保最小尺寸
+    width = Math.max(width, 800);
+    height = Math.max(height, 600);
 
     return { width, height };
   }

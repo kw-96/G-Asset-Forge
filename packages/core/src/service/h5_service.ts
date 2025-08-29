@@ -1,3 +1,10 @@
+/**
+ * H5 服务
+ * 实现 H5 服务的逻辑
+ * 提供了 H5 服务的初始化、激活、禁用、移动、结束等功能
+ * 提供了 H5 服务的性能监控、调试工具等功能
+ */
+
 import { type GAssetForgeEditor } from '../editor';
 import {
   H5ButtonBlock,
@@ -9,6 +16,10 @@ import {
 import { H5Container } from '../graphics/h5/h5_container';
 import { type IPaint, PaintType } from '../paint';
 import { type IEditorPaperData } from '../type';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from '../utils/canvasStateManager';
 
 /**
  * H5 服务 - 管理H5编辑模式的容器和内容块
@@ -18,8 +29,16 @@ export class H5Service {
   private currentContainer: H5Container | null = null;
   private containerMonitorInterval: number | null = null;
 
+  // 画布状态管理器
+  private canvasStateManager: CanvasStateManager;
+
   constructor(editor: GAssetForgeEditor) {
     this.editor = editor;
+
+    // 初始化画布状态管理器
+    this.canvasStateManager = createCanvasStateManager();
+    this.canvasStateManager.setEditor(editor);
+
     // 启动容器状态监控
     this.startContainerMonitoring();
   }
@@ -51,7 +70,7 @@ export class H5Service {
    * 在现有画布中插入H5容器，固定在画布中心
    */
   initializeH5Mode(): H5Container {
-    const currentCanvas = this.editor.doc.getCurrentCanvas();
+    const currentCanvas = this.canvasStateManager.getCurrentCanvas();
     if (!currentCanvas) {
       throw new Error('无法获取当前画布');
     }
@@ -208,7 +227,7 @@ export class H5Service {
     if (this.currentContainer) {
       try {
         // 验证容器是否还在画布中
-        const currentCanvas = this.editor.doc.getCurrentCanvas();
+        const currentCanvas = this.canvasStateManager.getCurrentCanvas();
         if (currentCanvas) {
           const containerExists = currentCanvas
             .getChildren()
@@ -239,7 +258,7 @@ export class H5Service {
     try {
       console.log('H5Service: 尝试恢复丢失的H5容器');
 
-      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (currentCanvas) {
         // 重新添加容器到画布
         currentCanvas.insertChild(this.currentContainer as any);
@@ -545,7 +564,7 @@ export class H5Service {
       );
 
       // 将容器添加到画布
-      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (currentCanvas) {
         // 清空子元素
         const children = currentCanvas.getChildren();
@@ -671,7 +690,7 @@ export class H5Service {
 
     if (this.currentContainer) {
       try {
-        const currentCanvas = this.editor.doc.getCurrentCanvas();
+        const currentCanvas = this.canvasStateManager.getCurrentCanvas();
         if (currentCanvas) {
           // 检查容器是否还在画布中
           const containerExists = currentCanvas

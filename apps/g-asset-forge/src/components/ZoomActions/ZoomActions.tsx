@@ -25,19 +25,19 @@ export const ZoomActions: FC = () => {
   }, containerRef);
 
   useEffect(() => {
-    if (editor) {
-      setZoom(editor.viewportManager.getZoom());
-      setSetting(editor.setting.getAttrs());
+    if (editor?.editor) {
+      setZoom(editor?.editor?.viewportManager?.getZoom());
+      setSetting(editor?.editor?.setting?.getAttrs());
 
       const handler = (zoom: number) => {
         setZoom(zoom);
       };
-      editor.viewportManager.on('zoomChange', handler);
-      editor.setting.on('update', (setting) => {
+      editor?.editor?.viewportManager.on('zoomChange', handler);
+      editor?.editor?.setting.on('update', (setting) => {
         setSetting(setting);
       });
       return () => {
-        editor.viewportManager.off('zoomChange', handler);
+        editor?.editor?.viewportManager.off('zoomChange', handler);
       };
     }
   }, [editor]);
@@ -59,11 +59,23 @@ export const ZoomActions: FC = () => {
             <ZoomInput
               defaultValue={zoom}
               onChange={(newZoom) => {
-                editor?.viewportManager.setZoom(
+                editor?.editor?.viewportManager.setZoom(
                   newZoom,
-                  editor.viewportManager.getSceneCenter(),
+                  editor?.editor?.viewportManager?.getSceneCenter(),
                 );
-                editor?.render();
+                editor?.editor?.render();
+              }}
+            />
+            <div
+              className="zoom-action-item"
+              onClick={() => {
+                editor?.editor?.viewportManager?.zoomToFit();
+              }}
+            />
+            <div
+              className="zoom-action-item"
+              onClick={() => {
+                editor?.editor?.viewportManager?.zoomToSelection();
               }}
             />
           </div>
@@ -74,47 +86,49 @@ export const ZoomActions: FC = () => {
                 id: 'zoom.zoomIn',
                 suffix: isWindows() ? 'Ctrl++' : '⌘+',
                 action: () => {
-                  editor?.viewportManager.zoomIn({ isLevelZoom: true });
+                  editor?.editor?.viewportManager.zoomIn({ isLevelZoom: true });
                 },
               },
               {
                 id: 'zoom.zoomOut',
                 suffix: isWindows() ? 'Ctrl+-' : '⌘-',
                 action: () => {
-                  editor?.viewportManager.zoomOut({ isLevelZoom: true });
+                  editor?.editor?.viewportManager.zoomOut({
+                    isLevelZoom: true,
+                  });
                 },
               },
               {
                 id: 'zoom.zoomToFit',
                 suffix: isWindows() ? 'Shift+1' : '⇧1',
                 action: () => {
-                  editor?.viewportManager.zoomToFit();
+                  editor?.editor?.viewportManager?.zoomToFit();
                 },
               },
               {
                 id: 'zoom.zoomToSelection',
                 suffix: isWindows() ? 'Shift+2' : '⇧2',
                 action: () => {
-                  editor?.viewportManager.zoomToSelection();
+                  editor?.editor?.viewportManager?.zoomToSelection();
                 },
               },
               {
                 id: 'zoom.zoomTo50',
                 action: () => {
-                  editor?.viewportManager.setZoomAndUpdateViewport(0.5);
+                  editor?.editor?.viewportManager.setZoomAndUpdateViewport(0.5);
                 },
               },
               {
                 id: 'zoom.zoomTo100',
                 suffix: isWindows() ? 'Ctrl+0' : '⌘0',
                 action: () => {
-                  editor?.viewportManager.setZoomAndUpdateViewport(1);
+                  editor?.editor?.viewportManager.setZoomAndUpdateViewport(1);
                 },
               },
               {
                 id: 'zoom.zoomTo200',
                 action: () => {
-                  editor?.viewportManager.setZoomAndUpdateViewport(2);
+                  editor?.editor?.viewportManager.setZoomAndUpdateViewport(2);
                 },
               },
             ] as { id: MessageIds; suffix?: string; action(): void }[]
@@ -125,7 +139,7 @@ export const ZoomActions: FC = () => {
                 key={item.id}
                 onClick={() => {
                   item.action();
-                  editor?.render();
+                  editor?.editor?.render();
                   setPopoverVisible(false);
                 }}
               >
@@ -133,49 +147,6 @@ export const ZoomActions: FC = () => {
               </ActionItem>
             );
           })}
-          <div className="separator" />
-          <ActionItem
-            check={setting.enablePixelGrid}
-            suffix={isWindows() ? "Ctrl+'" : "⌘'"}
-            onClick={() => {
-              if (editor) {
-                const enablePixelGrid = editor.setting.get('enablePixelGrid');
-                editor.setting.set('enablePixelGrid', !enablePixelGrid);
-                editor.render();
-                setPopoverVisible(false);
-              }
-            }}
-          >
-            <FormattedMessage id="setting.grid.pixelGrid" />
-          </ActionItem>
-          <ActionItem
-            check={setting.snapToGrid}
-            suffix={isWindows() ? "Ctrl+Shift+'" : "⌘⇧'"}
-            onClick={() => {
-              if (editor) {
-                const snapToGrid = editor.setting.get('snapToGrid');
-                editor.setting.set('snapToGrid', !snapToGrid);
-                editor.render();
-                setPopoverVisible(false);
-              }
-            }}
-          >
-            <FormattedMessage id="setting.grid.snapToPixelGrid" />
-          </ActionItem>
-          <ActionItem
-            check={setting.enableRuler}
-            suffix={isWindows() ? 'Shift+R' : '⇧R'}
-            onClick={() => {
-              if (editor) {
-                const enableRuler = editor.setting.get('enableRuler');
-                editor.setting.set('enableRuler', !enableRuler);
-                editor.render();
-                setPopoverVisible(false);
-              }
-            }}
-          >
-            <FormattedMessage id="setting.rulers" />
-          </ActionItem>
         </div>
       )}
     </div>

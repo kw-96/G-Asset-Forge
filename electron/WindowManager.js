@@ -15,7 +15,7 @@ class WindowManager {
   createMainWindow(options = {}) {
     // 根据模式设置窗口属性
     const isWelcomeMode = !options.webPreferences?.devTools;
-    
+
     const mainWindow = new BrowserWindow({
       width: options.width ?? (isWelcomeMode ? 480 : 1400),
       height: options.height ?? (isWelcomeMode ? 320 : 900),
@@ -31,14 +31,18 @@ class WindowManager {
         disableDialogs: false, // 允许对话框（用于错误报告）
         safeDialogs: true, // 启用安全对话框
         safeDialogsMessage: 'G-Asset-Forge检测到不安全的对话框尝试', // 安全对话框消息
+        // 应用 CSP 策略
+        webSecurity: SecurityConfig.webSecurity.webSecurity,
+        sandbox: SecurityConfig.webSecurity.webPreferences.sandbox,
         ...options.webPreferences,
       },
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
       frame: false, // 隐藏系统窗口框架，使用自定义标题栏
       show: false, // Don't show until ready
-      icon: process.platform === 'win32' 
-        ? path.join(__dirname, '../assets/icon-GAF.ico')
-        : path.join(__dirname, '../assets/icon.GAF.png'),
+      icon:
+        process.platform === 'win32'
+          ? path.join(__dirname, '../assets/icon-GAF.ico')
+          : path.join(__dirname, '../assets/icon.GAF.png'),
       // 额外的窗口安全设置
       transparent: false, // 不允许透明窗口
       thickFrame: isWelcomeMode ? false : true, // 欢迎模式下禁用厚框架
@@ -59,7 +63,7 @@ class WindowManager {
     // Show window when ready to prevent visual flash
     mainWindow.once('ready-to-show', () => {
       mainWindow.show();
-      
+
       // Center the window
       mainWindow.center();
     });
@@ -100,8 +104,9 @@ class WindowManager {
   }
 
   closeAllWindows() {
-    this.windows.forEach((window, _windowId) => {
+    this.windows.forEach((window, windowId) => {
       if (!window.isDestroyed()) {
+        console.log(`关闭窗口: ${windowId}`);
         window.close();
       }
     });

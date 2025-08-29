@@ -1,11 +1,19 @@
+/**
+ * 文本编辑器
+ * 实现文本编辑器的逻辑
+ * 提供了文本编辑器的初始化、激活、禁用、移动、结束等功能
+ * 提供了文本编辑器的性能监控、调试工具等功能
+ */
+
 import { getContentLength, sliceContent } from '@g-asset-forge/common';
 import { calcTextSize, type IPoint } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../editor';
-import { type IDrawInfo, GAssetForgeText, type TextAttrs } from '../graphics';
+import { GAssetForgeText, type IDrawInfo, type TextAttrs } from '../graphics';
 import { type IMousemoveEvent } from '../host_event_manager';
 import { removeGraphicsAndRecord } from '../service/remove_service';
 import { Transaction } from '../transaction';
+import { createCanvasStateManager } from '../utils/canvasStateManager';
 import { type IRange, RangeManager } from './range_manager';
 
 const defaultInputStyle = {
@@ -26,8 +34,14 @@ export class TextEditor {
   private _active = false;
   private transaction!: Transaction;
 
+  // 画布状态管理器
+  private canvasStateManager = createCanvasStateManager();
+
   constructor(private editor: GAssetForgeEditor) {
     this.rangeManager = new RangeManager(editor);
+
+    // 初始化画布状态管理器
+    this.canvasStateManager.setEditor(editor);
 
     this.inputDom = this.createInputDom();
     this.inactive();
@@ -87,7 +101,7 @@ export class TextEditor {
       this.textGraphics = textGraphics;
 
       this.editor.sceneGraph.addItems([textGraphics]);
-      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(textGraphics);
       } else {

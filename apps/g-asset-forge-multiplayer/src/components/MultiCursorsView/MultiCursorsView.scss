@@ -1,5 +1,6 @@
 .sk-cursors-view {
   pointer-events: none;
+  -webkit-user-select: none;
   user-select: none;
   overflow: hidden;
 

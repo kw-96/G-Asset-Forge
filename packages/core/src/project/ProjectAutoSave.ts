@@ -200,4 +200,53 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
   private getEditorData(): IEditorPaperData {
     return JSON.parse(this.editor.sceneGraph.toJSON());
   }
+
+  /**
+   * 创建项目备份
+   */
+  async createBackup(description: string): Promise<boolean> {
+    if (!this.currentProjectId) {
+      return false;
+    }
+
+    try {
+      const backup = await this.storageService.createBackup(
+        this.currentProjectId,
+        description,
+      );
+      return backup !== null;
+    } catch (error) {
+      console.error('创建备份失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 获取项目统计信息
+   */
+  async getProjectStats(): Promise<any> {
+    if (!this.currentProjectId) {
+      return null;
+    }
+
+    try {
+      const project = await this.storageService.loadProject(
+        this.currentProjectId,
+      );
+      if (!project) {
+        return null;
+      }
+
+      return {
+        projectId: this.currentProjectId,
+        lastModified: project.updatedAt,
+        autoSaveEnabled: this.autoSaveTimer !== null,
+        isDirty: this.isDirty,
+        autoSaveInterval: this.autoSaveInterval,
+      };
+    } catch (error) {
+      console.error('获取项目统计信息失败:', error);
+      return null;
+    }
+  }
 }

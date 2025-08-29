@@ -71,10 +71,16 @@ export const PageItem: FC<IProps> = ({
         className={classNames('sk-page-item', {
           'sk-editing': isEditing,
         })}
+        onClick={(e) => {
+          e.stopPropagation(); // 阻止事件冒泡
+          e.preventDefault(); // 阻止默认行为
+          setSelectedGraph && setSelectedGraph(id, e);
+        }}
         onMouseDown={(e) => {
           // only left click
           if (e.button !== 0) return;
-          setSelectedGraph && setSelectedGraph(id, e);
+          e.stopPropagation(); // 阻止事件冒泡
+          e.preventDefault(); // 阻止默认行为
         }}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -88,7 +94,10 @@ export const PageItem: FC<IProps> = ({
           <span
             key={'span'}
             className="sk-layout-name"
-            onDoubleClick={handleDbClick}
+            onDoubleClick={(e) => {
+              e.stopPropagation(); // 阻止双击事件冒泡
+              handleDbClick();
+            }}
           >
             {layoutName}
           </span>
@@ -99,6 +108,8 @@ export const PageItem: FC<IProps> = ({
             onMouseDown={(e) => e.stopPropagation()}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
+            placeholder="输入页面名称"
+            title="页面名称"
           />
         )}
       </div>

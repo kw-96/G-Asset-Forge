@@ -16,11 +16,11 @@ export const LayerInfoCard: FC = () => {
 
   const editor = useContext(EditorContext);
   useEffect(() => {
-    if (!editor) return;
+    if (!editor?.editor) return;
 
     const updateOpacity = () => {
-      if (!editor) return;
-      const items = editor.selectedElements.getItems();
+      if (!editor?.editor) return;
+      const items = editor?.editor?.selectedElements?.getItems();
       if (!items.length) return;
 
       let opacity: number | string = items[0].getOpacity();
@@ -34,18 +34,18 @@ export const LayerInfoCard: FC = () => {
     };
 
     updateOpacity();
-    editor.sceneGraph.on('render', updateOpacity);
+    editor?.editor?.sceneGraph.on('render', updateOpacity);
     return () => {
-      editor.sceneGraph.off('render', updateOpacity);
+      editor?.editor?.sceneGraph.off('render', updateOpacity);
     };
   }, [editor, MIXED]);
 
   const recordOpacityChange = (value: number) => {
-    if (!editor) return;
-    const items = editor.selectedElements.getItems();
+    if (!editor?.editor) return;
+    const items = editor?.editor?.selectedElements?.getItems();
     if (!items.length) return;
 
-    const transaction = new Transaction(editor);
+    const transaction = new Transaction(editor?.editor);
     for (const el of items) {
       transaction.recordOld(el.attrs.id, { opacity: el.getOpacity() });
       el.updateAttrs({ opacity: value });

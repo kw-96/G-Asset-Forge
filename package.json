@@ -11,7 +11,13 @@
   "scripts": {
     "dev": "run-p common:dev icons:dev components:dev geo:dev core:dev app:dev",
     "dev-m": "run-p common:dev icons:dev components:dev geo:dev core:dev app-m:dev",
-    "build": "pnpm -r --filter !@g-asset-forge/backend --filter !@g-asset-forge/workbench exec pnpm run build",
+    "build": "pnpm run build:common && pnpm run build:icons && pnpm run build:geo && pnpm run build:core && pnpm run build:components && pnpm run build:app",
+    "build:common": "pnpm --filter @g-asset-forge/common run build",
+    "build:icons": "pnpm --filter @g-asset-forge/icons run build",
+    "build:geo": "pnpm --filter @g-asset-forge/geo run build",
+    "build:core": "pnpm --filter @g-asset-forge/core run build",
+    "build:components": "pnpm --filter @g-asset-forge/components run build",
+    "build:app": "pnpm --filter @g-asset-forge/g-asset-forge run build",
     "app:dev": "pnpm --filter @g-asset-forge/g-asset-forge dev",
     "app-m:dev": "pnpm --filter @g-asset-forge/g-asset-forge-multiplayer dev",
     "app:build": "pnpm --filter @g-asset-forge/g-asset-forge build",
@@ -31,7 +37,12 @@
     "electron:dev": "concurrently \"pnpm run app:dev\" \"wait-on http://localhost:6167 && cross-env NODE_ENV=development node_modules/electron/cli.js electron/main.js\"",
     "electron:build": "pnpm run app:build && electron-builder",
     "electron:pack": "pnpm run app:build && electron-builder --dir",
-    "electron:dist": "pnpm run app:build && electron-builder"
+    "electron:dist": "pnpm run app:build && electron-builder",
+    "clean": "node scripts/clean.js",
+    "clean:quick": "node scripts/clean.js quick",
+    "clean:standard": "node scripts/clean.js standard",
+    "clean:deep": "node scripts/clean.js deep",
+    "clean:package": "node scripts/clean.js package"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.6.1",

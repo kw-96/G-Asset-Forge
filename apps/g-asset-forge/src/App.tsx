@@ -64,6 +64,8 @@ function App() {
 
     // 自动创建一个未命名项目
     try {
+      console.log('开始创建项目，模式:', mode);
+
       const projectResult = await projectManagementService.createProject({
         name: '未命名项目',
         description: '',
@@ -71,14 +73,28 @@ function App() {
       });
 
       if (projectResult) {
+        console.log('项目创建成功:', projectResult);
+
         // 打开创建的项目
         const success = await projectManagementService.openProject(
           projectResult.id,
         );
+
         if (success) {
+          console.log('项目打开成功，设置当前项目ID:', projectResult.id);
           setCurrentProjectId(projectResult.id);
+
+          // 等待一小段时间确保项目管理服务状态更新
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
           setCurrentView('editor');
-          console.log('自动创建并打开项目:', projectResult.name);
+          console.log('自动创建并打开项目完成:', projectResult.name);
+
+          // 调试信息
+          console.log('当前项目管理服务状态:', {
+            openTabs: projectManagementService.getOpenTabs(),
+            activeTabId: projectManagementService.getActiveTabId(),
+          });
         } else {
           console.error('打开自动创建的项目失败');
           setCurrentView('editor'); // 即使失败也进入编辑器
@@ -133,6 +149,19 @@ function App() {
           setCurrentProjectId(projectResult.id);
           setCurrentView('editor');
           console.log('创建并打开新项目:', projectResult.name);
+
+          // 确保项目管理服务状态正确更新
+          // 触发标签页状态更新
+          setTimeout(() => {
+            console.log(
+              '当前打开的标签页:',
+              projectManagementService.getOpenTabs(),
+            );
+            console.log(
+              '当前活动标签页:',
+              projectManagementService.getActiveTabId(),
+            );
+          }, 100);
         } else {
           console.error('打开新创建的项目失败');
         }

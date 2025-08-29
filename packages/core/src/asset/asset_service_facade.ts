@@ -147,20 +147,20 @@ export class AssetServiceFacade {
 
   // ========== 事件回调（可以被外部重写） ==========
 
-  protected onAssetUploaded(asset: any): void {
-    // 子类可以重写此方法来处理UI更新
+  protected onAssetUploaded(_asset: any): void {
+    // 资产上传后的处理逻辑
   }
 
-  protected onAssetsDeleted(assetIds: string[]): void {
-    // 子类可以重写此方法来处理UI更新
+  protected onAssetsDeleted(_assetIds: string[]): void {
+    // 资产删除后的处理逻辑
   }
 
-  protected onCategoryCreated(category: any): void {
-    // 子类可以重写此方法来处理UI更新
+  protected onCategoryCreated(_category: any): void {
+    // 分类创建后的处理逻辑
   }
 
-  protected onTagCreated(tag: any): void {
-    // 子类可以重写此方法来处理UI更新
+  protected onTagCreated(_tag: any): void {
+    // 标签创建后的处理逻辑
   }
 }
 

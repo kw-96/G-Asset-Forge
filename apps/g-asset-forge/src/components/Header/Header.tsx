@@ -32,8 +32,25 @@ export const Header: FC<IProps> = ({
   onCreateProject, // 新增：创建项目回调
   children,
 }) => {
+  // 添加调试信息
+  console.log('Header 渲染 - 标签页数据:', {
+    projectTabsLength: projectTabs.length,
+    projectTabs,
+    activeTabId,
+    hasOnTabSelect: !!onTabSelect,
+    hasOnTabClose: !!onTabClose,
+    hasOnCreateProject: !!onCreateProject,
+  });
+
   return (
-    <div className="sk-header">
+    <div
+      className="sk-header"
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Header: 阻止双击事件冒泡');
+      }}
+    >
       {/* 左侧区域 - 主页按钮 */}
       <div className="sk-left-area">
         {showHomeButton && onBackToHome && (
@@ -48,9 +65,9 @@ export const Header: FC<IProps> = ({
         )}
       </div>
 
-      {/* 项目标签页区域 */}
-      {projectTabs.length > 0 && (
-        <div className="sk-tabs-area">
+      {/* 项目标签页区域 - 始终显示容器，即使没有标签页 */}
+      <div className="sk-tabs-area">
+        {projectTabs.length > 0 ? (
           <ProjectTabs
             tabs={projectTabs}
             activeTabId={activeTabId}
@@ -58,15 +75,23 @@ export const Header: FC<IProps> = ({
             onTabClose={onTabClose}
             onTabsReorder={onTabsReorder}
           />
-        </div>
-      )}
+        ) : (
+          <div className="no-tabs-placeholder">
+            {/* 可以显示一个占位符或者什么都不显示 */}
+            <span className="no-tabs-text">暂无打开的项目</span>
+          </div>
+        )}
+      </div>
 
       {/* 新建项目按钮 - 始终显示 */}
       {onCreateProject && (
         <button
           type="button"
           className="new-project-btn"
-          onClick={onCreateProject}
+          onClick={() => {
+            console.log('新建项目按钮被点击');
+            onCreateProject();
+          }}
           title="新建项目"
         >
           <SvgIcon name="icon.24.plus" size={24} />

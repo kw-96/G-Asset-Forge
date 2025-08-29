@@ -12,6 +12,10 @@ import {
 } from '@g-asset-forge/core';
 
 import { type IProjectTab } from '../components/ProjectLibraryPanel/types';
+import {
+  type CanvasStateManager,
+  createCanvasStateManager,
+} from '../utils/canvasStateManager';
 
 interface ProjectManagementEvents {
   projectOpened: (project: ProjectData) => void;
@@ -22,6 +26,10 @@ interface ProjectManagementEvents {
   projectDeleted: (projectId: string) => void;
   tabsChanged: (tabs: IProjectTab[]) => void;
   activeTabChanged: (tabId: string) => void;
+  canvasContentChanged: (data: {
+    projectId: string;
+    canvasCount: number;
+  }) => void;
 }
 
 /**
@@ -35,10 +43,17 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   private openTabs: Map<string, IProjectTab> = new Map();
   private activeTabId: string | null = null;
   private projectDataCache: Map<string, ProjectData> = new Map();
+  private canvasStateManager: CanvasStateManager;
+  private pendingProjectLoad: string | null = null; // 待加载的项目ID
+
+  // 新增：项目级别的文档实例管理，实现真正的数据隔离
+  private projectDocuments: Map<string, any> = new Map(); // 存储每个项目的GAssetForgeDocument实例
+  private projectEditorStates: Map<string, any> = new Map(); // 存储每个项目的编辑器状态
 
   constructor() {
     super();
     this.storageService = new ProjectStorageService();
+    this.canvasStateManager = createCanvasStateManager();
     this.loadOpenTabs();
   }
 
@@ -47,6 +62,9 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
    */
   setEditor(editor: GAssetForgeEditor): void {
     this.editor = editor;
+
+    // 设置画布状态管理器
+    this.canvasStateManager.setEditor(editor);
 
     // 初始化自动保存服务
     if (this.autoSaveService) {
@@ -73,6 +91,12 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         this.emit('tabsChanged', this.getOpenTabs());
       }
     });
+
+    // 检查是否有待加载的项目
+    if (this.pendingProjectLoad) {
+      console.log('编辑器已就绪，处理待加载的项目:', this.pendingProjectLoad);
+      this.loadPendingProject();
+    }
   }
 
   /**
@@ -101,14 +125,42 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
+   * 加载待加载的项目
+   */
+  private async loadPendingProject(): Promise<void> {
+    if (!this.pendingProjectLoad || !this.editor) {
+      return;
+    }
+
+    try {
+      const projectId = this.pendingProjectLoad;
+      const projectData = this.projectDataCache.get(projectId);
+
+      if (projectData) {
+        console.log('加载待加载的项目数据:', projectData.name);
+        await this.loadProjectDataToEditor(projectData);
+        this.emit('projectSwitched', projectData);
+      }
+
+      // 清除待加载标记
+      this.pendingProjectLoad = null;
+    } catch (error) {
+      console.error('加载待加载项目失败:', error);
+      this.pendingProjectLoad = null;
+    }
+  }
+
+  /**
    * 打开项目
    */
   async openProject(projectId: string): Promise<boolean> {
     try {
+      console.log('尝试打开项目:', projectId);
+
       // 检查项目是否已经打开
       if (this.openTabs.has(projectId)) {
-        this.switchToTab(projectId);
-        return true;
+        console.log('项目已打开，切换到该标签页');
+        return await this.switchToTab(projectId);
       }
 
       // 加载项目数据
@@ -118,25 +170,47 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         return false;
       }
 
+      console.log('项目数据加载成功:', projectData.name);
+
       // 缓存项目数据
       this.projectDataCache.set(projectId, projectData);
+
+      // 将其他标签页设为非活动状态
+      this.openTabs.forEach((existingTab) => {
+        existingTab.isActive = false;
+      });
 
       // 创建标签页
       const tab: IProjectTab = {
         id: projectId,
         name: projectData.name,
         filePath: `project://${projectId}`,
-        isActive: false,
+        isActive: true,
         isDirty: false,
         isClosable: true,
       };
 
       this.openTabs.set(projectId, tab);
-      this.switchToTab(projectId);
+      this.activeTabId = projectId;
+
+      // 更新自动保存服务的当前项目
+      if (this.autoSaveService) {
+        this.autoSaveService.setCurrentProject(projectId);
+      }
+
+      // 保存状态
       this.saveOpenTabs();
 
+      // 批量发射事件，减少事件频率
       this.emit('projectOpened', projectData);
+      this.emit('activeTabChanged', projectId);
       this.emit('tabsChanged', this.getOpenTabs());
+
+      console.log('项目打开完成:', {
+        projectId,
+        tabsCount: this.openTabs.size,
+        activeTabId: this.activeTabId,
+      });
 
       return true;
     } catch (error) {
@@ -173,7 +247,11 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       if (this.activeTabId === projectId) {
         const remainingTabs = this.getOpenTabs();
         if (remainingTabs.length > 0) {
-          this.switchToTab(remainingTabs[0].id);
+          const success = await this.switchToTab(remainingTabs[0].id);
+          if (!success) {
+            console.warn('切换到剩余标签页失败');
+            this.activeTabId = null;
+          }
         } else {
           this.activeTabId = null;
           this.emit('activeTabChanged', '');
@@ -195,43 +273,134 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
    * 切换到指定标签页
    */
   async switchToTab(tabId: string): Promise<boolean> {
-    const tab = this.openTabs.get(tabId);
-    if (!tab) {
+    if (!this.editor || !this.openTabs.has(tabId)) {
+      console.warn('无法切换到标签页:', tabId);
       return false;
     }
 
-    // 更新活动状态
-    this.openTabs.forEach((t) => {
-      t.isActive = t.id === tabId;
-    });
+    try {
+      console.log('切换到标签页:', tabId);
 
-    this.activeTabId = tabId;
-    this.saveOpenTabs();
-
-    // 更新自动保存服务的当前项目
-    if (this.autoSaveService) {
-      this.autoSaveService.setCurrentProject(tabId);
-    }
-
-    // 加载项目数据到编辑器
-    const projectData = this.projectDataCache.get(tabId);
-    if (projectData && this.editor) {
-      try {
-        this.editor.setContents(projectData.editorData);
-      } catch (error) {
-        console.error('加载项目数据到编辑器失败:', error);
+      // 保存当前项目状态（如果需要）
+      if (this.activeTabId) {
+        await this.saveCurrentProjectState();
       }
+
+      // 更新活动标签页
+      this.activeTabId = tabId;
+      const tab = this.openTabs.get(tabId)!;
+
+      // 获取项目数据
+      const projectData = this.projectDataCache.get(tabId);
+      if (!projectData) {
+        console.warn('项目数据未找到:', tabId);
+        return false;
+      }
+
+      // 加载项目数据到编辑器（使用新的隔离方法）
+      await this.loadProjectDataToEditor(projectData);
+
+      // 发射事件
+      this.emit('activeTabChanged', tabId);
+      this.emit('tabsChanged', this.getOpenTabs());
+
+      console.log('标签页切换完成:', {
+        tabId,
+        activeTabId: this.activeTabId,
+        tabsCount: this.openTabs.size,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('切换标签页失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 保存当前项目状态到缓存
+   */
+  private async saveCurrentProjectState(): Promise<void> {
+    if (!this.activeTabId || !this.editor) {
+      return;
     }
 
-    this.emit('activeTabChanged', tabId);
-    this.emit('tabsChanged', this.getOpenTabs());
+    try {
+      // 获取当前编辑器的状态（通过sceneGraph的toJSON方法）
+      const currentStateJson = this.editor.sceneGraph.toJSON();
+      const currentState = JSON.parse(currentStateJson);
 
-    // 触发项目切换事件
-    if (projectData) {
-      this.emit('projectSwitched', projectData);
+      // 更新项目数据缓存
+      const currentTab = this.openTabs.get(this.activeTabId);
+      if (currentTab) {
+        const projectData = this.projectDataCache.get(this.activeTabId);
+        if (projectData) {
+          projectData.editorData = currentState;
+          this.projectDataCache.set(this.activeTabId, projectData);
+          console.log('已保存当前项目状态到缓存:', this.activeTabId);
+        }
+      }
+    } catch (error) {
+      console.warn('保存当前项目状态失败:', error);
+    }
+  }
+
+  /**
+   * 加载项目数据到编辑器，实现数据隔离
+   */
+  private async loadProjectDataToEditor(
+    projectData: ProjectData,
+  ): Promise<void> {
+    if (!this.editor || !projectData) {
+      return;
     }
 
-    return true;
+    try {
+      console.log(
+        '开始加载项目数据到编辑器（数据隔离模式）:',
+        projectData.name,
+      );
+
+      // 保存当前项目状态（如果有活动项目）
+      if (this.activeTabId) {
+        await this.saveCurrentProjectState();
+      }
+
+      // 使用现有的setContents方法，通过项目级别的数据缓存实现隔离
+      // 每次切换项目时，都会完全替换编辑器内容，确保数据隔离
+      this.editor.setContents(projectData.editorData);
+
+      // 使用画布状态管理器确保有效画布
+      const hasValidCanvas = this.canvasStateManager.ensureValidCanvas();
+      if (!hasValidCanvas) {
+        console.warn('项目数据加载后无法确保有效画布');
+      }
+
+      // 等待一帧确保DOM更新
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
+      // 触发渲染
+      this.editor.render();
+
+      // 强制更新画布状态，确保Pages组件能获取到正确的页面列表
+      if (this.canvasStateManager) {
+        try {
+          // 获取当前画布状态
+          const canvasState = this.canvasStateManager.getCanvasState();
+          console.log('画布状态已更新:', canvasState);
+        } catch (error) {
+          console.warn('更新画布状态时出错:', error);
+        }
+      }
+
+      console.log(
+        '项目数据已安全加载到编辑器（数据隔离模式）:',
+        projectData.name,
+      );
+    } catch (error) {
+      console.error('加载项目数据到编辑器失败:', error);
+      throw error;
+    }
   }
 
   /**
@@ -280,15 +449,29 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
    * 标记项目为已修改
    */
   markProjectDirty(projectId: string): void {
+    console.log('标记项目为已修改:', projectId);
+
     const tab = this.openTabs.get(projectId);
     if (tab && !tab.isDirty) {
+      console.log('项目标签页状态更新: 未修改 → 已修改');
       tab.isDirty = true;
       this.openTabs.set(projectId, tab);
+
+      // 发射事件通知UI更新
       this.emit('tabsChanged', this.getOpenTabs());
+      console.log(
+        '已发射tabsChanged事件，标签页数量:',
+        this.getOpenTabs().length,
+      );
+    } else if (tab && tab.isDirty) {
+      console.log('项目已经是已修改状态，无需更新');
+    } else {
+      console.warn('未找到项目标签页:', projectId);
     }
 
     // 通知自动保存服务
     if (this.autoSaveService && projectId === this.activeTabId) {
+      console.log('通知自动保存服务项目已修改');
       this.autoSaveService.markDirty();
     }
   }
@@ -454,6 +637,7 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       this.autoSaveService = null;
     }
 
+    this.canvasStateManager.destroy();
     this.openTabs.clear();
     this.projectDataCache.clear();
     this.activeTabId = null;
