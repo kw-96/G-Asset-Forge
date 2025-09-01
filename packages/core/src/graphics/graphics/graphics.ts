@@ -314,7 +314,10 @@ export class GAssetForgeGraphics<ATTRS extends GraphicsAttrs = GraphicsAttrs> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getHitGraphics(point: IPoint, options: IHitOptions): GAssetForgeGraphics | null {
+  getHitGraphics(
+    point: IPoint,
+    options: IHitOptions,
+  ): GAssetForgeGraphics | null {
     const { tol = 0 } = options;
     if (
       !this.isVisible() ||
@@ -549,7 +552,10 @@ export class GAssetForgeGraphics<ATTRS extends GraphicsAttrs = GraphicsAttrs> {
 
     if (src) {
       imgManager.addImg(src);
-      img = imgManager.getImg(src);
+      const loadedImg = imgManager.getImg(src);
+      if (loadedImg) {
+        img = loadedImg;
+      }
     } else {
       ctx.imageSmoothingEnabled = false;
       img = DEFAULT_IMAGE;
@@ -559,11 +565,14 @@ export class GAssetForgeGraphics<ATTRS extends GraphicsAttrs = GraphicsAttrs> {
       return;
     }
 
-    // reference: https://mp.weixin.qq.com/s/TSpZv_0VJtxPTCCzEqDl8Q
-    const scale = calcCoverScale(img.width, img.height, width, height);
+    // 类型断言确保img是HTMLImageElement
+    const htmlImg = img as HTMLImageElement;
 
-    const sx = img.width / 2 - width / scale / 2;
-    const sy = img.height / 2 - height / scale / 2;
+    // reference: https://mp.weixin.qq.com/s/TSpZv_0VJtxPTCCzEqDl8Q
+    const scale = calcCoverScale(htmlImg.width, htmlImg.height, width, height);
+
+    const sx = htmlImg.width / 2 - width / scale / 2;
+    const sy = htmlImg.height / 2 - height / scale / 2;
 
     if (cornerRadius) {
       ctx.save();

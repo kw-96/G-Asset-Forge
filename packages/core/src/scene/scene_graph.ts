@@ -78,6 +78,9 @@ export class SceneGraph {
 
   // 全局重渲染
   render = rafThrottle(() => {
+    // 标记渲染开始
+    this.editor.perfMonitor.markRenderStart();
+
     // 获取视口区域
     const { canvasElement: canvas, ctx, setting } = this.editor;
 
@@ -262,6 +265,12 @@ export class SceneGraph {
     }
 
     ctx.restore();
+
+    // 标记渲染结束并更新画布对象数量
+    this.editor.perfMonitor.markRenderEnd();
+    this.editor.perfMonitor.updateCanvasObjectCount(
+      this.editor.doc.getAllGraphicsArr().length,
+    );
 
     this.eventEmitter.emit('render');
   });
@@ -453,6 +462,24 @@ export class SceneGraph {
         }
       }
     }
+  }
+
+  /**
+   * 清空场景图数据
+   */
+  clear() {
+    console.log('SceneGraph.clear: 清空场景图数据');
+
+    // 清空文档数据
+    this.editor.doc.clear();
+
+    // 清空选择区域
+    this.selection = null;
+
+    // 触发渲染更新
+    this.render();
+
+    console.log('SceneGraph.clear: 场景图已清空');
   }
 
   on<K extends keyof Events>(eventName: K, handler: Events[K]) {

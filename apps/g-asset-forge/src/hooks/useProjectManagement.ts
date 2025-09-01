@@ -34,6 +34,7 @@ export interface UseProjectManagementReturn {
   getActiveProject: () => Promise<any>;
   markProjectDirty: (projectId: string) => void;
   hasUnsavedChanges: () => boolean;
+  getDataIsolationStatus: () => any;
 }
 
 /**
@@ -473,6 +474,13 @@ export const useProjectManagement = (
     return openTabs.some((tab) => tab.isDirty);
   }, [openTabs]);
 
+  const getDataIsolationStatus = useCallback((): any => {
+    if (!serviceRef.current) return null;
+
+    // 调用服务的数据隔离状态方法
+    return (serviceRef.current as any).getDataIsolationStatus?.() || null;
+  }, []);
+
   return {
     // 状态
     openTabs,
@@ -495,5 +503,6 @@ export const useProjectManagement = (
     getActiveProject,
     markProjectDirty,
     hasUnsavedChanges,
+    getDataIsolationStatus,
   };
 };

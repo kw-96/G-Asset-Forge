@@ -15,3 +15,11 @@ export * from './type';
 export * from './graphics/h5/content_block';
 export * from './graphics/h5/h5_container';
 export * from './service/h5_service';
+
+// 性能优化和稳定性功能
+export * from './perf_monitor';
+export * from './utils/raf_throttle';
+export * from './Img_manager';
+export * from './error_handler';
+export * from './offline_manager';
+export * from './performance_service';

@@ -9,7 +9,11 @@
 import './Editor.scss';
 
 import { pick, throttle } from '@g-asset-forge/common';
-import { GAssetForgeEditor, type SettingValue } from '@g-asset-forge/core';
+import {
+  GAssetForgeEditor,
+  type SettingValue,
+  performanceService,
+} from '@g-asset-forge/core';
 import { type FC, useCallback, useEffect, useRef, useState } from 'react';
 
 import { EditorContext } from '../context';
@@ -24,7 +28,11 @@ import {
   diagnoseEditorState,
   initializeEditorSafely,
 } from '../utils/editorInitializer';
+// import { createProjectDataIsolationTester } from '../utils/projectDataIsolationTester';
+import { DataIsolationMonitor } from './DebugPanel/DataIsolationMonitor';
+import { ProjectTabsDebugger } from './DebugPanel/ProjectTabsDebugger';
 import { AssetLibraryPanel } from './AssetLibraryPanel/index';
+import { PerformanceMonitor } from './PerformanceMonitor';
 import { ContextMenu } from './ContextMenu/ContextMenu';
 import { FloatingActionButtons } from './FloatingActionButtons/FloatingActionButtons';
 import { H5EditorMode } from './H5EditorMode/H5EditorMode';
@@ -201,6 +209,18 @@ const Editor: FC<EditorProps> = ({
 
       new AutoSaveGraphics(editor);
 
+      // 初始化性能服务
+      performanceService.initialize(container);
+
+      // 设置性能服务事件监听
+      performanceService.on('memoryWarning', (usage) => {
+        console.warn(`内存使用警告: ${(usage / 1024 / 1024).toFixed(2)}MB`);
+      });
+
+      performanceService.on('performanceDegraded', (reason) => {
+        console.warn(`性能下降: ${reason}`);
+      });
+
       // 设置项目管理的编辑器实例
       setProjectEditor(editor);
 
@@ -209,6 +229,77 @@ const Editor: FC<EditorProps> = ({
         (window as any).__PROJECT_MANAGEMENT_SERVICE__ =
           projectManagementService;
         console.log('项目管理服务已设置为全局可用');
+
+        // 创建数据隔离测试工具（开发环境）
+        if (import.meta.env?.DEV) {
+          const { createDataIsolationTester } = await import(
+            '../utils/dataIsolationTester'
+          );
+          const isolationTester = createDataIsolationTester(
+            editor,
+            projectManagementService,
+          );
+          (window as any).__ISOLATION_TESTER__ = isolationTester;
+
+          // 加载数据隔离修复测试脚本
+          try {
+            await import('../utils/testDataIsolationFix');
+            console.log('数据隔离修复测试脚本已加载');
+          } catch (error) {
+            console.warn('加载数据隔离修复测试脚本失败:', error);
+          }
+
+          // 加载数据隔离修复工具
+          try {
+            const { createDataIsolationFixer } = await import(
+              '../utils/dataIsolationFixer'
+            );
+            const projectDocumentManager =
+              projectManagementService.getProjectDocumentManager();
+            if (projectDocumentManager) {
+              const fixer = createDataIsolationFixer(
+                editor,
+                projectDocumentManager,
+              );
+              (window as any).__DATA_ISOLATION_FIXER_INSTANCE__ = fixer;
+              console.log('数据隔离修复工具实例已创建');
+
+              // 添加全局修复函数
+              (window as any).fixDataIsolation = (projectId?: string) => {
+                if (projectId) {
+                  return fixer.smartFix(projectId);
+                } else {
+                  const currentProjectId =
+                    projectManagementService.getActiveTabId();
+                  if (currentProjectId) {
+                    return fixer.smartFix(currentProjectId);
+                  } else {
+                    console.warn('没有活动项目可修复');
+                    return null;
+                  }
+                }
+              };
+
+              (window as any).fixAllDataIsolation = () => {
+                return fixer.fixAllProjects();
+              };
+
+              console.log('全局修复函数已添加:');
+              console.log(
+                '- fixDataIsolation(projectId?): 修复指定项目或当前项目的数据不匹配',
+              );
+              console.log('- fixAllDataIsolation(): 修复所有项目的数据不匹配');
+            }
+          } catch (error) {
+            console.warn('加载数据隔离修复工具失败:', error);
+          }
+
+          console.log('项目数据隔离测试工具已准备就绪');
+          console.log('可用的测试函数:');
+          console.log('- testDataIsolationFix(): 完整的数据隔离修复测试');
+          console.log('- quickTestIsolation(): 快速数据隔离验证');
+          console.log('- testDataIsolation(): 原有的数据隔离测试');
+        }
       }
 
       // 如果有当前项目ID，加载项目数据
@@ -858,6 +949,20 @@ const Editor: FC<EditorProps> = ({
             onProjectDelete={handleProjectDelete}
           />
         </Modal>
+
+        {/* 性能监控器 */}
+        <PerformanceMonitor
+          visible={import.meta.env?.DEV || false}
+          position="top-right"
+        />
+
+        {/* 开发环境调试器 */}
+        {import.meta.env?.DEV && (
+          <>
+            <ProjectTabsDebugger />
+            <DataIsolationMonitor />
+          </>
+        )}
       </EditorContext.Provider>
     </div>
   );

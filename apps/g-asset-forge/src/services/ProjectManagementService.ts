@@ -10,12 +10,17 @@ import {
   type ProjectMetadata,
   ProjectStorageService,
 } from '@g-asset-forge/core';
+import { Matrix } from '@g-asset-forge/geo';
 
 import { type IProjectTab } from '../components/ProjectLibraryPanel/types';
 import {
   type CanvasStateManager,
   createCanvasStateManager,
 } from '../utils/canvasStateManager';
+import {
+  type ProjectDocumentManager,
+  createProjectDocumentManager,
+} from '../utils/projectDocumentManager';
 
 interface ProjectManagementEvents {
   projectOpened: (project: ProjectData) => void;
@@ -46,15 +51,21 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   private canvasStateManager: CanvasStateManager;
   private pendingProjectLoad: string | null = null; // 待加载的项目ID
 
-  // 新增：项目级别的文档实例管理，实现真正的数据隔离
-  private projectDocuments: Map<string, any> = new Map(); // 存储每个项目的GAssetForgeDocument实例
-  private projectEditorStates: Map<string, any> = new Map(); // 存储每个项目的编辑器状态
+  // 真正的数据隔离管理器
+  private projectDocumentManager: ProjectDocumentManager;
+
+  // 保留原有的状态管理（用于兼容性）
+  private projectEditorStates: Map<string, any> = new Map();
+  private projectCanvasStates: Map<string, any> = new Map();
 
   constructor() {
     super();
     this.storageService = new ProjectStorageService();
     this.canvasStateManager = createCanvasStateManager();
+    this.projectDocumentManager = createProjectDocumentManager();
     this.loadOpenTabs();
+
+    console.log('项目管理服务已初始化，包含真正的数据隔离机制');
   }
 
   /**
@@ -65,6 +76,9 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
 
     // 设置画布状态管理器
     this.canvasStateManager.setEditor(editor);
+
+    // 设置项目文档管理器
+    this.projectDocumentManager.setEditor(editor);
 
     // 初始化自动保存服务
     if (this.autoSaveService) {
@@ -138,7 +152,11 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
 
       if (projectData) {
         console.log('加载待加载的项目数据:', projectData.name);
-        await this.loadProjectDataToEditor(projectData);
+        // 使用项目文档管理器加载项目数据
+        await this.projectDocumentManager.switchToProject(
+          projectId,
+          projectData.editorData,
+        );
         this.emit('projectSwitched', projectData);
       }
 
@@ -172,8 +190,28 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
 
       console.log('项目数据加载成功:', projectData.name);
 
-      // 缓存项目数据
+      // 缓存项目数据并初始化数据隔离状态
       this.projectDataCache.set(projectId, projectData);
+
+      // 初始化项目的画布状态和编辑器状态
+      if (!this.projectCanvasStates.has(projectId)) {
+        this.projectCanvasStates.set(projectId, projectData.editorData);
+      }
+
+      if (!this.projectEditorStates.has(projectId)) {
+        // 初始化默认编辑器状态
+        this.projectEditorStates.set(projectId, {
+          viewport: { x: 0, y: 0, zoom: 1 },
+          activeTool: 'Select',
+          selectedElements: [],
+        });
+      }
+
+      // 保存当前项目状态（如果有活动项目）
+      if (this.activeTabId && this.activeTabId !== projectId) {
+        // 项目文档管理器会自动保存当前状态
+        console.log('当前项目状态将由项目文档管理器自动保存');
+      }
 
       // 将其他标签页设为非活动状态
       this.openTabs.forEach((existingTab) => {
@@ -193,6 +231,23 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       this.openTabs.set(projectId, tab);
       this.activeTabId = projectId;
 
+      // 使用项目文档管理器加载项目（真正的数据隔离）
+      if (this.editor) {
+        const switchSuccess = await this.projectDocumentManager.switchToProject(
+          projectId,
+          projectData.editorData,
+        );
+
+        if (!switchSuccess) {
+          console.error('项目文档切换失败:', projectId);
+          return false;
+        }
+      } else {
+        // 如果编辑器还未初始化，标记为待加载
+        this.pendingProjectLoad = projectId;
+        console.log('编辑器未就绪，项目将在编辑器初始化后加载:', projectId);
+      }
+
       // 更新自动保存服务的当前项目
       if (this.autoSaveService) {
         this.autoSaveService.setCurrentProject(projectId);
@@ -200,6 +255,10 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
 
       // 保存状态
       this.saveOpenTabs();
+
+      // 验证数据隔离状态
+      const isolationValid = this.validateDataIsolation(projectId);
+      console.log('项目打开后数据隔离验证:', isolationValid);
 
       // 批量发射事件，减少事件频率
       this.emit('projectOpened', projectData);
@@ -239,9 +298,16 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         }
       }
 
-      // 移除标签页
+      // 移除标签页和清理数据隔离状态
       this.openTabs.delete(projectId);
       this.projectDataCache.delete(projectId);
+      this.projectCanvasStates.delete(projectId);
+      this.projectEditorStates.delete(projectId);
+
+      // 使用项目文档管理器清理项目文档
+      this.projectDocumentManager.removeProject(projectId);
+
+      console.log('项目数据隔离状态已清理:', projectId);
 
       // 如果关闭的是当前活动标签页，切换到其他标签页
       if (this.activeTabId === projectId) {
@@ -270,7 +336,7 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
-   * 切换到指定标签页
+   * 切换到指定标签页 - 真正的数据隔离版本
    */
   async switchToTab(tabId: string): Promise<boolean> {
     if (!this.editor || !this.openTabs.has(tabId)) {
@@ -278,129 +344,128 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       return false;
     }
 
+    // 如果切换到当前活动标签页，直接返回成功
+    if (this.activeTabId === tabId) {
+      console.log('已经是当前活动标签页:', tabId);
+      return true;
+    }
+
+    const previousActiveTabId = this.activeTabId;
+
     try {
-      console.log('切换到标签页:', tabId);
+      console.log('开始切换标签页（真正数据隔离模式）:', {
+        from: this.activeTabId,
+        to: tabId,
+      });
 
-      // 保存当前项目状态（如果需要）
-      if (this.activeTabId) {
-        await this.saveCurrentProjectState();
-      }
+      // 1. 更新标签页状态
+      this.openTabs.forEach((tab) => {
+        tab.isActive = tab.id === tabId;
+      });
 
-      // 更新活动标签页
       this.activeTabId = tabId;
-      const tab = this.openTabs.get(tabId)!;
 
-      // 获取项目数据
+      // 2. 获取目标项目数据
       const projectData = this.projectDataCache.get(tabId);
       if (!projectData) {
-        console.warn('项目数据未找到:', tabId);
+        console.error('目标项目数据未找到:', tabId);
+        // 恢复之前的活动标签页
+        this.activeTabId = previousActiveTabId;
         return false;
       }
 
-      // 加载项目数据到编辑器（使用新的隔离方法）
-      await this.loadProjectDataToEditor(projectData);
+      // 3. 使用项目文档管理器切换到目标项目（真正的数据隔离）
+      const switchSuccess = await this.projectDocumentManager.switchToProject(
+        tabId,
+        projectData.editorData,
+      );
 
-      // 发射事件
+      if (!switchSuccess) {
+        console.error('项目文档切换失败:', tabId);
+        this.activeTabId = previousActiveTabId;
+        return false;
+      }
+
+      // 4. 验证切换结果
+      const currentCanvasState = this.canvasStateManager.getCanvasState();
+      if (!currentCanvasState.hasValidCanvas) {
+        console.warn('切换后画布状态无效，尝试恢复');
+        await this.canvasStateManager.attemptCanvasRecovery();
+      }
+
+      // 5. 发射事件通知UI更新
+      this.emit('projectSwitched', projectData);
       this.emit('activeTabChanged', tabId);
       this.emit('tabsChanged', this.getOpenTabs());
 
-      console.log('标签页切换完成:', {
-        tabId,
-        activeTabId: this.activeTabId,
-        tabsCount: this.openTabs.size,
+      // 6. 输出切换完成信息
+      console.log('标签页切换完成（真正数据隔离模式）:', {
+        projectId: tabId,
+        projectName: projectData.name,
+        canvasState: currentCanvasState,
+        documentManagerStatus: this.projectDocumentManager.getProjectsStatus(),
+        isolationValid: this.projectDocumentManager.validateIsolation(),
       });
 
       return true;
     } catch (error) {
       console.error('切换标签页失败:', error);
+
+      // 错误恢复：恢复之前的活动标签页
+      if (previousActiveTabId) {
+        this.activeTabId = previousActiveTabId;
+      }
+
       return false;
     }
   }
 
   /**
-   * 保存当前项目状态到缓存
+   * 验证真正的数据隔离机制
    */
-  private async saveCurrentProjectState(): Promise<void> {
-    if (!this.activeTabId || !this.editor) {
-      return;
-    }
+  validateTrueDataIsolation(): boolean {
+    // 首先强制同步当前编辑器状态
+    this.projectDocumentManager.syncCurrentEditorState();
 
-    try {
-      // 获取当前编辑器的状态（通过sceneGraph的toJSON方法）
-      const currentStateJson = this.editor.sceneGraph.toJSON();
-      const currentState = JSON.parse(currentStateJson);
+    const isolationValid = this.projectDocumentManager.validateIsolation();
 
-      // 更新项目数据缓存
-      const currentTab = this.openTabs.get(this.activeTabId);
-      if (currentTab) {
-        const projectData = this.projectDataCache.get(this.activeTabId);
-        if (projectData) {
-          projectData.editorData = currentState;
-          this.projectDataCache.set(this.activeTabId, projectData);
-          console.log('已保存当前项目状态到缓存:', this.activeTabId);
-        }
+    // 额外验证：检查当前编辑器状态是否与活动项目匹配
+    if (this.activeTabId && this.editor) {
+      const projectState = this.projectDocumentManager.getProjectDocument(
+        this.activeTabId,
+      );
+      if (projectState) {
+        // 验证文档实例是否正确
+        const isCorrectDocument = this.editor.doc === projectState.document;
+
+        // 验证场景图数据是否匹配
+        const sceneGraphData = JSON.parse(this.editor.sceneGraph.toJSON());
+        const expectedDataCount = projectState.editorData.data?.length || 0;
+        const actualDataCount = sceneGraphData.data?.length || 0;
+        const isDataMatched = expectedDataCount === actualDataCount;
+
+        console.log('数据隔离验证（详细）:', {
+          activeTabId: this.activeTabId,
+          isolationValid,
+          isCorrectDocument,
+          isDataMatched,
+          expectedDataCount,
+          actualDataCount,
+          syncPerformed: true,
+        });
+
+        return isolationValid && isCorrectDocument && isDataMatched;
       }
-    } catch (error) {
-      console.warn('保存当前项目状态失败:', error);
     }
+
+    return isolationValid;
   }
 
   /**
-   * 加载项目数据到编辑器，实现数据隔离
+   * 获取项目文档管理器实例（用于调试）
    */
-  private async loadProjectDataToEditor(
-    projectData: ProjectData,
-  ): Promise<void> {
-    if (!this.editor || !projectData) {
-      return;
-    }
-
-    try {
-      console.log(
-        '开始加载项目数据到编辑器（数据隔离模式）:',
-        projectData.name,
-      );
-
-      // 保存当前项目状态（如果有活动项目）
-      if (this.activeTabId) {
-        await this.saveCurrentProjectState();
-      }
-
-      // 使用现有的setContents方法，通过项目级别的数据缓存实现隔离
-      // 每次切换项目时，都会完全替换编辑器内容，确保数据隔离
-      this.editor.setContents(projectData.editorData);
-
-      // 使用画布状态管理器确保有效画布
-      const hasValidCanvas = this.canvasStateManager.ensureValidCanvas();
-      if (!hasValidCanvas) {
-        console.warn('项目数据加载后无法确保有效画布');
-      }
-
-      // 等待一帧确保DOM更新
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-
-      // 触发渲染
-      this.editor.render();
-
-      // 强制更新画布状态，确保Pages组件能获取到正确的页面列表
-      if (this.canvasStateManager) {
-        try {
-          // 获取当前画布状态
-          const canvasState = this.canvasStateManager.getCanvasState();
-          console.log('画布状态已更新:', canvasState);
-        } catch (error) {
-          console.warn('更新画布状态时出错:', error);
-        }
-      }
-
-      console.log(
-        '项目数据已安全加载到编辑器（数据隔离模式）:',
-        projectData.name,
-      );
-    } catch (error) {
-      console.error('加载项目数据到编辑器失败:', error);
-      throw error;
-    }
+  getProjectDocumentManager(): ProjectDocumentManager {
+    return this.projectDocumentManager;
   }
 
   /**
@@ -629,6 +694,64 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
+   * 验证项目数据隔离机制
+   */
+  private validateDataIsolation(projectId: string): boolean {
+    try {
+      const projectData = this.projectDataCache.get(projectId);
+      const canvasState = this.projectCanvasStates.get(projectId);
+      const editorState = this.projectEditorStates.get(projectId);
+
+      console.log('数据隔离验证:', {
+        projectId,
+        hasProjectData: !!projectData,
+        hasCanvasState: !!canvasState,
+        hasEditorState: !!editorState,
+        canvasObjectCount: canvasState?.data?.length || 0,
+      });
+
+      return !!(projectData && canvasState);
+    } catch (error) {
+      console.error('数据隔离验证失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 获取项目数据隔离状态（调试用）
+   */
+  getDataIsolationStatus(): any {
+    const documentManagerStatus =
+      this.projectDocumentManager.getProjectsStatus();
+
+    return {
+      // 基本状态
+      openTabsCount: this.openTabs.size,
+      cachedProjectsCount: this.projectDataCache.size,
+      activeTabId: this.activeTabId,
+
+      // 真正的数据隔离状态
+      documentManager: documentManagerStatus,
+      isolationValid: this.projectDocumentManager.validateIsolation(),
+
+      // 兼容性状态（旧版本）
+      canvasStatesCount: this.projectCanvasStates.size,
+      editorStatesCount: this.projectEditorStates.size,
+
+      // 项目详情
+      projects: Array.from(this.openTabs.keys()).map((projectId) => ({
+        id: projectId,
+        name: this.openTabs.get(projectId)?.name,
+        hasData: this.projectDataCache.has(projectId),
+        hasCanvasState: this.projectCanvasStates.has(projectId),
+        hasEditorState: this.projectEditorStates.has(projectId),
+        hasDocumentInstance:
+          !!this.projectDocumentManager.getProjectDocument(projectId),
+      })),
+    };
+  }
+
+  /**
    * 清理资源
    */
   destroy(): void {
@@ -638,8 +761,12 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
     }
 
     this.canvasStateManager.destroy();
+    this.projectDocumentManager.destroy();
+
     this.openTabs.clear();
     this.projectDataCache.clear();
+    this.projectCanvasStates.clear();
+    this.projectEditorStates.clear();
     this.activeTabId = null;
     this.editor = null;
   }

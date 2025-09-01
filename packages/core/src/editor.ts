@@ -182,6 +182,15 @@ export class GAssetForgeEditor {
       this.perfMonitor.start(this.containerElement);
     }
 
+    // 设置性能监控回调
+    this.perfMonitor.on('performanceWarning', (type, value, threshold) => {
+      console.warn(`性能警告 - ${type}: ${value} (阈值: ${threshold})`);
+    });
+
+    this.perfMonitor.on('memoryLeak', (usage) => {
+      console.error(`检测到内存泄漏: ${(usage / 1024 / 1024).toFixed(2)}MB`);
+    });
+
     /**
      * setViewport 其实会修改 canvas 的宽高，浏览器的 DOM 更新是异步的，
      * 所以下面的 render 要异步执行
