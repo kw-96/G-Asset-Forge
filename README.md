@@ -49,7 +49,7 @@ $env:ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"; node install.js
 
 ```bash
 # Web 开发
-pnpm run dev
+npx pnpm run dev
 
 # 桌面应用开发
 $env:PATH += ";$env:APPDATA\npm"

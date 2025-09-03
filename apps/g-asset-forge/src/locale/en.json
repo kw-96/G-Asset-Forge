@@ -80,9 +80,12 @@
   "homePage.quickStart": "Quick Start",
   "homePage.resourceManagement": "Resource Management",
   "homePage.createNewProject": "Create New Project",
+  "homePage.createDesignProject": "Create Design Project",
+  "homePage.createH5Project": "Create H5 Project",
   "homePage.templateLibrary": "Template Library",
   "homePage.projectLibrary": "Project Library",
   "homePage.assetLibrary": "Asset Library",
+  "homePage.fontLibrary": "Font Library",
   "homePage.recentProjects": "Recent Projects",
   "homePage.designType": "Design",
   "homePage.h5Type": "H5"

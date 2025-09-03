@@ -11,7 +11,6 @@
   .sk-left-area {
     display: flex;
     align-items: center;
-    padding: 0 8px;
     position: relative; // 为分隔线定位提供参考
     -webkit-app-region: no-drag !important;
     app-region: no-drag !important;
@@ -24,6 +23,7 @@
       position: relative;
       border: none;
       background: transparent;
+      padding: 0 12px;
       -webkit-app-region: no-drag !important;
       app-region: no-drag !important;
 
@@ -43,52 +43,6 @@
       width: 1px;
       height: 32px;
       background-color: #d3d3d3;
-    }
-  }
-
-  // 项目标签页区域
-  .sk-tabs-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    min-width: 0; // 允许收缩
-
-    .no-tabs-placeholder {
-      display: flex;
-      align-items: center;
-      height: 100%;
-      padding: 0 12px;
-
-      .no-tabs-text {
-        color: #666;
-        font-size: 12px;
-        font-style: italic;
-      }
-    }
-  }
-
-  // 新建项目按钮 - 独立定位
-  .new-project-btn {
-    height: 48px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    border: none;
-    background: transparent;
-    margin-left: 8px; // 与标签页区域保持间距
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    -webkit-app-region: no-drag !important;
-    app-region: no-drag !important;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.1);
-      color: #333;
-    }
-
-    &:active {
-      background: rgba(0, 0, 0, 0.15);
     }
   }
 

@@ -312,7 +312,7 @@ export class BatchExportManager {
    */
   private async exportGraphicsAsSVG(
     graphics: GAssetForgeGraphics[],
-    options: ExportOptions,
+    _options: ExportOptions,
   ): Promise<Blob> {
     // 使用现有的 toSVG 函数
     const { toSVG } = await import('../to_svg');
@@ -329,9 +329,9 @@ export class BatchExportManager {
   ): Promise<Blob> {
     // 先导出为高质量 PNG
     const pngBlob = await this.exportGraphicsAsImage(graphics, {
-      ...options,
+      ..._options,
       format: ExportFormat.PNG,
-      quality: { ...options.quality, quality: 1.0 },
+      quality: { ..._options.quality, quality: 1.0 },
     });
 
     // 创建简单的 PDF

@@ -12,13 +12,11 @@
 - **ProjectSearchBar** - 搜索和筛选栏
 - **ProjectLibraryToolbar** - 工具栏，包含视图切换和操作按钮
 - **ProjectEditModal** - 项目编辑模态框（新建、重命名、删除）
-- **ProjectTabs** - 项目标签页组件，用于多项目管理
 
 ### 类型定义
 
 - **IProjectMetadata** - 项目元数据接口
 - **IProjectSearchOptions** - 搜索选项接口
-- **IProjectTab** - 项目标签页接口
 - **ProjectCategory** - 项目分类类型
 - **ViewMode** - 视图模式类型
 
@@ -78,10 +76,8 @@ function App() {
 
 ```tsx
 import { Header } from './components/Header';
-import { IProjectTab } from './components/ProjectLibraryPanel';
-
 function App() {
-  const [tabs, setTabs] = useState<IProjectTab[]>([
+  const [tabs, setTabs] = useState([
     {
       id: '1',
       name: '项目1',
@@ -96,7 +92,6 @@ function App() {
     <Header
       title="G-Asset Forge"
       projectTabs={tabs}
-      activeTabId="1"
       onTabSelect={(tabId) => console.log('选择标签页:', tabId)}
       onTabClose={(tabId) => console.log('关闭标签页:', tabId)}
     />

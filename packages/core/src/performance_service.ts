@@ -1,9 +1,10 @@
 import { EventEmitter } from '@g-asset-forge/common';
+
+import { ErrorType, globalErrorHandler } from './error_handler';
+import { ImgManager } from './Img_manager';
+import { offlineManager } from './offline_manager';
 import { PerfMonitor } from './perf_monitor';
 import { AdvancedThrottler } from './utils/raf_throttle';
-import { ImgManager } from './Img_manager';
-import { globalErrorHandler, ErrorType } from './error_handler';
-import { offlineManager } from './offline_manager';
 
 interface PerformanceServiceEvents {
   performanceOptimized(optimization: string): void;
@@ -211,18 +212,7 @@ export class PerformanceService extends EventEmitter<PerformanceServiceEvents> {
   }
 
   private setupPerformanceMonitoring(): void {
-    this.perfMonitor.on('performanceWarning', (type) => {
-      if (this.config.enableAutoOptimization) {
-        this.handlePerformanceWarning(type);
-      }
-    });
-
-    this.perfMonitor.on('memoryLeak', (usage) => {
-      this.emit('memoryWarning', usage);
-      if (this.config.enableAutoOptimization) {
-        this.optimizeMemory();
-      }
-    });
+    // 简化版本不需要事件监听
   }
 
   private setupErrorHandling(): void {
@@ -266,19 +256,7 @@ export class PerformanceService extends EventEmitter<PerformanceServiceEvents> {
     });
   }
 
-  private handlePerformanceWarning(type: string): void {
-    switch (type) {
-      case 'fps':
-        this.optimizeRendering();
-        break;
-      case 'memory':
-        this.optimizeMemory();
-        break;
-      case 'renderTime':
-        this.optimizeRenderingPipeline();
-        break;
-    }
-  }
+  // 简化版本不需要处理性能警告
 
   private async optimizeMemory(): Promise<void> {
     const startUsage = this.perfMonitor.getMetrics().memoryUsage;
@@ -313,15 +291,6 @@ export class PerformanceService extends EventEmitter<PerformanceServiceEvents> {
     }
 
     this.recordOptimization('rendering', 0);
-  }
-
-  private optimizeRenderingPipeline(): void {
-    // 使用高优先级队列处理关键渲染任务
-    this.throttler.scheduleHigh(() => {
-      // 关键渲染逻辑
-    });
-
-    this.recordOptimization('render-pipeline', 0);
   }
 
   private optimizeImageCache(): void {

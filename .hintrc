@@ -20,6 +20,8 @@
       {
         "image-alt": "off"
       }
-    ]
+    ],
+    "typescript-config/consistent-casing": "off",
+    "typescript-config/strict": "off"
   }
 }

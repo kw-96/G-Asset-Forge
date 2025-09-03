@@ -23,8 +23,8 @@
     position: absolute;
     left: 240px;
     top: 0;
-    width: calc(100% - 240px);
-    height: 100%;
+    width: calc(100% - 480px); // 左右各240px边距
+    height: calc(100vh - 48px); // 减去顶部Header高度
     min-width: 800px;
     min-height: 600px;
   }

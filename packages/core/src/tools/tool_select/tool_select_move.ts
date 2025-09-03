@@ -24,7 +24,6 @@ import {
 import { GuideLineManager } from '../../guide_lines/guide_line_manager';
 import { Transaction } from '../../transaction';
 import { getDeepFrameAtPoint } from '../../utils';
-import { createCanvasStateManager } from '../../utils/canvasStateManager';
 import { type IBaseTool } from '../type';
 import { getTopHitElement } from './utils';
 
@@ -46,9 +45,6 @@ export class SelectMoveTool implements IBaseTool {
   private dx = 0;
   private dy = 0;
   private prevBBoxPos: IPoint = { x: -1, y: -1 };
-
-  // 画布状态管理器
-  private canvasStateManager = createCanvasStateManager();
 
   constructor(private editor: GAssetForgeEditor) {
     this.transaction = new Transaction(editor);
@@ -94,9 +90,8 @@ export class SelectMoveTool implements IBaseTool {
       this.originParentIndexMap.set(id, cloneDeep(item.attrs.parentIndex!));
     }
 
-    // 设置编辑器并确保有有效画布
-    this.canvasStateManager.setEditor(this.editor);
-    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
+    // 获取当前画布
+    const canvasGraphics = this.editor.doc.getCurrentCanvas();
     if (!canvasGraphics) {
       console.error('无法获取当前画布，无法执行移动操作');
       return;
@@ -182,8 +177,8 @@ export class SelectMoveTool implements IBaseTool {
     const offset =
       this.editor.guideLineManager.getGraphicsSnapOffset(targetPoints);
 
-    // 使用画布状态管理器获取当前画布
-    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
+    // 获取当前画布
+    const canvasGraphics = this.editor.doc.getCurrentCanvas();
     if (!canvasGraphics) {
       console.error('无法获取当前画布，无法执行移动操作');
       return;

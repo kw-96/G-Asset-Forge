@@ -4,6 +4,42 @@
  * @author 开发团队
  */
 
+// 根据环境获取CSP配置
+const getCSPConfig = () => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  const baseCSP = {
+    'default-src': ["'self'"],
+    'style-src': ["'self'", "'unsafe-inline'"],
+    'img-src': ["'self'", 'data:', 'https:'],
+    'font-src': ["'self'", 'https:'],
+    'frame-src': ["'none'"],
+    'object-src': ["'none'"],
+    'base-uri': ["'self'"],
+    'form-action': ["'self'"],
+  };
+
+  if (isDevelopment) {
+    // 开发环境：允许调试功能，但阻止外部统计脚本
+    return {
+      ...baseCSP,
+      'script-src': [
+        "'self'",
+        "'wasm-unsafe-eval'",
+        "'inline-speculation-rules'",
+      ],
+      'connect-src': ["'self'", 'http://localhost:*'],
+    };
+  } else {
+    // 生产环境：严格的策略，完全阻止外部脚本
+    return {
+      ...baseCSP,
+      'script-src': ["'self'", "'wasm-unsafe-eval'"],
+      'connect-src': ["'self'"],
+    };
+  }
+};
+
 const SecurityConfig = {
   webSecurity: {
     nodeIntegration: false, // 禁用 Node.js 集成
@@ -23,18 +59,15 @@ const SecurityConfig = {
     },
   },
 
-  // 内容安全策略
-  contentSecurityPolicy: {
-    'default-src': ["'self'"],
-    'script-src': ["'self'"],
-    'style-src': ["'self'", "'unsafe-inline'"],
-    'img-src': ["'self'", 'data:', 'https:'],
-    'font-src': ["'self'", 'https:'],
-    'connect-src': ["'self'", 'http://localhost:*'],
-    'frame-src': ["'none'"],
-    'object-src': ["'none'"],
-    'base-uri': ["'self'"],
-    'form-action': ["'self'"],
+  // 内容安全策略 - 根据环境动态配置
+  contentSecurityPolicy: getCSPConfig(),
+
+  // 额外的安全配置
+  additionalSecurity: {
+    // 阻止不安全的脚本执行
+    blockUnsafeScripts: true,
+    // 报告CSP违规（开发环境）
+    reportCSPViolations: process.env.NODE_ENV === 'development',
   },
 
   // 权限控制

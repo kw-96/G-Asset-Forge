@@ -15,10 +15,9 @@ import type {
 
 import { AddGraphCmd, SetGraphsAttrsCmd } from '../../commands';
 import { type GAssetForgeEditor } from '../../editor';
-import { GAssetForgePath,GraphicsObjectSuffix } from '../../graphics';
+import { GAssetForgePath, GraphicsObjectSuffix } from '../../graphics';
 import { PaintType } from '../../paint';
 import { getNoConflictObjectName } from '../../utils';
-import { createCanvasStateManager } from '../../utils/canvasStateManager';
 import { PathSelectTool } from '../tool_path_select';
 import { type IBaseTool } from '../type';
 import { type PenTool } from './tool_pen';
@@ -30,12 +29,7 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
     pathData: IPathItem[];
   } | null = null;
 
-  // 画布状态管理器
-  private canvasStateManager = createCanvasStateManager();
-
-  constructor(private editor: GAssetForgeEditor, private parentTool: PenTool) {
-    this.canvasStateManager.setEditor(editor);
-  }
+  constructor(private editor: GAssetForgeEditor, private parentTool: PenTool) {}
 
   onActive() {
     /* noop */
@@ -70,7 +64,7 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
         },
       ];
 
-      const currCanvas = this.canvasStateManager.getCurrentCanvas();
+      const currCanvas = this.editor.doc.getCurrentCanvas();
       const path = new GAssetForgePath(
         {
           objectName: getNoConflictObjectName(
@@ -96,7 +90,7 @@ export class ToolDrawPathAnchorAppend implements IBaseTool {
       this.parentTool.path = path;
 
       this.editor.sceneGraph.addItems([path]);
-      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(path);
       } else {

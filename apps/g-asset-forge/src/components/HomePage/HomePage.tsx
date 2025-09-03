@@ -1,35 +1,27 @@
 /**
  * 首页界面组件
- * 提供模式选择、项目管理和快速访问功能
+ * 提供左右分栏布局，左侧为功能菜单，右侧为内容展示
  */
 
 import './HomePage.scss';
 
-import { Button } from '@g-asset-forge/components';
 import React, { useState } from 'react';
-import { FormattedMessage } from 'react-intl';
 
 import { Header } from '../Header';
-import { SvgIcon } from '../SvgIcon';
+import { LeftPanel } from './LeftPanel';
+import { RightPanel } from './RightPanel';
 
 export interface HomePageProps {
-  onModeSelect: (mode: 'design' | 'h5') => void;
-  onOpenProjectLibrary: () => void;
-  onOpenTemplateLibrary: () => void;
-  onOpenAssetLibrary: () => void;
   onCreateNewProject: () => void;
+  onCreateDesignProject?: () => void;
+  onCreateH5Project?: () => void;
   onOpenProject?: (projectId: string) => void;
+  onDeleteProject?: (projectId: string) => void;
   recentProjects?: RecentProject[];
 
   // Header 相关 props - 从 Editor.tsx 传递过来
-  projectTabs?: any[];
-  activeTabId?: string;
-  onTabSelect?: (tabId: string) => void;
-  onTabClose?: (tabId: string) => void;
-  onTabsReorder?: (tabs: any[]) => void;
   onBackToHome?: () => void;
   onCreateProject?: () => void;
-  currentMode?: 'design' | 'h5';
 }
 
 export interface RecentProject {
@@ -41,186 +33,46 @@ export interface RecentProject {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
-  onModeSelect,
-  onOpenProjectLibrary,
-  onOpenTemplateLibrary,
-  onOpenAssetLibrary,
   onCreateNewProject,
+  onCreateDesignProject,
+  onCreateH5Project,
   onOpenProject,
+  onDeleteProject,
   recentProjects = [],
 
   // Header 相关 props
-  projectTabs = [],
-  activeTabId,
-  onTabSelect,
-  onTabClose,
-  onTabsReorder,
   onBackToHome,
-  onCreateProject,
-  currentMode = 'design',
 }) => {
-  const [selectedMode, setSelectedMode] = useState<'design' | 'h5'>(
-    currentMode,
-  );
+  const [selectedItem, setSelectedItem] = useState<string>('project-library');
 
-  const handleModeSelect = (mode: 'design' | 'h5') => {
-    setSelectedMode(mode);
-    onModeSelect(mode);
-  };
-
-  const handleOpenRecentProject = (project: RecentProject) => {
-    // 根据项目类型设置模式并打开项目
-    setSelectedMode(project.type);
-    onModeSelect(project.type);
-    // 打开具体项目
-    onOpenProject?.(project.id);
-    console.log('打开最近项目:', project);
+  const handleItemSelect = (item: string) => {
+    setSelectedItem(item);
   };
 
   return (
     <div className="home-page">
-      {/* 统一的Header - 支持项目标签页和模式切换 */}
+      {/* 统一的Header */}
       <Header
         title="g-asset-forge"
-        projectTabs={projectTabs}
-        activeTabId={activeTabId}
-        onTabSelect={onTabSelect}
-        onTabClose={onTabClose}
-        onTabsReorder={onTabsReorder}
         onBackToHome={onBackToHome || (() => window.location.reload())}
         showHomeButton={true}
-        onCreateProject={onCreateProject || onCreateNewProject}
       />
 
+      {/* 主要内容区域 - 左右分栏布局 */}
       <div className="home-page__container">
-        {/* 头部区域 */}
-        <header className="home-page__header">
-          <div className="home-page__logo">
-            <h1 className="home-page__title">
-              <FormattedMessage id="homePage.title" />
-            </h1>
-          </div>
-          <p className="home-page__subtitle">
-            <FormattedMessage id="homePage.subtitle" />
-          </p>
-        </header>
-
-        {/* 主要内容区域 */}
-        <main className="home-page__main">
-          {/* 模式选择区域 */}
-          <section className="home-page__modes">
-            <h2 className="home-page__section-title">
-              <FormattedMessage id="homePage.selectMode" />
-            </h2>
-            <div className="mode-cards">
-              <div
-                className={`mode-card ${
-                  selectedMode === 'design' ? 'mode-card--active' : ''
-                }`}
-                onClick={() => handleModeSelect('design')}
-              >
-                <div className="mode-card__icon">
-                  <SvgIcon name="icon.24.file.design" size={48} />
-                </div>
-                <h3 className="mode-card__title">
-                  <FormattedMessage id="homePage.designMode" />
-                </h3>
-              </div>
-
-              <div
-                className={`mode-card ${
-                  selectedMode === 'h5' ? 'mode-card--active' : ''
-                }`}
-                onClick={() => handleModeSelect('h5')}
-              >
-                <div className="mode-card__icon">
-                  <SvgIcon name="icon.24.file.H5" size={48} />
-                </div>
-                <h3 className="mode-card__title">
-                  <FormattedMessage id="homePage.h5Mode" />
-                </h3>
-              </div>
-            </div>
-          </section>
-
-          {/* 快速操作区域 */}
-          <section className="home-page__actions">
-            <div className="action-group">
-              <h3 className="action-group__title">
-                <FormattedMessage id="homePage.quickStart" />
-              </h3>
-              <div className="action-buttons">
-                <Button onClick={onCreateNewProject}>
-                  <SvgIcon name="icon.24.plus" size={16} />
-                  <FormattedMessage id="homePage.createNewProject" />
-                </Button>
-                <Button onClick={onOpenTemplateLibrary}>
-                  <SvgIcon name="icon.24.file.design.library" size={16} />
-                  <FormattedMessage id="homePage.templateLibrary" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="action-group">
-              <h3 className="action-group__title">
-                <FormattedMessage id="homePage.resourceManagement" />
-              </h3>
-              <div className="action-buttons">
-                <Button onClick={onOpenProjectLibrary}>
-                  <SvgIcon name="icon.24.file.design.library" size={16} />
-                  <FormattedMessage id="homePage.projectLibrary" />
-                </Button>
-                <Button onClick={onOpenAssetLibrary}>
-                  <SvgIcon name="icon.24.file.design.library" size={16} />
-                  <FormattedMessage id="homePage.assetLibrary" />
-                </Button>
-              </div>
-            </div>
-          </section>
-
-          {/* 最近项目区域 */}
-          {recentProjects.length > 0 && (
-            <section className="home-page__recent">
-              <h2 className="home-page__section-title">
-                <FormattedMessage id="homePage.recentProjects" />
-              </h2>
-              <div className="recent-projects">
-                {recentProjects.slice(0, 6).map((project) => (
-                  <div
-                    key={project.id}
-                    className="recent-project"
-                    onClick={() => handleOpenRecentProject(project)}
-                  >
-                    <div className="recent-project__thumbnail">
-                      {project.thumbnail ? (
-                        <img src={project.thumbnail} alt={project.name} />
-                      ) : (
-                        <SvgIcon name="icon.24.file.design.library" size={32} />
-                      )}
-                    </div>
-                    <div className="recent-project__info">
-                      <h4 className="recent-project__name">{project.name}</h4>
-                      <div className="recent-project__meta">
-                        <span className="recent-project__type">
-                          <FormattedMessage
-                            id={
-                              project.type === 'design'
-                                ? 'homePage.designType'
-                                : 'homePage.h5Type'
-                            }
-                          />
-                        </span>
-                        <span className="recent-project__date">
-                          {new Date(project.lastOpenedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </main>
+        <LeftPanel
+          selectedItem={selectedItem}
+          onItemSelect={handleItemSelect}
+        />
+        <RightPanel
+          selectedItem={selectedItem}
+          onCreateNewProject={onCreateNewProject}
+          onCreateDesignProject={onCreateDesignProject}
+          onCreateH5Project={onCreateH5Project}
+          onOpenProject={onOpenProject}
+          onDeleteProject={onDeleteProject}
+          recentProjects={recentProjects}
+        />
       </div>
     </div>
   );

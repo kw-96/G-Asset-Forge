@@ -12,7 +12,6 @@ import { AddOutlined } from '@g-asset-forge/icons';
 import { type FC, useContext, useEffect, useRef, useState } from 'react';
 
 import { EditorContext } from '../../context';
-import { createCanvasStateManager } from '../../utils/canvasStateManager';
 import { BaseCard } from '../Cards/BaseCard';
 import { PageContextMenu } from '../ContextMenu';
 import { PageItem } from './PageItem';
@@ -32,47 +31,17 @@ export const Pages: FC = () => {
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [canvasIdByMenu, setCanvasIdByMenu] = useState<string>('');
 
-  // 画布状态管理器
-  const canvasStateManagerRef = useRef<ReturnType<
-    typeof createCanvasStateManager
-  > | null>(null);
-
   // 定期检查定时器引用
   const periodicCheckRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!editor) return;
 
-    // 确保画布状态管理器存在
-    if (!canvasStateManagerRef.current) {
-      console.log('Pages: 创建画布状态管理器');
-      canvasStateManagerRef.current = createCanvasStateManager();
-    }
-
-    // 设置编辑器到画布状态管理器
-    canvasStateManagerRef.current.setEditor(editor);
-
     const updatePageItems = () => {
       try {
         // 延迟验证，给编辑器更多时间初始化
         setTimeout(() => {
           try {
-            // 确保画布状态管理器有效
-            if (!canvasStateManagerRef.current) {
-              console.warn('Pages: 画布状态管理器无效，跳过页面更新');
-              setPageItems([]);
-              setCurrPageId('');
-              return;
-            }
-
-            // 使用画布状态管理器验证编辑器状态
-            if (!canvasStateManagerRef.current.validateEditorState()) {
-              console.warn('编辑器状态异常，跳过页面更新');
-              setPageItems([]);
-              setCurrPageId('');
-              return;
-            }
-
             // 获取当前项目的页面数据 - 从编辑器获取画布列表
             let pages: any[] = [];
 
@@ -87,17 +56,14 @@ export const Pages: FC = () => {
             console.log('Pages: 最终获取到页面数据:', pages);
             setPageItems(pages || []);
 
-            // 使用画布状态管理器确保有效画布
-            const hasValidCanvas =
-              canvasStateManagerRef.current.ensureValidCanvas();
-            if (hasValidCanvas) {
-              const canvasState =
-                canvasStateManagerRef.current.getCanvasState();
-              const newCurrentPageId = canvasState.currentCanvasId || '';
+            // 设置当前页面ID
+            const currentCanvas = editor.doc.getCurrentCanvas();
+            if (currentCanvas) {
+              const newCurrentPageId = currentCanvas.attrs.id || '';
               console.log('Pages: 设置当前页面ID:', newCurrentPageId);
               setCurrPageId(newCurrentPageId);
             } else {
-              console.warn('无法获取有效画布，设置空的页面ID');
+              console.warn('无法获取当前画布，设置空的页面ID');
               setCurrPageId('');
             }
           } catch (error) {
@@ -173,7 +139,7 @@ export const Pages: FC = () => {
 
     periodicCheckRef.current = window.setInterval(() => {
       try {
-        if (editor && canvasStateManagerRef.current) {
+        if (editor) {
           const currentCanvas = editor.doc.getCurrentCanvas();
           if (currentCanvas && currentCanvas.attrs) {
             const newCurrentPageId = currentCanvas.attrs.id;
@@ -198,12 +164,6 @@ export const Pages: FC = () => {
         periodicCheckRef.current = null;
       }
 
-      if (canvasStateManagerRef.current) {
-        console.log('Pages: 清理画布状态管理器');
-        canvasStateManagerRef.current.destroy();
-        canvasStateManagerRef.current = null;
-      }
-
       // 清理编辑器事件监听器
       try {
         if (editor && editor.off && typeof editor.off === 'function') {
@@ -219,15 +179,7 @@ export const Pages: FC = () => {
   useEffect(() => {
     return () => {
       // 延迟销毁，避免在编辑器操作过程中过早销毁
-      setTimeout(() => {
-        try {
-          if (canvasStateManagerRef.current) {
-            canvasStateManagerRef.current.destroy();
-          }
-        } catch (error) {
-          console.warn('Pages: 销毁画布状态管理器时出错:', error);
-        }
-      }, 2000); // 增加延迟时间，避免热更新时过早销毁
+      setTimeout(() => {}, 2000); // 增加延迟时间，避免热更新时过早销毁
     };
   }, []);
 

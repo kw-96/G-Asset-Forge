@@ -21,7 +21,6 @@ import { type GAssetForgeEditor } from '../editor';
 import { type GAssetForgeGraphics, isFrameGraphics } from '../graphics';
 import { SnapHelper } from '../snap';
 import { getDeepFrameAtPoint } from '../utils';
-import { createCanvasStateManager } from '../utils/canvasStateManager';
 import { type ITool } from './type';
 
 /**
@@ -52,12 +51,7 @@ export abstract class DrawGraphicsTool implements ITool {
   private isDragging = false;
   private unbindEvent: () => void = noop;
 
-  // 画布状态管理器
-  protected canvasStateManager = createCanvasStateManager();
-
-  constructor(protected editor: GAssetForgeEditor) {
-    this.canvasStateManager.setEditor(editor);
-  }
+  constructor(protected editor: GAssetForgeEditor) {}
 
   onActive() {
     const editor = this.editor;
@@ -298,7 +292,7 @@ export abstract class DrawGraphicsTool implements ITool {
     if (this.drawingGraphics) {
       this.updateGraphics(rect);
     } else {
-      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
       if (!currentCanvas) {
         console.error('无法获取当前画布，无法创建图形');
         return;
@@ -357,7 +351,7 @@ export abstract class DrawGraphicsTool implements ITool {
       const width = this.editor.setting.get('drawGraphDefaultWidth');
       const height = this.editor.setting.get('drawGraphDefaultHeight');
 
-      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
       if (!currentCanvas) {
         console.error('无法获取当前画布，无法创建图形');
         return;

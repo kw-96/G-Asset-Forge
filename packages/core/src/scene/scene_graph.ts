@@ -28,10 +28,6 @@ import {
 import { Grid } from '../grid';
 import { GraphicsType, type IEditorPaperData } from '../type';
 import { rafThrottle } from '../utils';
-import {
-  type CanvasStateManager,
-  createCanvasStateManager,
-} from '../utils/canvasStateManager';
 
 const graphCtorMap = {
   [GraphicsType.Graph]: GAssetForgeGraphics,
@@ -59,15 +55,8 @@ export class SceneGraph {
   showSelectedGraphsOutline = true;
   highlightLayersOnHover = true;
 
-  // 画布状态管理器
-  private canvasStateManager: CanvasStateManager;
-
   constructor(private editor: GAssetForgeEditor) {
     this.grid = new Grid(editor);
-
-    // 初始化画布状态管理器
-    this.canvasStateManager = createCanvasStateManager();
-    this.canvasStateManager.setEditor(editor);
   }
 
   addItems(graphicsArr: GAssetForgeGraphics[]) {
@@ -78,9 +67,6 @@ export class SceneGraph {
 
   // 全局重渲染
   render = rafThrottle(() => {
-    // 标记渲染开始
-    this.editor.perfMonitor.markRenderStart();
-
     // 获取视口区域
     const { canvasElement: canvas, ctx, setting } = this.editor;
 
@@ -93,12 +79,6 @@ export class SceneGraph {
     // 检查canvas是否已被移除或损坏
     if (!canvas.parentElement) {
       console.warn('SceneGraph.render: canvas已从DOM中移除，跳过渲染');
-      return;
-    }
-
-    // 检查canvas尺寸是否有效
-    if (canvas.width === 0 || canvas.height === 0) {
-      console.warn('SceneGraph.render: canvas尺寸无效，跳过渲染');
       return;
     }
 
@@ -126,7 +106,7 @@ export class SceneGraph {
 
     const imgManager = this.editor.imgManager;
 
-    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
+    const canvasGraphics = this.editor.doc.getCurrentCanvas();
     const smooth = zoom <= 1;
     if (canvasGraphics) {
       const viewportArea = this.editor.viewportManager.getSceneBbox();
@@ -267,10 +247,7 @@ export class SceneGraph {
     ctx.restore();
 
     // 标记渲染结束并更新画布对象数量
-    this.editor.perfMonitor.markRenderEnd();
-    this.editor.perfMonitor.updateCanvasObjectCount(
-      this.editor.doc.getAllGraphicsArr().length,
-    );
+    // 简化版本不需要标记渲染结束和更新对象数量
 
     this.eventEmitter.emit('render');
   });
@@ -295,7 +272,7 @@ export class SceneGraph {
    * 检查图形是否属于当前画布
    */
   private isGraphicsInCurrentCanvas(graphics: GAssetForgeGraphics): boolean {
-    const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+    const currentCanvas = this.editor.doc.getCurrentCanvas();
     if (!currentCanvas) {
       return false;
     }
@@ -338,7 +315,7 @@ export class SceneGraph {
    * get tree data with simple info (for layer panel)
    */
   toObjects() {
-    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
+    const canvasGraphics = this.editor.doc.getCurrentCanvas();
     if (!canvasGraphics) {
       return [];
     }
@@ -391,12 +368,21 @@ export class SceneGraph {
       if (type === GraphicsType.Canvas) {
         const existingCanvases =
           this.editor.doc.graphicsStoreManager.getCanvasItems();
-        const hasCanvasWithSameName = existingCanvases.some(
-          (canvas) =>
-            canvas.attrs.objectName === attrs.objectName && !canvas.isDeleted(),
+        const hasCanvasWithSameId = existingCanvases.some(
+          (canvas) => canvas.attrs.id === attrs.id && !canvas.isDeleted(),
         );
-        if (hasCanvasWithSameName) {
-          // 如果存在同名画布，跳过创建
+        console.log('createGraphicsArr: 检查画布冲突', {
+          canvasId: attrs.id,
+          canvasName: attrs.objectName,
+          existingCanvases: existingCanvases.length,
+          hasCanvasWithSameId,
+        });
+        if (hasCanvasWithSameId) {
+          // 如果存在相同ID的画布，跳过创建
+          console.log(
+            'createGraphicsArr: 跳过创建画布，已存在相同ID:',
+            attrs.id,
+          );
           continue;
         }
       }
@@ -421,23 +407,50 @@ export class SceneGraph {
   }
 
   load(info: GraphicsAttrs[], isApplyChanges?: boolean) {
+    console.log('sceneGraph.load: 开始加载', info.length, '个图形对象');
+    console.log(
+      'sceneGraph.load: 图形对象类型:',
+      info.map((item) => ({
+        type: item.type,
+        id: item.id,
+        name: item.objectName,
+      })),
+    );
+
     // 保存现有的画布引用，在清空前先保存
     const existingCanvases =
       this.editor.doc.graphicsStoreManager.getCanvasItems();
-    // const existingCanvasIds = new Set(
-    //   existingCanvases.map((canvas) => canvas.attrs.id),
-    // );
+    console.log('sceneGraph.load: 现有画布数量:', existingCanvases.length);
+    console.log(
+      'sceneGraph.load: 现有画布详情:',
+      existingCanvases.map((canvas) => ({
+        id: canvas.attrs.id,
+        name: canvas.attrs.objectName,
+        isDeleted: canvas.isDeleted(),
+      })),
+    );
 
     const graphicsArr = this.createGraphicsArr(info);
+    console.log('sceneGraph.load: 创建图形数组完成，数量:', graphicsArr.length);
+    console.log(
+      'sceneGraph.load: 创建的图形详情:',
+      graphicsArr.map((graphics) => ({
+        type: graphics.attrs.type,
+        id: graphics.attrs.id,
+        name: graphics.attrs.objectName,
+      })),
+    );
 
     // 只有在不是应用变更时才清空文档
     if (!isApplyChanges) {
+      console.log('sceneGraph.load: 清空文档');
       // 清空文档
       this.editor.doc.clear();
 
       // 重新添加现有的画布到存储管理器
       for (const canvas of existingCanvases) {
         if (canvas && !canvas.isDeleted()) {
+          console.log('sceneGraph.load: 重新添加现有画布:', canvas.attrs.id);
           this.editor.doc.graphicsStoreManager.add(canvas);
           // 确保画布也被添加到场景图中
           this.editor.sceneGraph.addItems([canvas]);
@@ -446,22 +459,37 @@ export class SceneGraph {
     }
 
     // 添加新的图形项目
+    console.log('sceneGraph.load: 添加新图形项目');
     this.addItems(graphicsArr);
     this.initGraphicsTree(graphicsArr);
 
     // 如果数据中没有画布，但我们需要保持现有画布
     if (!isApplyChanges && existingCanvases.length > 0) {
+      console.log('sceneGraph.load: 确保现有画布在场景树中正确设置');
       // 确保现有画布在场景树中正确设置
       for (const canvas of existingCanvases) {
         if (canvas && !canvas.isDeleted()) {
           // 检查画布是否已经在文档的子节点中
           const children = this.editor.doc.getChildren();
           if (!children.includes(canvas)) {
+            console.log('sceneGraph.load: 插入画布到文档:', canvas.attrs.id);
             this.editor.doc.insertChild(canvas);
           }
         }
       }
     }
+
+    // 加载完成后的状态检查
+    const finalCanvases = this.editor.doc.graphicsStoreManager.getCanvasItems();
+    console.log('sceneGraph.load: 加载完成后画布数量:', finalCanvases.length);
+    console.log(
+      'sceneGraph.load: 最终画布详情:',
+      finalCanvases.map((canvas) => ({
+        id: canvas.attrs.id,
+        name: canvas.attrs.objectName,
+        isDeleted: canvas.isDeleted(),
+      })),
+    );
   }
 
   /**

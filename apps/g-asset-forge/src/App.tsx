@@ -1,6 +1,6 @@
 import './App.css';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { IntlProvider } from 'react-intl';
 
 import Editor from './components/Editor';
@@ -23,6 +23,14 @@ const getLocale = (): SupportedLocale => {
 
 type AppView = 'welcome' | 'home' | 'editor';
 
+interface RecentProject {
+  id: string;
+  name: string;
+  type: 'design' | 'h5';
+  lastOpenedAt: string;
+  thumbnail?: string;
+}
+
 function App() {
   const [locale, setLocale] = useState(getLocale());
   const [currentView, setCurrentView] = useState<AppView>('welcome');
@@ -31,6 +39,7 @@ function App() {
     () => new ProjectManagementService(),
   );
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
   useEffect(() => {
     // 检查用户是否已经使用过应用(暂时始终设置为首次使用)
@@ -59,76 +68,73 @@ function App() {
     setCurrentView('home');
   };
 
-  const handleModeSelect = async (mode: 'design' | 'h5') => {
-    setSelectedMode(mode);
-
-    // 自动创建一个未命名项目
+  const handleBackToHome = async () => {
     try {
-      console.log('开始创建项目，模式:', mode);
-
-      const projectResult = await projectManagementService.createProject({
-        name: '未命名项目',
-        description: '',
-        type: mode,
-      });
-
-      if (projectResult) {
-        console.log('项目创建成功:', projectResult);
-
-        // 打开创建的项目
-        const success = await projectManagementService.openProject(
-          projectResult.id,
-        );
-
-        if (success) {
-          console.log('项目打开成功，设置当前项目ID:', projectResult.id);
-          setCurrentProjectId(projectResult.id);
-
-          // 等待一小段时间确保项目管理服务状态更新
-          await new Promise((resolve) => setTimeout(resolve, 100));
-
-          setCurrentView('editor');
-          console.log('自动创建并打开项目完成:', projectResult.name);
-
-          // 调试信息
-          console.log('当前项目管理服务状态:', {
-            openTabs: projectManagementService.getOpenTabs(),
-            activeTabId: projectManagementService.getActiveTabId(),
-          });
-        } else {
-          console.error('打开自动创建的项目失败');
-          setCurrentView('editor'); // 即使失败也进入编辑器
-        }
-      } else {
-        console.error('创建项目失败');
-        setCurrentView('editor'); // 即使失败也进入编辑器
+      // 如果有当前项目，关闭项目（closeProject内部会处理保存）
+      if (currentProjectId) {
+        console.log('关闭项目前保存当前项目:', currentProjectId);
+        // 关闭项目（内部会调用manualSave）
+        projectManagementService.closeProject(currentProjectId);
       }
+
+      // 清理项目状态
+      setCurrentProjectId(null);
+      setSelectedMode('design');
+
+      // 返回首页
+      setCurrentView('home');
+
+      console.log('项目已关闭，返回首页');
     } catch (error) {
-      console.error('自动创建项目失败:', error);
-      setCurrentView('editor'); // 即使失败也进入编辑器
+      console.error('关闭项目时发生错误:', error);
+      // 即使保存失败，也要返回首页
+      setCurrentProjectId(null);
+      setSelectedMode('design');
+      setCurrentView('home');
     }
   };
 
-  const handleBackToHome = () => {
-    setCurrentView('home');
-  };
+  // 加载项目列表
+  const loadProjectsList = useCallback(async () => {
+    try {
+      const projects = await projectManagementService.getProjectsList();
+      const recentProjectsData: RecentProject[] = projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        type: project.type as 'design' | 'h5',
+        lastOpenedAt:
+          (typeof project.lastOpenedAt === 'string'
+            ? project.lastOpenedAt
+            : project.lastOpenedAt?.toISOString()) ||
+          (typeof project.updatedAt === 'string'
+            ? project.updatedAt
+            : project.updatedAt?.toISOString()) ||
+          new Date().toISOString(),
+        thumbnail: project.thumbnail,
+      }));
+      setRecentProjects(recentProjectsData);
+      console.log('已加载项目列表:', recentProjectsData.length, '个项目');
+    } catch (error) {
+      console.error('加载项目列表失败:', error);
+      setRecentProjects([]);
+    }
+  }, [projectManagementService]);
 
+  // 加载项目列表
+  useEffect(() => {
+    loadProjectsList();
+  }, [loadProjectsList]);
+
+  // 简单的库打开处理函数（暂时为空实现）
   const handleOpenProjectLibrary = () => {
-    // 这里可以添加打开项目库的逻辑
     console.log('打开项目库');
-    // 如果当前在首页，可以直接切换到编辑器并打开项目库
-    if (currentView === 'home') {
-      setCurrentView('editor');
-    }
   };
 
   const handleOpenTemplateLibrary = () => {
-    // 这里可以添加打开模板库的逻辑
     console.log('打开模板库');
   };
 
   const handleOpenAssetLibrary = () => {
-    // 这里可以添加打开素材库的逻辑
     console.log('打开素材库');
   };
 
@@ -136,7 +142,6 @@ function App() {
     try {
       const projectResult = await projectManagementService.createProject({
         name: '新项目',
-        description: '',
         type: selectedMode,
       });
 
@@ -150,17 +155,12 @@ function App() {
           setCurrentView('editor');
           console.log('创建并打开新项目:', projectResult.name);
 
+          // 刷新项目列表
+          loadProjectsList();
+
           // 确保项目管理服务状态正确更新
-          // 触发标签页状态更新
           setTimeout(() => {
-            console.log(
-              '当前打开的标签页:',
-              projectManagementService.getOpenTabs(),
-            );
-            console.log(
-              '当前活动标签页:',
-              projectManagementService.getActiveTabId(),
-            );
+            console.log('项目管理服务状态已更新');
           }, 100);
         } else {
           console.error('打开新创建的项目失败');
@@ -170,6 +170,64 @@ function App() {
       }
     } catch (error) {
       console.error('创建新项目失败:', error);
+    }
+  };
+
+  const handleCreateDesignProject = async () => {
+    try {
+      const projectResult = await projectManagementService.createProject({
+        name: '设计项目',
+        type: 'design',
+      });
+
+      if (projectResult) {
+        const success = await projectManagementService.openProject(
+          projectResult.id,
+        );
+        if (success) {
+          setCurrentProjectId(projectResult.id);
+          setCurrentView('editor');
+          console.log('创建并打开设计项目:', projectResult.name);
+
+          // 刷新项目列表
+          loadProjectsList();
+        } else {
+          console.error('打开设计项目失败');
+        }
+      } else {
+        console.error('创建设计项目失败');
+      }
+    } catch (error) {
+      console.error('创建设计项目时出错:', error);
+    }
+  };
+
+  const handleCreateH5Project = async () => {
+    try {
+      const projectResult = await projectManagementService.createProject({
+        name: 'H5项目',
+        type: 'h5',
+      });
+
+      if (projectResult) {
+        const success = await projectManagementService.openProject(
+          projectResult.id,
+        );
+        if (success) {
+          setCurrentProjectId(projectResult.id);
+          setCurrentView('editor');
+          console.log('创建并打开H5项目:', projectResult.name);
+
+          // 刷新项目列表
+          loadProjectsList();
+        } else {
+          console.error('打开H5项目失败');
+        }
+      } else {
+        console.error('创建H5项目失败');
+      }
+    } catch (error) {
+      console.error('创建H5项目时出错:', error);
     }
   };
 
@@ -183,9 +241,7 @@ function App() {
         console.log('打开项目成功:', projectId);
 
         // 获取项目数据以确定模式
-        const projectData = await projectManagementService.getProjectData(
-          projectId,
-        );
+        const projectData = await projectManagementService.getCurrentProject();
         if (projectData) {
           setSelectedMode(projectData.type);
         }
@@ -197,6 +253,22 @@ function App() {
     }
   };
 
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      // 删除项目
+      const success = await projectManagementService.deleteProject(projectId);
+      if (success) {
+        console.log('删除项目成功:', projectId);
+        // 刷新项目列表
+        loadProjectsList();
+      } else {
+        console.error('删除项目失败:', projectId);
+      }
+    } catch (error) {
+      console.error('删除项目时出错:', error);
+    }
+  };
+
   const renderCurrentView = () => {
     switch (currentView) {
       case 'welcome':
@@ -204,13 +276,12 @@ function App() {
       case 'home':
         return (
           <HomePage
-            onModeSelect={handleModeSelect}
-            onOpenProjectLibrary={handleOpenProjectLibrary}
-            onOpenTemplateLibrary={handleOpenTemplateLibrary}
-            onOpenAssetLibrary={handleOpenAssetLibrary}
             onCreateNewProject={handleCreateNewProject}
+            onCreateDesignProject={handleCreateDesignProject}
+            onCreateH5Project={handleCreateH5Project}
             onOpenProject={handleOpenProject}
-            recentProjects={[]} // 暂时为空，后续可以从本地存储加载
+            onDeleteProject={handleDeleteProject}
+            recentProjects={recentProjects}
           />
         );
       case 'editor':

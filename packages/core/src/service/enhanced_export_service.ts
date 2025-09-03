@@ -241,7 +241,7 @@ export class EnhancedExportService {
    */
   private async exportAsSVG(
     graphics: GAssetForgeGraphics[],
-    options: ExportOptions,
+    _options: ExportOptions,
   ): Promise<Blob> {
     const svgContent = toSVG(graphics);
     return new Blob([svgContent], { type: 'image/svg+xml' });
@@ -272,8 +272,8 @@ export class EnhancedExportService {
    * 导出为原生 GAF 格式
    */
   private async exportAsGAF(
-    graphics: GAssetForgeGraphics[],
-    options: ExportOptions,
+    _graphics: GAssetForgeGraphics[],
+    _options: ExportOptions,
   ): Promise<Blob> {
     const data = this.editor.sceneGraph.toJSON();
     return new Blob([data], { type: 'application/json' });
@@ -443,7 +443,7 @@ export class EnhancedExportService {
     options: ExportOptions,
   ): Promise<Blob> {
     const graphics: GAssetForgeGraphics[] = [];
-    this.collectGraphicsRecursively(canvas, graphics);
+    this.collectGraphicsRecursively(_canvas, graphics);
     return this.exportSingle({ ...options, scope: 'all' });
   }
 

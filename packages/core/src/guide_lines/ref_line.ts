@@ -34,10 +34,6 @@ import {
   pointsToHLines,
   pointsToVLines,
 } from '../utils';
-import {
-  type CanvasStateManager,
-  createCanvasStateManager,
-} from '../utils/canvasStateManager';
 
 /**
  * reference line
@@ -60,14 +56,7 @@ export class RefLine {
   private toDrawVLines: IVerticalLine[] = []; // 等待绘制的垂直参照线
   private toDrawHLines: IHorizontalLine[] = []; // 等待绘制的水平参照线
 
-  // 画布状态管理器
-  private canvasStateManager: CanvasStateManager;
-
-  constructor(private editor: GAssetForgeEditor) {
-    // 初始化画布状态管理器
-    this.canvasStateManager = createCanvasStateManager();
-    this.canvasStateManager.setEditor(editor);
-  }
+  constructor(private editor: GAssetForgeEditor) {}
 
   /**
    * cache reference line of graphics in viewport
@@ -89,7 +78,7 @@ export class RefLine {
     const viewportBbox = this.editor.viewportManager.getSceneBbox();
 
     const refGraphicsSet = new Set<GAssetForgeGraphics>();
-    const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+    const currentCanvas = this.editor.doc.getCurrentCanvas();
     if (!currentCanvas) {
       console.warn('无法获取当前画布，跳过参考线计算');
       return;

@@ -4,8 +4,6 @@
  */
 import { type GAssetForgeEditor, type SettingValue } from '@g-asset-forge/core';
 
-import { createCanvasStateManager } from './canvasStateManager';
-
 export interface EditorInitializationConfig {
   containerElement: HTMLDivElement;
   width: number;
@@ -60,13 +58,6 @@ export const initializeEditorSafely = async (
     if (!validationResult.success) {
       throw new Error(`编辑器初始化验证失败: ${validationResult.error}`);
     }
-
-    // 初始化画布状态管理器
-    const canvasStateManager = createCanvasStateManager();
-    canvasStateManager.setEditor(editor);
-
-    // 确保有有效的画布
-    canvasStateManager.ensureValidCanvas();
 
     console.log('编辑器初始化成功');
     return {
@@ -179,10 +170,6 @@ export const createEditorHealthChecker = (editor: GAssetForgeEditor) => {
   let checkCount = 0;
   const maxChecks = 100; // 最多检查100次，避免无限循环
 
-  // 创建画布状态管理器用于健康检查
-  const canvasStateManager = createCanvasStateManager();
-  canvasStateManager.setEditor(editor);
-
   const healthCheck = async () => {
     if (isDestroyed || checkCount >= maxChecks) {
       return;
@@ -191,23 +178,16 @@ export const createEditorHealthChecker = (editor: GAssetForgeEditor) => {
     checkCount++;
 
     try {
-      // 使用画布状态管理器验证编辑器状态
-      if (!canvasStateManager.validateEditorState()) {
-        console.warn('健康检查：编辑器状态异常');
+      // 简单的编辑器状态检查
+      if (!editor || !editor.containerElement) {
+        console.warn('健康检查：编辑器或容器元素不存在');
         return;
       }
 
-      // 检查画布状态并尝试恢复
-      const canvasState = canvasStateManager.getCanvasState();
-      if (!canvasState.hasValidCanvas) {
-        console.log('健康检查：发现画布状态异常，尝试恢复');
-
-        const recovered = await canvasStateManager.attemptCanvasRecovery();
-        if (recovered) {
-          console.log('健康检查：画布状态已恢复');
-        } else {
-          console.warn('健康检查：画布状态恢复失败');
-        }
+      // 检查当前画布
+      const currentCanvas = editor.doc.getCurrentCanvas();
+      if (!currentCanvas) {
+        console.warn('健康检查：当前画布不存在');
       }
     } catch (error) {
       console.error('健康检查失败:', error);
@@ -221,7 +201,6 @@ export const createEditorHealthChecker = (editor: GAssetForgeEditor) => {
   return () => {
     isDestroyed = true;
     clearInterval(intervalId);
-    canvasStateManager.destroy();
     console.log('编辑器健康检查已停止');
   };
 };

@@ -2,7 +2,6 @@
  * 导出质量优化器 - 根据内容和目标自动优化导出设置（简化版）
  */
 
-import { type GAssetForgeEditor } from '../editor';
 import { type GAssetForgeGraphics } from '../graphics';
 import { ExportFormat, type ExportQuality } from './enhanced_export_service';
 
@@ -52,7 +51,7 @@ interface OptimizationSuggestion {
  * 导出质量优化器（简化版）
  */
 export class ExportQualityOptimizer {
-  constructor(private editor: GAssetForgeEditor) {}
+  constructor() {}
 
   /**
    * 分析内容并提供优化建议
@@ -79,7 +78,7 @@ export class ExportQualityOptimizer {
     const dimensions = this.calculateDimensions(graphics);
 
     for (const graphic of graphics) {
-      c = graphic.attrs.type;
+      const type = graphic.attrs.type;
 
       switch (type) {
         case 'Text':
@@ -332,8 +331,6 @@ export class ExportQualityOptimizer {
 /**
  * 创建导出质量优化器实例
  */
-export const createExportQualityOptimizer = (
-  editor: GAssetForgeEditor,
-): ExportQualityOptimizer => {
-  return new ExportQualityOptimizer(editor);
+export const createExportQualityOptimizer = (): ExportQualityOptimizer => {
+  return new ExportQualityOptimizer();
 };

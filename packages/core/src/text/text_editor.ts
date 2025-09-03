@@ -13,7 +13,6 @@ import { GAssetForgeText, type IDrawInfo, type TextAttrs } from '../graphics';
 import { type IMousemoveEvent } from '../host_event_manager';
 import { removeGraphicsAndRecord } from '../service/remove_service';
 import { Transaction } from '../transaction';
-import { createCanvasStateManager } from '../utils/canvasStateManager';
 import { type IRange, RangeManager } from './range_manager';
 
 const defaultInputStyle = {
@@ -35,13 +34,9 @@ export class TextEditor {
   private transaction!: Transaction;
 
   // 画布状态管理器
-  private canvasStateManager = createCanvasStateManager();
 
   constructor(private editor: GAssetForgeEditor) {
     this.rangeManager = new RangeManager(editor);
-
-    // 初始化画布状态管理器
-    this.canvasStateManager.setEditor(editor);
 
     this.inputDom = this.createInputDom();
     this.inactive();
@@ -101,7 +96,7 @@ export class TextEditor {
       this.textGraphics = textGraphics;
 
       this.editor.sceneGraph.addItems([textGraphics]);
-      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(textGraphics);
       } else {

@@ -11,8 +11,8 @@ import './Editor.scss';
 import { pick, throttle } from '@g-asset-forge/common';
 import {
   GAssetForgeEditor,
-  type SettingValue,
   performanceService,
+  type SettingValue,
 } from '@g-asset-forge/core';
 import { type FC, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -20,19 +20,11 @@ import { EditorContext } from '../context';
 import { useProjectManagement } from '../hooks/useProjectManagement';
 import { AutoSaveGraphics } from '../store/auto-save-graphs';
 import {
-  type CanvasStateManager,
-  createCanvasStateManager,
-} from '../utils/canvasStateManager';
-import {
   createEditorHealthChecker,
   diagnoseEditorState,
   initializeEditorSafely,
 } from '../utils/editorInitializer';
-// import { createProjectDataIsolationTester } from '../utils/projectDataIsolationTester';
-import { DataIsolationMonitor } from './DebugPanel/DataIsolationMonitor';
-import { ProjectTabsDebugger } from './DebugPanel/ProjectTabsDebugger';
 import { AssetLibraryPanel } from './AssetLibraryPanel/index';
-import { PerformanceMonitor } from './PerformanceMonitor';
 import { ContextMenu } from './ContextMenu/ContextMenu';
 import { FloatingActionButtons } from './FloatingActionButtons/FloatingActionButtons';
 import { H5EditorMode } from './H5EditorMode/H5EditorMode';
@@ -89,9 +81,6 @@ const Editor: FC<EditorProps> = ({
   const [editor, setEditor] = useState<GAssetForgeEditor | null>(null);
   const [editorMode, setEditorMode] = useState<'design' | 'h5'>(initialMode);
 
-  // 画布状态管理器
-  const canvasStateManagerRef = useRef<CanvasStateManager | null>(null);
-
   // 弹窗状态管理
   const [showAssetLibrary, setShowAssetLibrary] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
@@ -99,22 +88,11 @@ const Editor: FC<EditorProps> = ({
 
   // 项目管理Hook - 统一状态管理
   const {
-    openTabs,
-    activeTabId,
-    isLoading: projectLoading,
-    error: projectError,
     openProject,
-    closeProject,
-    switchToTab,
-    reorderTabs,
-    saveProject,
-    saveAllProjects,
     renameProject,
     deleteProject,
     setEditor: setProjectEditor,
-    getActiveProject,
-    markProjectDirty,
-    hasUnsavedChanges,
+    getCurrentProject,
   } = useProjectManagement(projectManagementService);
 
   useEffect(() => {
@@ -229,108 +207,6 @@ const Editor: FC<EditorProps> = ({
         (window as any).__PROJECT_MANAGEMENT_SERVICE__ =
           projectManagementService;
         console.log('项目管理服务已设置为全局可用');
-
-        // 创建数据隔离测试工具（开发环境）
-        if (import.meta.env?.DEV) {
-          const { createDataIsolationTester } = await import(
-            '../utils/dataIsolationTester'
-          );
-          const isolationTester = createDataIsolationTester(
-            editor,
-            projectManagementService,
-          );
-          (window as any).__ISOLATION_TESTER__ = isolationTester;
-
-          // 加载数据隔离修复测试脚本
-          try {
-            await import('../utils/testDataIsolationFix');
-            console.log('数据隔离修复测试脚本已加载');
-          } catch (error) {
-            console.warn('加载数据隔离修复测试脚本失败:', error);
-          }
-
-          // 加载数据隔离修复工具
-          try {
-            const { createDataIsolationFixer } = await import(
-              '../utils/dataIsolationFixer'
-            );
-            const projectDocumentManager =
-              projectManagementService.getProjectDocumentManager();
-            if (projectDocumentManager) {
-              const fixer = createDataIsolationFixer(
-                editor,
-                projectDocumentManager,
-              );
-              (window as any).__DATA_ISOLATION_FIXER_INSTANCE__ = fixer;
-              console.log('数据隔离修复工具实例已创建');
-
-              // 添加全局修复函数
-              (window as any).fixDataIsolation = (projectId?: string) => {
-                if (projectId) {
-                  return fixer.smartFix(projectId);
-                } else {
-                  const currentProjectId =
-                    projectManagementService.getActiveTabId();
-                  if (currentProjectId) {
-                    return fixer.smartFix(currentProjectId);
-                  } else {
-                    console.warn('没有活动项目可修复');
-                    return null;
-                  }
-                }
-              };
-
-              (window as any).fixAllDataIsolation = () => {
-                return fixer.fixAllProjects();
-              };
-
-              console.log('全局修复函数已添加:');
-              console.log(
-                '- fixDataIsolation(projectId?): 修复指定项目或当前项目的数据不匹配',
-              );
-              console.log('- fixAllDataIsolation(): 修复所有项目的数据不匹配');
-            }
-          } catch (error) {
-            console.warn('加载数据隔离修复工具失败:', error);
-          }
-
-          console.log('项目数据隔离测试工具已准备就绪');
-          console.log('可用的测试函数:');
-          console.log('- testDataIsolationFix(): 完整的数据隔离修复测试');
-          console.log('- quickTestIsolation(): 快速数据隔离验证');
-          console.log('- testDataIsolation(): 原有的数据隔离测试');
-        }
-      }
-
-      // 如果有当前项目ID，加载项目数据
-      if (currentProjectId && projectManagementService) {
-        const loadProjectData = async () => {
-          try {
-            const projectData = await projectManagementService.getProjectData(
-              currentProjectId,
-            );
-            if (projectData && projectData.editorData) {
-              // 再次验证编辑器状态
-              if (!editor.doc || !editor.sceneGraph || !editor.canvasElement) {
-                console.error('编辑器状态异常，无法加载项目数据');
-                return;
-              }
-
-              editor.setContents(projectData.editorData);
-              console.log('已加载项目数据到编辑器:', projectData.name);
-
-              // 触发一次渲染确保数据正确显示
-              editor.render();
-            } else {
-              console.log('项目数据为空或无效，使用默认状态');
-            }
-          } catch (error) {
-            console.error('加载项目数据失败:', error);
-          }
-        };
-
-        // 使用Promise.resolve确保在下一个事件循环中执行
-        Promise.resolve().then(loadProjectData);
       }
 
       // 尝试手动配置编辑器设置
@@ -357,7 +233,6 @@ const Editor: FC<EditorProps> = ({
       });
 
       // 检查编辑器容器的事件绑定
-      let wheelHandler: ((e: WheelEvent) => void) | null = null;
 
       if (containerRef.current) {
         const container = containerRef.current;
@@ -383,53 +258,11 @@ const Editor: FC<EditorProps> = ({
           }
         });
 
-        // 改进的滚轮事件处理 - 针对Electron环境优化
-        wheelHandler = (e: WheelEvent) => {
-          // 只在Canvas区域内处理滚轮事件
-          const target = e.target as HTMLElement;
-          if (!target || !containerRef.current?.contains(target)) {
-            return;
-          }
-
-          console.log('编辑器滚轮事件触发:', {
-            deltaY: e.deltaY,
-            target: e.target,
-          });
-
-          // 阻止默认行为
-          e.preventDefault();
-
-          if (editor && editor.viewportManager) {
-            const delta = e.deltaY;
-            const center = editor.getCursorXY(e);
-
-            try {
-              // 使用标准的缩放方法
-              if (delta > 0) {
-                editor.viewportManager.zoomOut({
-                  center,
-                  deltaY: Math.abs(delta),
-                });
-              } else {
-                editor.viewportManager.zoomIn({
-                  center,
-                  deltaY: Math.abs(delta),
-                });
-              }
-              console.log('滚轮缩放成功:', { delta, center });
-            } catch (error) {
-              console.warn('滚轮缩放失败:', error);
-            }
-          }
-        };
-
-        // 只在容器上绑定事件，避免全局冲突
-        if (containerRef.current) {
-          containerRef.current.addEventListener('wheel', wheelHandler, {
-            passive: false,
-          });
-          console.log('已绑定编辑器滚轮事件监听器');
-        }
+        // 滚轮事件处理已移除 - 由核心包的 host_event_manager 统一处理
+        // 核心包中的滚轮处理逻辑：
+        // - Ctrl/Cmd + 滚轮：缩放画布
+        // - 普通滚轮：平移画布
+        console.log('滚轮事件由核心包统一处理，无需在此处重复绑定');
 
         // 添加更多调试信息
         console.log('编辑器状态检查:', {
@@ -468,12 +301,6 @@ const Editor: FC<EditorProps> = ({
       // 使用 passive: true 来避免滚轮事件冲突
       window.addEventListener('resize', changeViewport, { passive: true });
 
-      // 初始化画布状态管理器
-      if (!canvasStateManagerRef.current) {
-        canvasStateManagerRef.current = createCanvasStateManager();
-      }
-      canvasStateManagerRef.current.setEditor(editor);
-
       // 启动编辑器健康检查
       const stopHealthCheck = createEditorHealthChecker(editor);
 
@@ -491,16 +318,7 @@ const Editor: FC<EditorProps> = ({
           // 停止健康检查
           stopHealthCheck();
 
-          // 销毁画布状态管理器
-          if (canvasStateManagerRef.current) {
-            canvasStateManagerRef.current.destroy();
-            canvasStateManagerRef.current = null;
-          }
-
-          // 移除滚轮事件监听器
-          if (containerRef.current && wheelHandler) {
-            containerRef.current.removeEventListener('wheel', wheelHandler);
-          }
+          // 滚轮事件监听器已移除，由核心包统一处理
 
           // 安全检查编辑器是否存在且未被销毁
           if (editor && editor.containerElement) {
@@ -528,12 +346,35 @@ const Editor: FC<EditorProps> = ({
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [
-    containerRef,
-    setProjectEditor,
-    currentProjectId,
-    projectManagementService,
-  ]);
+  }, [containerRef, setProjectEditor, projectManagementService]);
+
+  // 监听currentProjectId变化，自动打开项目
+  useEffect(() => {
+    if (currentProjectId && projectManagementService) {
+      // 检查项目是否已经打开，避免重复打开
+      const currentOpenProjectId =
+        projectManagementService.getCurrentProjectId();
+      if (currentOpenProjectId === currentProjectId) {
+        console.log('项目已经打开，跳过重复打开:', currentProjectId);
+        return;
+      }
+
+      console.log('检测到项目ID变化，自动打开项目:', currentProjectId);
+      // 使用项目管理服务打开项目
+      projectManagementService
+        .openProject(currentProjectId)
+        .then((success: boolean) => {
+          if (success) {
+            console.log('项目自动打开成功:', currentProjectId);
+          } else {
+            console.error('项目自动打开失败:', currentProjectId);
+          }
+        })
+        .catch((error: any) => {
+          console.error('项目自动打开时发生错误:', error);
+        });
+    }
+  }, [currentProjectId, projectManagementService]);
 
   const handleModeSwitch = (mode: 'design' | 'h5') => {
     setEditorMode(mode);
@@ -616,7 +457,7 @@ const Editor: FC<EditorProps> = ({
           setShowProjectLibrary(false);
 
           // 加载项目数据到编辑器
-          const projectData = await getActiveProject();
+          const projectData = await getCurrentProject();
           if (projectData && editor) {
             editor.setContents(projectData.editorData);
             console.log('项目数据已加载到编辑器');
@@ -626,7 +467,7 @@ const Editor: FC<EditorProps> = ({
         console.error('打开项目失败:', error);
       }
     },
-    [openProject, getActiveProject, editor],
+    [openProject, getCurrentProject, editor],
   );
 
   const handleProjectCreate = useCallback(async () => {
@@ -650,7 +491,7 @@ const Editor: FC<EditorProps> = ({
             // 等待一小段时间确保状态更新
             setTimeout(async () => {
               // 加载项目数据到编辑器
-              const projectData = await getActiveProject();
+              const projectData = await getCurrentProject();
               if (projectData && editor) {
                 try {
                   editor.setContents(projectData.editorData);
@@ -659,10 +500,6 @@ const Editor: FC<EditorProps> = ({
                   console.error('加载项目数据到编辑器失败:', error);
                 }
               }
-
-              // 调试信息：检查标签页状态
-              console.log('当前打开的标签页:', openTabs);
-              console.log('当前活动标签页ID:', activeTabId);
             }, 100);
           } else {
             console.error('打开新创建的项目失败');
@@ -681,9 +518,7 @@ const Editor: FC<EditorProps> = ({
     openProject,
     editor,
     projectManagementService,
-    getActiveProject,
-    openTabs,
-    activeTabId,
+    getCurrentProject,
   ]);
 
   const handleProjectRename = useCallback(
@@ -712,161 +547,19 @@ const Editor: FC<EditorProps> = ({
     [deleteProject],
   );
 
-  // 标签页事件处理
-  const handleTabSelect = useCallback(
-    async (tabId: string) => {
-      await switchToTab(tabId);
-    },
-    [switchToTab],
-  );
-
-  const handleTabClose = useCallback(
-    async (tabId: string) => {
-      await closeProject(tabId);
-    },
-    [closeProject],
-  );
-
-  const handleTabsReorder = useCallback(
-    (tabs: any[]) => {
-      reorderTabs(tabs);
-    },
-    [reorderTabs],
-  );
-
-  // 监听当前项目ID变化，加载项目数据
-  useEffect(() => {
-    if (currentProjectId && editor && projectManagementService) {
-      const loadProjectData = async () => {
-        try {
-          // 验证编辑器状态
-          if (!editor.doc || !editor.sceneGraph || !editor.canvasElement) {
-            console.warn('编辑器未完全初始化，跳过项目数据加载');
-            return;
-          }
-
-          const projectData = await projectManagementService.getProjectData(
-            currentProjectId,
-          );
-          if (projectData && projectData.editorData) {
-            // 再次验证编辑器状态（异步操作后可能发生变化）
-            if (!editor.doc || !editor.sceneGraph || !editor.canvasElement) {
-              console.warn('编辑器状态在异步操作后发生变化，跳过数据加载');
-              return;
-            }
-
-            editor.setContents(projectData.editorData);
-            editor.render();
-            console.log('项目数据已更新到编辑器:', projectData.name);
-          } else {
-            console.log('项目数据为空，保持当前状态');
-          }
-        } catch (error) {
-          console.error('加载项目数据失败:', error);
-        }
-      };
-
-      // 使用微任务确保在下一个事件循环中执行
-      Promise.resolve().then(loadProjectData);
-    }
-  }, [currentProjectId, editor, projectManagementService]);
-
-  // 监听编辑器内容变化，标记项目为已修改
-  useEffect(() => {
-    if (!editor || !activeTabId) return;
-
-    const handleContentChange = () => {
-      markProjectDirty(activeTabId);
-    };
-
-    // 监听编辑器的内容变化事件
-    editor.commandManager.on('change', handleContentChange);
-
-    // 额外监听画布渲染事件，确保能捕获到内容变化
-    try {
-      if (editor.sceneGraph && editor.sceneGraph.on) {
-        const handleRender = () => {
-          console.log('画布渲染事件触发，可能表示内容变化');
-          // 延迟标记，避免频繁更新
-          setTimeout(() => {
-            markProjectDirty(activeTabId);
-          }, 1000);
-        };
-
-        editor.sceneGraph.on('render', handleRender);
-        console.log('已监听编辑器sceneGraph.render事件');
-
-        // 保存引用以便清理
-        (editor.sceneGraph as any)._renderHandler = handleRender;
-      }
-    } catch (error) {
-      console.warn('监听编辑器render事件失败:', error);
-    }
-
-    return () => {
-      try {
-        editor.commandManager.off('change', handleContentChange);
-        if (editor.sceneGraph && editor.sceneGraph.off) {
-          const renderHandler = (editor.sceneGraph as any)._renderHandler;
-          if (renderHandler) {
-            editor.sceneGraph.off('render', renderHandler);
-          }
-        }
-        console.log('已清理编辑器事件监听器');
-      } catch (error) {
-        console.warn('清理编辑器事件监听器失败:', error);
-      }
-    };
-  }, [editor, activeTabId, markProjectDirty]);
-
-  // 自动保存功能
-  useEffect(() => {
-    if (!activeTabId) return;
-
-    const autoSaveInterval = setInterval(async () => {
-      if (hasUnsavedChanges() && editor) {
-        try {
-          // 获取当前编辑器内容
-          const editorData = JSON.parse(editor.sceneGraph.toJSON());
-
-          // 更新项目数据（这里需要实现获取项目数据的方法）
-          // TODO: 实现updateProjectData方法
-
-          // 保存项目
-          await saveProject(activeTabId);
-          console.log('项目自动保存成功');
-        } catch (error) {
-          console.error('自动保存失败:', error);
-        }
-      }
-    }, 30000); // 30秒自动保存一次
-
-    return () => clearInterval(autoSaveInterval);
-  }, [activeTabId, hasUnsavedChanges, editor, saveProject]);
-
   return (
     <div>
       <EditorContext.Provider
         value={{
           editor,
-          projectTabs: openTabs,
-          activeTabId,
-          onTabSelect: handleTabSelect,
-          onTabClose: handleTabClose,
         }}
       >
-        {/* 统一的Header - 两个模式共用，集成项目标签页 */}
+        {/* 统一的Header - 两个模式共用 */}
         {showHeader && (
           <Header
             title="g-asset-forge"
-            projectTabs={openTabs}
-            activeTabId={activeTabId || undefined}
-            onTabSelect={handleTabSelect}
-            onTabClose={handleTabClose}
-            onTabsReorder={handleTabsReorder}
             onBackToHome={onBackToHome}
             showHomeButton={!!onBackToHome}
-            onCreateProject={handleProjectCreate}
           >
             <div className="header-controls">
               <ModeSwitcher
@@ -949,20 +642,6 @@ const Editor: FC<EditorProps> = ({
             onProjectDelete={handleProjectDelete}
           />
         </Modal>
-
-        {/* 性能监控器 */}
-        <PerformanceMonitor
-          visible={import.meta.env?.DEV || false}
-          position="top-right"
-        />
-
-        {/* 开发环境调试器 */}
-        {import.meta.env?.DEV && (
-          <>
-            <ProjectTabsDebugger />
-            <DataIsolationMonitor />
-          </>
-        )}
       </EditorContext.Provider>
     </div>
   );

@@ -7,6 +7,7 @@ node_modules
 .pnp.js
 logs
 docs
+suika_backup
 
 # testing
 /coverage
@@ -14,6 +15,7 @@ docs
 # production
 build
 dist
+suika_backup
 
 # misc
 .DS_Store

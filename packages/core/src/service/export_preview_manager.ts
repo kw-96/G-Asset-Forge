@@ -6,9 +6,9 @@ import { EventEmitter } from '@g-asset-forge/common';
 
 import { type GAssetForgeEditor } from '../editor';
 import {
+  EnhancedExportService,
   type ExportOptions,
   type ExportPreview,
-  EnhancedExportService,
 } from './enhanced_export_service';
 
 interface Events {
@@ -27,7 +27,7 @@ export class ExportPreviewManager {
   private previewCache = new Map<string, ExportPreview>();
   private isGenerating = false;
 
-  constructor(private editor: GAssetForgeEditor) {
+  constructor(editor: GAssetForgeEditor) {
     this.exportService = new EnhancedExportService(editor);
   }
 

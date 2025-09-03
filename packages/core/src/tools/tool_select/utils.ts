@@ -8,23 +8,6 @@ import { type IBox, type IPoint, rectToBox } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../../editor';
 import { type GAssetForgeGraphics, type IHitOptions } from '../../graphics';
-import {
-  type CanvasStateManager,
-  createCanvasStateManager,
-} from '../../utils/canvasStateManager';
-
-// 创建全局画布状态管理器实例
-let globalCanvasStateManager: CanvasStateManager | null = null;
-
-/**
- * 初始化画布状态管理器
- */
-const initCanvasStateManager = (): CanvasStateManager => {
-  if (!globalCanvasStateManager) {
-    globalCanvasStateManager = createCanvasStateManager();
-  }
-  return globalCanvasStateManager;
-};
 
 /**
  * 获取有效的画布对象 - 使用统一的画布状态管理器
@@ -32,11 +15,7 @@ const initCanvasStateManager = (): CanvasStateManager => {
 const getValidCanvas = (
   editor: GAssetForgeEditor,
 ): GAssetForgeGraphics | null => {
-  const canvasStateManager = initCanvasStateManager();
-  canvasStateManager.setEditor(editor);
-
-  // 使用画布状态管理器获取当前画布
-  return canvasStateManager.getCurrentCanvas();
+  return editor.doc.getCurrentCanvas();
 };
 
 /********* get top hit element ********/

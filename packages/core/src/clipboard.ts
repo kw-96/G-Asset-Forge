@@ -28,10 +28,6 @@ import { toSVG } from './to_svg';
 import { Transaction } from './transaction';
 import { type IEditorPaperData } from './type';
 import { getChildNodeSet } from './utils';
-import {
-  type CanvasStateManager,
-  createCanvasStateManager,
-} from './utils/canvasStateManager';
 
 /**
  * Clipboard Manager
@@ -42,14 +38,7 @@ export class ClipboardManager {
   private unbindEvents = noop;
   private hasBindEvents = false;
 
-  // 画布状态管理器
-  private canvasStateManager: CanvasStateManager;
-
-  constructor(private editor: GAssetForgeEditor) {
-    // 初始化画布状态管理器
-    this.canvasStateManager = createCanvasStateManager();
-    this.canvasStateManager.setEditor(editor);
-  }
+  constructor(private editor: GAssetForgeEditor) {}
 
   bindEvents() {
     if (this.hasBindEvents) {
@@ -129,7 +118,7 @@ export class ClipboardManager {
         },
       );
       editor.sceneGraph.addItems([rectGraphics]);
-      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(rectGraphics);
       } else {
@@ -232,7 +221,7 @@ export class ClipboardManager {
      */
     let left: string | null = null;
     let right: string | null = null;
-    const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+    const currentCanvas = this.editor.doc.getCurrentCanvas();
     if (!currentCanvas) {
       console.error('无法获取当前画布，无法粘贴');
       return 0;

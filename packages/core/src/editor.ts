@@ -29,10 +29,6 @@ import { Setting, type SettingValue } from './setting';
 import { TextEditor } from './text/text_editor';
 import { ToolManager } from './tools';
 import { type IChanges, type IEditorPaperData } from './type';
-import {
-  type CanvasStateManager,
-  createCanvasStateManager,
-} from './utils/canvasStateManager';
 import { ViewportManager } from './viewport_manager';
 
 interface IEditorOptions {
@@ -58,9 +54,6 @@ export class GAssetForgeEditor {
   paperId: string;
 
   private emitter = new EventEmitter<Events>();
-
-  // 画布状态管理器
-  private canvasStateManager: CanvasStateManager;
 
   doc: GAssetForgeDocument;
   sceneGraph: SceneGraph;
@@ -103,10 +96,6 @@ export class GAssetForgeEditor {
     if (options.offsetY) {
       this.setting.set('offsetY', options.offsetY);
     }
-
-    // 初始化画布状态管理器
-    this.canvasStateManager = createCanvasStateManager();
-    this.canvasStateManager.setEditor(this);
 
     this.mouseEventManager = new MouseEventManager(this);
     this.keybindingManager = new KeyBindingManager(this);
@@ -182,15 +171,6 @@ export class GAssetForgeEditor {
       this.perfMonitor.start(this.containerElement);
     }
 
-    // 设置性能监控回调
-    this.perfMonitor.on('performanceWarning', (type, value, threshold) => {
-      console.warn(`性能警告 - ${type}: ${value} (阈值: ${threshold})`);
-    });
-
-    this.perfMonitor.on('memoryLeak', (usage) => {
-      console.error(`检测到内存泄漏: ${(usage / 1024 / 1024).toFixed(2)}MB`);
-    });
-
     /**
      * setViewport 其实会修改 canvas 的宽高，浏览器的 DOM 更新是异步的，
      * 所以下面的 render 要异步执行
@@ -210,19 +190,47 @@ export class GAssetForgeEditor {
     }
 
     // 先加载数据
+    console.log(
+      'setContents: 开始加载数据，数据包含',
+      data.data.length,
+      '个对象',
+    );
+
+    // 检查是否已经有画布，如果有则清空
+    const existingCanvases = this.doc.graphicsStoreManager.getCanvasItems();
+    if (existingCanvases.length > 0) {
+      console.log('setContents: 清空现有画布，准备加载项目数据');
+      this.doc.clear();
+    }
+
     this.sceneGraph.load(data.data);
     this.commandManager.clearRecords();
     this.paperId = data.paperId ?? genUuid();
 
     // 检查是否有可用的画布
     const availableCanvases = this.doc.graphicsStoreManager.getCanvasItems();
+    console.log('setContents: 加载后可用画布数量:', availableCanvases.length);
+    console.log(
+      'setContents: 可用画布详情:',
+      availableCanvases.map((canvas) => ({
+        id: canvas.attrs.id,
+        name: canvas.attrs.objectName,
+        isDeleted: canvas.isDeleted(),
+      })),
+    );
 
     if (availableCanvases && availableCanvases.length > 0) {
       // 使用第一个可用的画布
       const firstCanvas = availableCanvases[0];
+      console.log(
+        'setContents: 使用现有画布:',
+        firstCanvas.attrs.id,
+        firstCanvas.attrs.objectName,
+      );
       this.doc.setCurrentCanvas(firstCanvas.attrs.id);
-    } else if (!this.doc.getChildren().length) {
+    } else {
       // 如果没有画布，创建一个新的
+      console.log('setContents: 没有可用画布，创建新画布');
       const canvas = new GAssetForgeCanvas(
         {
           objectName: 'Page 1',
@@ -237,6 +245,7 @@ export class GAssetForgeEditor {
 
       this.sceneGraph.addItems([canvas]);
       this.doc.insertChild(canvas);
+      console.log('setContents: 创建新画布完成:', canvas.attrs.id);
       this.doc.setCurrentCanvas(canvas.attrs.id);
     }
 
@@ -315,7 +324,7 @@ export class GAssetForgeEditor {
   }
 
   getCanvasChildrenBbox() {
-    const canvasGraphics = this.canvasStateManager.getCurrentCanvas();
+    const canvasGraphics = this.doc.getCurrentCanvas();
     if (!canvasGraphics) {
       return null;
     }

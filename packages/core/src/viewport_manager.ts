@@ -225,24 +225,14 @@ export class ViewportManager {
     return { width, height };
   }
 
-  setViewportSize({ width, height }: ISize) {
-    // 安全检查canvasElement是否存在
-    if (!this.editor.canvasElement) {
-      console.warn('Canvas元素不存在，无法设置视口尺寸');
-      return;
-    }
-
+  setViewportSize({ width, height }: ISize): void {
     const dpr = getDevicePixelRatio();
 
-    try {
-      this.editor.canvasElement.width = width * dpr;
-      this.editor.canvasElement.style.width = width + 'px';
+    this.editor.canvasElement.width = width * dpr;
+    this.editor.canvasElement.style.width = width + 'px';
 
-      this.editor.canvasElement.height = height * dpr;
-      this.editor.canvasElement.style.height = height + 'px';
-    } catch (error) {
-      console.error('设置视口尺寸时出错:', error);
-    }
+    this.editor.canvasElement.height = height * dpr;
+    this.editor.canvasElement.style.height = height + 'px';
   }
   getSceneCenter() {
     const size = this.getPageSize();

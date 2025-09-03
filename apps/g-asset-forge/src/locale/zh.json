@@ -84,9 +84,12 @@
   "homePage.quickStart": "快速开始",
   "homePage.resourceManagement": "资源管理",
   "homePage.createNewProject": "创建新项目",
+  "homePage.createDesignProject": "创建设计项目",
+  "homePage.createH5Project": "创建H5项目",
   "homePage.templateLibrary": "模板库",
   "homePage.projectLibrary": "项目库",
   "homePage.assetLibrary": "素材库",
+  "homePage.fontLibrary": "字体库",
   "homePage.recentProjects": "最近项目",
   "homePage.designType": "设计",
   "homePage.h5Type": "H5"

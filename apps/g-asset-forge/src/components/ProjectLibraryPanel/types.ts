@@ -66,23 +66,3 @@ export interface IProjectLibraryPanelProps {
   className?: string;
   style?: React.CSSProperties;
 }
-
-// 项目标签页相关类型
-export interface IProjectTab {
-  id: string;
-  name: string;
-  filePath: string;
-  isActive: boolean;
-  isDirty: boolean;
-  isClosable: boolean;
-}
-
-export interface IProjectTabsProps {
-  tabs: IProjectTab[];
-  activeTabId?: string;
-  onTabSelect?: (tabId: string) => void;
-  onTabClose?: (tabId: string) => void;
-  onTabsReorder?: (tabs: IProjectTab[]) => void;
-  className?: string;
-  style?: React.CSSProperties;
-}

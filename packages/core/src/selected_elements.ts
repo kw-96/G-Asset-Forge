@@ -12,10 +12,6 @@ import { type GAssetForgeEditor } from './editor';
 import { type GAssetForgeGraphics, isFrameGraphics } from './graphics';
 import { removeGraphicsAndRecord } from './service/remove_service';
 import { getParentIdSet } from './utils';
-import {
-  type CanvasStateManager,
-  createCanvasStateManager,
-} from './utils/canvasStateManager';
 
 interface Events {
   itemsChange(items: GAssetForgeGraphics[]): void;
@@ -36,14 +32,7 @@ export class SelectedElements {
 
   private eventEmitter = new EventEmitter<Events>();
 
-  // 画布状态管理器
-  private canvasStateManager: CanvasStateManager;
-
-  constructor(private editor: GAssetForgeEditor) {
-    // 初始化画布状态管理器
-    this.canvasStateManager = createCanvasStateManager();
-    this.canvasStateManager.setEditor(editor);
-  }
+  constructor(private editor: GAssetForgeEditor) {}
   setItems(items: GAssetForgeGraphics[]) {
     const prevItems = this.items;
     this.items = items;
@@ -177,8 +166,7 @@ export class SelectedElements {
     // 如果是，将父节点下的子节点全部选中
     // 如果不是，不做任何操作。
     const parent =
-      this.items[0]?.getParent?.() ??
-      this.canvasStateManager.getCurrentCanvas();
+      this.items[0]?.getParent?.() ?? this.editor.doc.getCurrentCanvas();
 
     if (!parent) {
       console.warn('无法获取父级元素，无法执行全选操作');

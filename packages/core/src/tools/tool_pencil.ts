@@ -11,9 +11,8 @@ import { simplePath } from '@g-asset-forge/geo';
 import { AddGraphCmd } from '../commands';
 import { type ICursor } from '../cursor_manager';
 import { type GAssetForgeEditor } from '../editor';
-import { GAssetForgePath,GraphicsObjectSuffix } from '../graphics';
+import { GAssetForgePath, GraphicsObjectSuffix } from '../graphics';
 import { getNoConflictObjectName } from '../utils';
-import { createCanvasStateManager } from '../utils/canvasStateManager';
 import { type ITool } from './type';
 
 const TYPE = 'pencil';
@@ -31,12 +30,7 @@ export class PencilTool implements ITool {
   private path: GAssetForgePath | null = null;
   private isFirstDrag = true;
 
-  // 画布状态管理器
-  private canvasStateManager = createCanvasStateManager();
-
-  constructor(private editor: GAssetForgeEditor) {
-    this.canvasStateManager.setEditor(editor);
-  }
+  constructor(private editor: GAssetForgeEditor) {}
   onActive() {
     this.editor.selectedElements.clear();
   }
@@ -51,7 +45,7 @@ export class PencilTool implements ITool {
     this.path = new GAssetForgePath(
       {
         objectName: getNoConflictObjectName(
-          this.canvasStateManager.getCurrentCanvas()!,
+          this.editor.doc.getCurrentCanvas()!,
           GraphicsObjectSuffix.Path,
         ),
         width: 0,
@@ -89,7 +83,7 @@ export class PencilTool implements ITool {
 
     if (this.isFirstDrag) {
       this.editor.sceneGraph.addItems([path]);
-      const currentCanvas = this.canvasStateManager.getCurrentCanvas();
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
       if (currentCanvas) {
         currentCanvas.insertChild(path);
       } else {

@@ -102,7 +102,7 @@ export class HostEventManager {
     const editor = this.editor;
     const onWheel = (event: WheelEvent) => {
       if (event.ctrlKey || event.metaKey) {
-        // zoom viewport
+        // Ctrl/Cmd + 滚轮：缩放画布（保留此功能）
         event.preventDefault();
         const point = this.editor.getCursorXY(event);
         let isZoomOut = event.deltaY > 0;
@@ -122,7 +122,7 @@ export class HostEventManager {
         }
         editor.render();
       } else {
-        // translate viewport
+        // 普通滚轮：平移画布（保留此功能）
         if (
           this.editor.canvasDragger.isActive() &&
           this.editor.canvasDragger.isPressing()

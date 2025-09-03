@@ -1,5 +1,6 @@
 import { EventEmitter } from '@g-asset-forge/common';
 
+import { GraphicsType } from '../type';
 import { RecycleBinService } from './RecycleBinService';
 import {
   type CreateProjectParams,
@@ -69,7 +70,7 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
       backgroundColor: '#ffffff',
       exportFormat: ['png', 'jpg'],
       exportQuality: 0.9,
-      showGrid: false,
+      showGrid: true, // 默认显示网格，与编辑器设置保持一致
       gridSize: 20,
       showRuler: true,
     };
@@ -97,7 +98,17 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
       editorData: {
         appVersion: 'g-asset-forge-editor_1.0.0',
         paperId: projectId,
-        data: [],
+        data: [
+          // 添加默认的Page 1 (无限画布)
+          {
+            id: `${projectId}-page-1`,
+            type: GraphicsType.Canvas,
+            objectName: 'Page 1',
+            width: 0,
+            height: 0,
+            transform: [1, 0, 0, 1, 0, 0],
+          },
+        ],
       },
       settings: {
         ...this.getDefaultSettings(),

@@ -10,7 +10,6 @@ import { type GAssetForgeEditor } from '../editor';
 import { GAssetForgeCanvas } from '../graphics';
 import { Transaction } from '../transaction';
 import { getNoConflictObjectName } from '../utils';
-import { createCanvasStateManager } from '../utils/canvasStateManager';
 
 export const addAndSwitchCanvasRecord = (
   editor: GAssetForgeEditor,
@@ -52,11 +51,7 @@ export const switchCanvasRecord = (
   editor: GAssetForgeEditor,
   canvasId: string,
 ) => {
-  // 创建画布状态管理器实例
-  const canvasStateManager = createCanvasStateManager();
-  canvasStateManager.setEditor(editor);
-
-  const currentCanvas = canvasStateManager.getCurrentCanvas();
+  const currentCanvas = editor.doc.getCurrentCanvas();
   if (!currentCanvas) {
     console.error('无法获取当前画布');
     return;

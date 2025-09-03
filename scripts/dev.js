@@ -39,6 +39,7 @@ const setup = async () => {
     sourcemap: true,
     format: 'esm',
     platform: 'browser',
+    target: 'es2020',
     plugins: [
       sassPlugin({
         type: 'css',

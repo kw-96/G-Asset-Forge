@@ -3,5 +3,5 @@
     "module": "CommonJS"
   },
   "include": ["scripts/**/*.ts"],
-  "exclude": ["packages/**/*"]
+  "exclude": ["packages/**/*", "suika_backup"]
 }
