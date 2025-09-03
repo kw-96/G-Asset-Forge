@@ -1,5 +1,6 @@
 import { EventEmitter } from '@g-asset-forge/common';
 
+// import { ProjectDataService } from '../service/project_data_service'; // 暂时注释，后续使用
 import { GraphicsType } from '../type';
 import { RecycleBinService } from './RecycleBinService';
 import {
@@ -43,6 +44,7 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
 
   private config: ProjectStorageConfig;
   private recycleBinService: RecycleBinService;
+  // private projectDataService: ProjectDataService; // 暂时注释，后续使用
 
   constructor(config?: Partial<ProjectStorageConfig>) {
     super();
@@ -57,6 +59,7 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
     };
 
     this.recycleBinService = new RecycleBinService();
+    // this.projectDataService = new ProjectDataService(); // 暂时注释，后续使用
     this.saveConfig();
   }
 

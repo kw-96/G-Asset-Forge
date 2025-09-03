@@ -8,6 +8,7 @@ import React from 'react';
 import { FormattedMessage } from 'react-intl';
 
 import { SvgIcon } from '../SvgIcon';
+import { SettingsPanel } from './SettingsPanel';
 
 export interface RightPanelProps {
   selectedItem: string;
@@ -17,6 +18,16 @@ export interface RightPanelProps {
   onOpenProject?: (projectId: string) => void;
   onDeleteProject?: (projectId: string) => void;
   recentProjects?: RecentProject[];
+  // 设置相关 props
+  onAutoExportToggle?: (enabled: boolean) => void;
+  onRequestFileSystemPermission?: () => Promise<boolean>;
+  autoExportInfo?: {
+    isSupported: boolean;
+    method: 'electron' | 'directory' | 'download';
+    description: string;
+    isOptimal: boolean;
+    browserInfo: any;
+  };
 }
 
 export interface RecentProject {
@@ -35,6 +46,9 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   onOpenProject,
   onDeleteProject,
   recentProjects = [],
+  onAutoExportToggle,
+  onRequestFileSystemPermission,
+  autoExportInfo,
 }) => {
   const handleOpenProject = (project: RecentProject) => {
     onOpenProject?.(project.id);
@@ -172,6 +186,22 @@ export const RightPanel: React.FC<RightPanelProps> = ({
               <h3>字体库</h3>
               <p>字体库功能正在开发中，敬请期待</p>
             </div>
+          </div>
+        );
+
+      case 'settings':
+        return (
+          <div className="right-panel__content">
+            <div className="content-header">
+              <h2 className="content-title">
+                <FormattedMessage id="homePage.settings" />
+              </h2>
+            </div>
+            <SettingsPanel
+              onAutoExportToggle={onAutoExportToggle}
+              onRequestFileSystemPermission={onRequestFileSystemPermission}
+              autoExportInfo={autoExportInfo}
+            />
           </div>
         );
 

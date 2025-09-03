@@ -28,6 +28,6 @@
       "@g-asset-forge/geo": ["../geo/src"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/types/**/*"],
   "exclude": ["dist", "node_modules", "suika_backup"]
 }

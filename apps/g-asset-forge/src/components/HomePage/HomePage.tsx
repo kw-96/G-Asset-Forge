@@ -22,6 +22,17 @@ export interface HomePageProps {
   // Header 相关 props - 从 Editor.tsx 传递过来
   onBackToHome?: () => void;
   onCreateProject?: () => void;
+
+  // 设置相关 props
+  onAutoExportToggle?: (enabled: boolean) => void;
+  onRequestFileSystemPermission?: () => Promise<boolean>;
+  autoExportInfo?: {
+    isSupported: boolean;
+    method: 'electron' | 'directory' | 'download';
+    description: string;
+    isOptimal: boolean;
+    browserInfo: any;
+  };
 }
 
 export interface RecentProject {
@@ -42,6 +53,11 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   // Header 相关 props
   onBackToHome,
+
+  // 设置相关 props
+  onAutoExportToggle,
+  onRequestFileSystemPermission,
+  autoExportInfo,
 }) => {
   const [selectedItem, setSelectedItem] = useState<string>('project-library');
 
@@ -72,6 +88,9 @@ export const HomePage: React.FC<HomePageProps> = ({
           onOpenProject={onOpenProject}
           onDeleteProject={onDeleteProject}
           recentProjects={recentProjects}
+          onAutoExportToggle={onAutoExportToggle}
+          onRequestFileSystemPermission={onRequestFileSystemPermission}
+          autoExportInfo={autoExportInfo}
         />
       </div>
     </div>

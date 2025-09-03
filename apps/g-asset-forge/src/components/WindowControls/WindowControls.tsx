@@ -9,28 +9,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { SvgIcon } from '../SvgIcon';
 
-// 声明全局类型
-declare global {
-  interface Window {
-    electronAPI: {
-      windowControl: {
-        minimize: () => void;
-        maximize: () => void;
-        restore: () => void;
-        close: () => void;
-        isMaximized: () => Promise<any>;
-        onMaximizeChange: (
-          callback: (value: boolean) => void,
-        ) => (() => void) | void;
-        resize: (
-          width: number,
-          height: number,
-          resizable?: boolean,
-        ) => Promise<any>;
-      };
-    };
-  }
-}
+// 使用 core 包中的全局类型声明
 
 export const WindowControls: React.FC = () => {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -39,14 +18,14 @@ export const WindowControls: React.FC = () => {
     let cleanup: (() => void) | undefined;
     const init = async () => {
       try {
-        const res = await window.electronAPI.windowControl.isMaximized();
+        const res = await window.electronAPI?.windowControl?.isMaximized();
         if (res && (res as any).success) setIsMaximized(!!(res as any).data);
       } catch (error) {
         console.warn('WindowControls: 获取窗口最大化状态失败:', error);
       }
       try {
         // NOTE: onMaximizeChange 可能未返回清理函数，需兼容处理
-        const unsubscribe = window.electronAPI.windowControl.onMaximizeChange(
+        const unsubscribe = window.electronAPI?.windowControl?.onMaximizeChange(
           (v: boolean) => setIsMaximized(!!v),
         );
         if (typeof unsubscribe === 'function') {
@@ -65,19 +44,19 @@ export const WindowControls: React.FC = () => {
   }, []);
 
   const handleMinimize = useCallback(() => {
-    window.electronAPI.windowControl.minimize();
+    window.electronAPI?.windowControl?.minimize();
   }, []);
 
   const handleMaxToggle = useCallback(() => {
     if (isMaximized) {
-      window.electronAPI.windowControl.restore();
+      window.electronAPI?.windowControl?.restore();
     } else {
-      window.electronAPI.windowControl.maximize();
+      window.electronAPI?.windowControl?.maximize();
     }
   }, [isMaximized]);
 
   const handleClose = useCallback(() => {
-    window.electronAPI.windowControl.close();
+    window.electronAPI?.windowControl?.close();
   }, []);
 
   return (

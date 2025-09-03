@@ -1,5 +1,7 @@
-const { app, Menu, BrowserWindow } = require('electron');
+const { app, Menu, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs').promises;
+const os = require('os');
 const isDev = process.env.NODE_ENV === 'development';
 const { WindowManager } = require('./WindowManager.js');
 
@@ -132,8 +134,6 @@ app.whenReady().then(() => {
   createWindow();
 
   // 设置 IPC 处理器
-  const { ipcMain } = require('electron');
-
   // 窗口控制 IPC 处理器
   ipcMain.handle('window:minimize', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -180,6 +180,114 @@ app.whenReady().then(() => {
       return { success: false };
     },
   );
+
+  // 文件保存 IPC 处理器
+  ipcMain.handle('file:save', async (event, { filename, data, directory }) => {
+    try {
+      // 确定保存目录
+      let saveDirectory = directory;
+
+      if (!saveDirectory) {
+        // 默认保存到用户的文档目录下的 g-asset-forge-projects 文件夹
+        const documentsPath = path.join(os.homedir(), 'Documents');
+        saveDirectory = path.join(documentsPath, 'g-asset-forge-projects');
+
+        // 确保目录存在
+        try {
+          await fs.access(saveDirectory);
+        } catch (error) {
+          // 目录不存在，创建它
+          await fs.mkdir(saveDirectory, { recursive: true });
+        }
+      }
+
+      // 构建完整的文件路径
+      const filePath = path.join(saveDirectory, filename);
+
+      // 保存文件
+      await fs.writeFile(filePath, data);
+
+      console.log(`文件保存成功: ${filePath}`);
+      return {
+        success: true,
+        filePath: filePath,
+        directory: saveDirectory,
+      };
+    } catch (error) {
+      console.error('文件保存失败:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  // 文件保存对话框 IPC 处理器
+  ipcMain.handle('file:save-dialog', async (event, { filename, data }) => {
+    try {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: '保存 GAF 文件',
+        defaultPath: filename,
+        filters: [
+          { name: 'GAF 文件', extensions: ['gaf'] },
+          { name: 'JSON 文件', extensions: ['json'] },
+          { name: '所有文件', extensions: ['*'] },
+        ],
+        properties: ['createDirectory'],
+      });
+
+      if (!result.canceled && result.filePath) {
+        // 保存文件到用户选择的路径
+        await fs.writeFile(result.filePath, data);
+
+        console.log(`文件保存成功: ${result.filePath}`);
+        return {
+          success: true,
+          filePath: result.filePath,
+        };
+      } else {
+        return {
+          success: false,
+          error: '用户取消了保存操作',
+        };
+      }
+    } catch (error) {
+      console.error('文件保存失败:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  // 获取默认保存目录 IPC 处理器
+  ipcMain.handle('file:get-default-directory', async () => {
+    try {
+      const documentsPath = path.join(os.homedir(), 'Documents');
+      const defaultDirectory = path.join(
+        documentsPath,
+        'g-asset-forge-projects',
+      );
+
+      // 确保目录存在
+      try {
+        await fs.access(defaultDirectory);
+      } catch (error) {
+        await fs.mkdir(defaultDirectory, { recursive: true });
+      }
+
+      return {
+        success: true,
+        directory: defaultDirectory,
+      };
+    } catch (error) {
+      console.error('获取默认目录失败:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
 });
 
 // 当所有窗口都被关闭后退出

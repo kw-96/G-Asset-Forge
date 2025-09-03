@@ -1,6 +1,9 @@
+import { FileReadService } from '@g-asset-forge/core';
+
 /**
  * 模板导入导出工具函数
  * 提供文件下载和上传的便捷方法
+ * 使用 FileReadService 进行文件读取操作
  */
 
 /**
@@ -34,53 +37,30 @@ export const downloadTemplateFile = (
 
 /**
  * 选择并读取模板文件
+ * 使用 FileReadService 进行文件读取
  */
-export const selectAndReadTemplateFile = (): Promise<{
+export const selectAndReadTemplateFile = async (): Promise<{
   file: File;
   content: string;
 }> => {
-  return new Promise((resolve, reject) => {
-    try {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,.gaf';
-      input.style.display = 'none';
+  const fileReadService = new FileReadService();
 
-      input.onchange = (event) => {
-        const file = (event.target as HTMLInputElement).files?.[0];
-        if (!file) {
-          reject(new Error('未选择文件'));
-          return;
-        }
+  try {
+    // 选择文件
+    const files = await fileReadService.selectAndReadFiles('.json,.gaf', false);
+    const file = files[0];
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const content = e.target?.result as string;
-            resolve({ file, content });
-          } catch (error) {
-            reject(new Error('读取文件内容失败'));
-          }
-        };
+    // 读取文件内容
+    const content = await fileReadService.readTextFile(file);
 
-        reader.onerror = () => {
-          reject(new Error('文件读取失败'));
-        };
-
-        reader.readAsText(file);
-      };
-
-      input.onerror = () => {
-        reject(new Error('文件选择失败'));
-      };
-
-      document.body.appendChild(input);
-      input.click();
-      document.body.removeChild(input);
-    } catch (error) {
-      reject(error);
-    }
-  });
+    return { file, content };
+  } catch (error) {
+    throw new Error(
+      `读取模板文件失败: ${
+        error instanceof Error ? error.message : '未知错误'
+      }`,
+    );
+  }
 };
 
 /**

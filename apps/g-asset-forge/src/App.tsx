@@ -41,6 +41,15 @@ function App() {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
+  // 自动导出相关状态
+  const [autoExportInfo, setAutoExportInfo] = useState({
+    isSupported: false,
+    method: 'download' as 'electron' | 'directory' | 'download',
+    description: '使用传统下载方式',
+    isOptimal: false,
+    browserInfo: null as any,
+  });
+
   useEffect(() => {
     // 检查用户是否已经使用过应用(暂时始终设置为首次使用)
     // const hasUsedApp = localStorage.getItem('g-asset-forge-used');
@@ -93,6 +102,33 @@ function App() {
       setCurrentView('home');
     }
   };
+
+  // 自动导出相关处理函数
+  const handleAutoExportToggle = useCallback(
+    (enabled: boolean) => {
+      if (enabled) {
+        projectManagementService.enableAutoExport();
+      } else {
+        projectManagementService.disableAutoExport();
+      }
+    },
+    [projectManagementService],
+  );
+
+  const handleRequestFileSystemPermission =
+    useCallback(async (): Promise<boolean> => {
+      return await projectManagementService.requestFileSystemPermission();
+    }, [projectManagementService]);
+
+  // 初始化自动导出信息
+  useEffect(() => {
+    const updateAutoExportInfo = () => {
+      const info = projectManagementService.getAutoExportInfo();
+      setAutoExportInfo(info);
+    };
+
+    updateAutoExportInfo();
+  }, [projectManagementService]);
 
   // 加载项目列表
   const loadProjectsList = useCallback(async () => {
@@ -282,6 +318,9 @@ function App() {
             onOpenProject={handleOpenProject}
             onDeleteProject={handleDeleteProject}
             recentProjects={recentProjects}
+            onAutoExportToggle={handleAutoExportToggle}
+            onRequestFileSystemPermission={handleRequestFileSystemPermission}
+            autoExportInfo={autoExportInfo}
           />
         );
       case 'editor':

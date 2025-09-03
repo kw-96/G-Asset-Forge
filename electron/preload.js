@@ -37,6 +37,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 版本信息
   versions: process.versions,
+
+  // 文件操作 API
+  saveFile: async (filename, data, directory) => {
+    return await ipcRenderer.invoke('file:save', { filename, data, directory });
+  },
+
+  saveFileDialog: async (filename, data) => {
+    return await ipcRenderer.invoke('file:save-dialog', { filename, data });
+  },
+
+  getDefaultDirectory: async () => {
+    return await ipcRenderer.invoke('file:get-default-directory');
+  },
 });
 
 // 当 DOM 加载完成后设置一些默认行为

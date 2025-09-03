@@ -36,6 +36,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
       id: 'font-library',
       label: 'homePage.fontLibrary',
     },
+    {
+      id: 'settings',
+      label: 'homePage.settings',
+    },
   ];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

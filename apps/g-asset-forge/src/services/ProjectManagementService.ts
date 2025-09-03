@@ -3,6 +3,7 @@
  */
 import { EventEmitter } from '@g-asset-forge/common';
 import {
+  AutoExportService,
   type GAssetForgeEditor,
   ProjectAutoSave,
   type ProjectData,
@@ -16,17 +17,22 @@ interface ProjectManagementEvents {
   projectSaved: (project: ProjectData) => void;
   projectRenamed: (projectId: string, newName: string) => void;
   projectDeleted: (projectId: string) => void;
+  projectAutoExported: (project: ProjectData) => void;
+  autoExportError: (projectId: string, error: any) => void;
 }
 
 export class ProjectManagementService extends EventEmitter<ProjectManagementEvents> {
   private storageService: ProjectStorageService;
   private autoSaveService: ProjectAutoSave | null = null;
+  private autoExportService: AutoExportService;
   private editor: GAssetForgeEditor | null = null;
   private currentProjectId: string | null = null;
+  private autoExportEnabled: boolean = false;
 
   constructor() {
     super();
     this.storageService = new ProjectStorageService();
+    this.autoExportService = new AutoExportService();
   }
 
   /**
@@ -148,57 +154,6 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
-   * 保存当前项目
-   */
-  async saveProject(): Promise<boolean> {
-    if (!this.currentProjectId || !this.editor) {
-      console.warn('没有当前项目或编辑器实例');
-      return false;
-    }
-
-    try {
-      // 获取当前编辑器数据
-      const editorData = this.editor.sceneGraph.toJSON();
-      console.log('保存编辑器数据:', editorData);
-
-      // 加载项目数据
-      const projectData = await this.storageService.loadProject(
-        this.currentProjectId,
-      );
-      if (!projectData) {
-        console.error('项目不存在:', this.currentProjectId);
-        return false;
-      }
-
-      // 更新编辑器数据 - 直接使用解析后的数据
-      projectData.editorData = JSON.parse(editorData);
-      projectData.updatedAt = new Date();
-
-      console.log('更新后的项目数据:', projectData);
-
-      // 同步编辑器设置到项目设置
-      if (projectData.settings) {
-        // 同步标尺设置
-        projectData.settings.showRuler = this.editor.setting.get('enableRuler');
-
-        // 同步网格设置
-        projectData.settings.showGrid =
-          this.editor.setting.get('enablePixelGrid');
-      }
-
-      // 保存项目
-      await this.storageService.saveProject(projectData);
-
-      console.log('项目保存成功:', projectData.name);
-      this.emit('projectSaved', projectData);
-      return true;
-    } catch (error) {
-      console.error('保存项目失败:', error);
-      return false;
-    }
-  }
-
-  /**
    * 重命名项目
    */
   async renameProject(projectId: string, newName: string): Promise<boolean> {
@@ -298,6 +253,12 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         this.autoSaveService.manualSave();
       }
 
+      // 如果启用了自动导出，则自动导出GAF文件到本地
+      if (this.autoExportEnabled) {
+        console.log('关闭项目时触发自动导出...');
+        this.triggerAutoExport();
+      }
+
       this.emit('projectClosed', projectId);
 
       // 先清空自动保存服务，避免setContents触发自动保存
@@ -347,6 +308,154 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       this.autoSaveService.testAutoSave();
     } else {
       console.error('自动保存服务未初始化');
+    }
+  }
+
+  /**
+   * 启用自动导出
+   */
+  enableAutoExport(): void {
+    this.autoExportEnabled = true;
+    console.log('自动导出已启用');
+  }
+
+  /**
+   * 禁用自动导出
+   */
+  disableAutoExport(): void {
+    this.autoExportEnabled = false;
+    console.log('自动导出已禁用');
+  }
+
+  /**
+   * 检查自动导出是否启用
+   */
+  isAutoExportEnabled(): boolean {
+    return this.autoExportEnabled;
+  }
+
+  /**
+   * 手动触发自动导出
+   */
+  async triggerAutoExport(): Promise<boolean> {
+    if (!this.currentProjectId) {
+      console.warn('没有当前项目，无法进行自动导出');
+      return false;
+    }
+
+    try {
+      const projectData = await this.getCurrentProject();
+      if (!projectData) {
+        console.error('无法获取当前项目数据');
+        return false;
+      }
+
+      const success = await this.autoExportService.autoExportProject(
+        projectData,
+      );
+      if (success) {
+        this.emit('projectAutoExported', projectData);
+        console.log('项目自动导出成功:', projectData.name);
+      } else {
+        this.emit(
+          'autoExportError',
+          this.currentProjectId,
+          new Error('自动导出失败'),
+        );
+      }
+
+      return success;
+    } catch (error) {
+      console.error('自动导出失败:', error);
+      this.emit('autoExportError', this.currentProjectId, error);
+      return false;
+    }
+  }
+
+  /**
+   * 获取自动导出服务信息
+   */
+  getAutoExportInfo(): {
+    isSupported: boolean;
+    method: 'electron' | 'directory' | 'download';
+    description: string;
+    isOptimal: boolean;
+    browserInfo: any;
+  } {
+    const methodInfo = this.autoExportService.getExportMethodInfo();
+    const browserInfo = this.autoExportService.getBrowserCompatibilityInfo();
+
+    return {
+      isSupported: this.autoExportService.isAutoExportSupported(),
+      method: methodInfo.method,
+      description: methodInfo.description,
+      isOptimal: methodInfo.isOptimal,
+      browserInfo,
+    };
+  }
+
+  /**
+   * 请求文件系统权限（仅 Chrome/Edge 需要）
+   */
+  async requestFileSystemPermission(): Promise<boolean> {
+    return this.autoExportService.requestFileSystemPermission();
+  }
+
+  /**
+   * 重写保存项目方法，集成自动导出
+   */
+  async saveProject(): Promise<boolean> {
+    if (!this.currentProjectId || !this.editor) {
+      console.warn('没有当前项目或编辑器实例');
+      return false;
+    }
+
+    try {
+      // 获取当前编辑器数据
+      const editorData = this.editor.sceneGraph.toJSON();
+      console.log('保存编辑器数据:', editorData);
+
+      // 加载项目数据
+      const projectData = await this.storageService.loadProject(
+        this.currentProjectId,
+      );
+      if (!projectData) {
+        console.error('项目不存在:', this.currentProjectId);
+        return false;
+      }
+
+      // 更新编辑器数据 - 直接使用解析后的数据
+      projectData.editorData = JSON.parse(editorData);
+      projectData.updatedAt = new Date();
+
+      console.log('更新后的项目数据:', projectData);
+
+      // 同步编辑器设置到项目设置
+      if (projectData.settings) {
+        // 同步标尺设置
+        projectData.settings.showRuler = this.editor.setting.get('enableRuler');
+
+        // 同步网格设置
+        projectData.settings.showGrid =
+          this.editor.setting.get('enablePixelGrid');
+      }
+
+      // 保存项目
+      await this.storageService.saveProject(projectData);
+
+      console.log('项目保存成功:', projectData.name);
+      this.emit('projectSaved', projectData);
+
+      // 如果启用了自动导出，则触发自动导出
+      if (this.autoExportEnabled) {
+        console.log('触发自动导出...');
+        await this.triggerAutoExport();
+      }
+
+      return true;
+    } catch (error) {
+      console.error('保存项目失败:', error);
+      return false;
     }
   }
 

@@ -88,5 +88,6 @@
   "homePage.fontLibrary": "Font Library",
   "homePage.recentProjects": "Recent Projects",
   "homePage.designType": "Design",
-  "homePage.h5Type": "H5"
+  "homePage.h5Type": "H5",
+  "homePage.settings": "Settings"
 }

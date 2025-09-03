@@ -24,6 +24,6 @@
       "@g-asset-forge/core": ["../../packages/core/src"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "../../packages/core/src/types/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
