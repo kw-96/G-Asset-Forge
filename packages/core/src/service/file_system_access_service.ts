@@ -6,6 +6,8 @@
 // 使用全局类型声明
 export class FileSystemAccessService {
   private directoryHandle: FileSystemDirectoryHandle | null = null;
+  private readonly PERMISSION_STORAGE_KEY =
+    'g-asset-forge-file-system-permission';
 
   /**
    * 请求文件系统访问权限
@@ -15,13 +17,23 @@ export class FileSystemAccessService {
     // 检查浏览器支持
     if (this.isSupported()) {
       try {
+        // 使用 Downloads 作为默认目录，用户更熟悉
         this.directoryHandle = await window.showDirectoryPicker!({
           mode: 'readwrite',
-          startIn: 'documents',
+          startIn: 'downloads', // 改为 downloads，用户更熟悉
         });
+
+        // 保存权限信息到本地存储
+        this.savePermissionInfo(this.directoryHandle);
+
+        console.log('文件系统访问权限获取成功，用户选择的目录已保存');
         return true;
-      } catch (error) {
-        console.warn('用户取消或浏览器不支持，降级到下载模式');
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.warn('用户取消了目录选择，将使用下载模式');
+        } else {
+          console.warn('获取文件系统权限失败，降级到下载模式:', error);
+        }
         return false;
       }
     }
@@ -51,6 +63,32 @@ export class FileSystemAccessService {
   }
 
   /**
+   * 获取或创建 G-Asset Forge 子目录
+   * @returns Promise<FileSystemDirectoryHandle> G-Asset Forge 目录句柄
+   */
+  private async getOrCreateGAssetForgeDirectory(): Promise<FileSystemDirectoryHandle> {
+    if (!this.directoryHandle) {
+      throw new Error('未获取到目录访问权限');
+    }
+
+    try {
+      // 尝试获取 G-Asset Forge 子目录，如果不存在则创建
+      const gafDirectory = await this.directoryHandle.getDirectoryHandle(
+        'G-Asset Forge',
+        {
+          create: true,
+        },
+      );
+      console.log('G-Asset Forge 目录已准备就绪');
+      return gafDirectory;
+    } catch (error) {
+      console.warn('无法创建 G-Asset Forge 子目录，将使用主目录:', error);
+      // 如果无法创建子目录，降级到使用主目录
+      return this.directoryHandle;
+    }
+  }
+
+  /**
    * 保存文件到已授权的目录
    * @param filename 文件名
    * @param blob 文件内容
@@ -61,7 +99,10 @@ export class FileSystemAccessService {
       throw new Error('未获取到目录访问权限');
     }
 
-    const fileHandle = await this.directoryHandle.getFileHandle(filename, {
+    // 获取或创建 G-Asset Forge 子目录
+    const targetDirectory = await this.getOrCreateGAssetForgeDirectory();
+
+    const fileHandle = await targetDirectory.getFileHandle(filename, {
       create: true,
     });
     const writable = await fileHandle.createWritable();
@@ -170,6 +211,116 @@ export class FileSystemAccessService {
    */
   clearDirectoryAccess(): void {
     this.directoryHandle = null;
+    this.clearPermissionInfo();
+  }
+
+  /**
+   * 检查权限是否仍然有效
+   * @returns Promise<boolean> 权限是否有效
+   */
+  async verifyPermission(): Promise<boolean> {
+    // 简化权限验证：只检查是否有权限句柄
+    // 页面刷新后权限句柄会丢失，这是浏览器的安全限制
+    return this.directoryHandle !== null;
+  }
+
+  /**
+   * 保存权限信息到本地存储
+   * @param directoryHandle 目录句柄
+   */
+  private savePermissionInfo(directoryHandle: FileSystemDirectoryHandle): void {
+    try {
+      const permissionInfo = {
+        directoryName: directoryHandle.name,
+        timestamp: Date.now(),
+        // 注意：不能直接序列化 FileSystemDirectoryHandle，只能保存元信息
+        hasPermission: true,
+      };
+
+      localStorage.setItem(
+        this.PERMISSION_STORAGE_KEY,
+        JSON.stringify(permissionInfo),
+      );
+      console.log('文件系统权限信息已保存到本地存储');
+    } catch (error) {
+      console.warn('保存权限信息失败:', error);
+    }
+  }
+
+  /**
+   * 从本地存储恢复权限信息
+   * @returns Promise<boolean> 是否成功恢复权限
+   */
+  async restorePermission(): Promise<boolean> {
+    try {
+      const stored = localStorage.getItem(this.PERMISSION_STORAGE_KEY);
+      if (!stored) {
+        return false;
+      }
+
+      const permissionInfo = JSON.parse(stored);
+
+      // 检查权限信息是否过期（24小时）
+      const now = Date.now();
+      const maxAge = 24 * 60 * 60 * 1000; // 24小时
+      if (now - permissionInfo.timestamp > maxAge) {
+        console.log('文件系统权限信息已过期，需要重新授权');
+        this.clearPermissionInfo();
+        return false;
+      }
+
+      // 尝试恢复权限
+      if (permissionInfo.hasPermission && this.isSupported()) {
+        console.log('尝试恢复文件系统权限...');
+        // 注意：File System Access API 不允许直接恢复权限句柄
+        // 需要用户重新选择目录，但我们可以提供更好的用户体验
+        return false; // 需要用户重新授权
+      }
+
+      return false;
+    } catch (error) {
+      console.warn('恢复权限信息失败:', error);
+      this.clearPermissionInfo();
+      return false;
+    }
+  }
+
+  /**
+   * 清除本地存储的权限信息
+   */
+  private clearPermissionInfo(): void {
+    try {
+      localStorage.removeItem(this.PERMISSION_STORAGE_KEY);
+      console.log('文件系统权限信息已清除');
+    } catch (error) {
+      console.warn('清除权限信息失败:', error);
+    }
+  }
+
+  /**
+   * 获取权限恢复提示信息
+   * @returns string 提示信息
+   */
+  getPermissionRestoreHint(): string | null {
+    try {
+      const stored = localStorage.getItem(this.PERMISSION_STORAGE_KEY);
+      if (!stored) {
+        return null;
+      }
+
+      const permissionInfo = JSON.parse(stored);
+      const now = Date.now();
+      const maxAge = 24 * 60 * 60 * 1000; // 24小时
+
+      if (now - permissionInfo.timestamp <= maxAge) {
+        return `检测到之前已授权访问 "${permissionInfo.directoryName}" 目录，请重新选择相同目录以恢复权限`;
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('获取权限恢复提示失败:', error);
+      return null;
+    }
   }
 
   /**
@@ -238,5 +389,136 @@ export class FileSystemAccessService {
     }
 
     console.log(`文件保存成功: ${result.filePath}`);
+  }
+
+  /**
+   * 读取文件内容
+   * @param filename 文件名
+   * @returns Promise<string | null> 文件内容，失败时返回 null
+   */
+  async readFile(filename: string): Promise<string | null> {
+    try {
+      if (this.isElectron()) {
+        // 使用 Electron 的原生文件系统 API
+        return await this.readFileElectron(filename);
+      } else if (this.directoryHandle) {
+        // 使用File System Access API（Chrome/Edge）
+        return await this.readFromDirectory(filename);
+      } else {
+        // 传统下载模式不支持读取文件
+        console.warn('传统下载模式不支持读取文件');
+        return null;
+      }
+    } catch (error) {
+      console.error('读取文件失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 删除文件
+   * @param filename 文件名
+   * @returns Promise<boolean> 删除是否成功
+   */
+  async deleteFile(filename: string): Promise<boolean> {
+    try {
+      if (this.isElectron()) {
+        // 使用 Electron 的原生文件系统 API
+        return await this.deleteFileElectron(filename);
+      } else if (this.directoryHandle) {
+        // 使用File System Access API（Chrome/Edge）
+        await this.deleteFromDirectory(filename);
+        return true;
+      } else {
+        // 传统下载模式不支持删除文件
+        console.warn('传统下载模式不支持删除文件');
+        return false;
+      }
+    } catch (error) {
+      console.error('删除文件失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 通过 Electron 读取文件
+   * @param filename 文件名
+   * @returns Promise<string | null> 文件内容
+   */
+  private async readFileElectron(filename: string): Promise<string | null> {
+    if (window.electronAPI && window.electronAPI.readFile) {
+      const result = await window.electronAPI.readFile(filename);
+      if (result.success) {
+        return result.content || null;
+      } else {
+        console.error('Electron 读取文件失败:', result.error);
+        return null;
+      }
+    } else {
+      throw new Error('Electron API 不可用');
+    }
+  }
+
+  /**
+   * 从已授权的目录读取文件
+   * @param filename 文件名
+   * @returns Promise<string | null> 文件内容
+   */
+  private async readFromDirectory(filename: string): Promise<string | null> {
+    if (!this.directoryHandle) {
+      throw new Error('未获取到目录访问权限');
+    }
+
+    try {
+      // 获取或创建 G-Asset Forge 子目录
+      const targetDirectory = await this.getOrCreateGAssetForgeDirectory();
+
+      const fileHandle = await targetDirectory.getFileHandle(filename);
+      const file = await fileHandle.getFile();
+      return await file.text();
+    } catch (error) {
+      // 如果是文件不存在的错误，记录为调试信息而不是错误
+      if (error instanceof Error && error.name === 'NotFoundError') {
+        console.debug('文件不存在，将使用fallback机制:', filename);
+      } else {
+        console.error('从目录读取文件失败:', error);
+      }
+      return null;
+    }
+  }
+
+  /**
+   * 通过 Electron 删除文件
+   * @param filename 文件名
+   * @returns Promise<boolean> 删除是否成功
+   */
+  private async deleteFileElectron(filename: string): Promise<boolean> {
+    if (window.electronAPI && window.electronAPI.deleteFile) {
+      const result = await window.electronAPI.deleteFile(filename);
+      return result.success;
+    } else {
+      throw new Error('Electron API 不可用');
+    }
+  }
+
+  /**
+   * 从已授权的目录删除文件
+   * @param filename 文件名
+   * @returns Promise<void>
+   */
+  private async deleteFromDirectory(filename: string): Promise<void> {
+    if (!this.directoryHandle) {
+      throw new Error('未获取到目录访问权限');
+    }
+
+    try {
+      // 获取或创建 G-Asset Forge 子目录
+      const targetDirectory = await this.getOrCreateGAssetForgeDirectory();
+
+      await targetDirectory.removeEntry(filename);
+    } catch (error) {
+      console.error('从目录删除文件失败:', error);
+      throw error;
+    }
   }
 }

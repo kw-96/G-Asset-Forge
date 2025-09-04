@@ -54,6 +54,15 @@ declare global {
         directory?: string;
         error?: string;
       }>;
+      readFile?: (filename: string) => Promise<{
+        success: boolean;
+        content?: string;
+        error?: string;
+      }>;
+      deleteFile?: (filename: string) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
     };
 
     process?: {

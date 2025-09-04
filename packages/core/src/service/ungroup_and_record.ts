@@ -3,9 +3,9 @@ import { generateNKeysBetween } from 'fractional-indexing';
 
 import { type GAssetForgeEditor } from '../editor';
 import {
-  isFrameGraphics,
   type GAssetForgeFrame,
   type GAssetForgeGraphics,
+  isFrameGraphics,
 } from '../graphics';
 import { Transaction } from '../transaction';
 import { getParentIdSet } from '../utils';

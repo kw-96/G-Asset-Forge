@@ -27,24 +27,39 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   private autoExportService: AutoExportService;
   private editor: GAssetForgeEditor | null = null;
   private currentProjectId: string | null = null;
-  private autoExportEnabled: boolean = false;
+  private autoExportEnabled: boolean = true;
 
   constructor() {
     super();
     this.storageService = new ProjectStorageService();
     this.autoExportService = new AutoExportService();
+
+    // 从 localStorage 读取自动导出设置
+    this.loadAutoExportSettings();
   }
 
   /**
    * 设置编辑器实例
    */
-  setEditor(editor: GAssetForgeEditor): void {
-    console.log('ProjectManagementService.setEditor 被调用');
+  setEditor(editor: GAssetForgeEditor | null): void {
+    console.log('ProjectManagementService.setEditor 被调用', {
+      editor: !!editor,
+    });
 
     // 如果编辑器已经设置过，先保存当前项目
     if (this.editor && this.currentProjectId) {
       console.log('编辑器重新设置，先保存当前项目:', this.currentProjectId);
       this.saveProject();
+    }
+
+    // 如果传入 null，清理编辑器状态
+    if (editor === null) {
+      console.log('清理编辑器状态');
+      this.editor = null;
+      this.autoSaveService = null;
+      this.currentProjectId = null;
+      console.log('编辑器状态已清理');
+      return;
     }
 
     this.editor = editor;
@@ -60,9 +75,117 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
     if (currentProjectId) {
       console.log('重新设置项目ID到新的自动保存服务:', currentProjectId);
       this.autoSaveService.setCurrentProject(currentProjectId);
+
+      // 检查是否是H5项目，如果是H5项目则延迟重新加载数据，等待H5EditorMode完成初始化
+      const isH5Project = (window as any).__isH5Project;
+      if (isH5Project) {
+        console.log(
+          '检测到H5项目，延迟数据重新加载，等待H5EditorMode完成初始化',
+        );
+
+        // 等待H5容器恢复完成后再重新加载数据
+        let checkCount = 0;
+        const maxChecks = 20;
+        const checkInterval = 500;
+
+        const waitForH5Restoration = () => {
+          const h5ContainerRestored = (window as any).__h5ContainerRestored;
+          const isH5ProjectStillActive = (window as any).__isH5Project;
+
+          checkCount++;
+          console.log(
+            `ProjectManagementService: 第${checkCount}次检查H5恢复状态:`,
+            {
+              h5ContainerRestored,
+              isH5ProjectStillActive,
+              checkCount,
+            },
+          );
+
+          if (h5ContainerRestored || !isH5ProjectStillActive) {
+            console.log(
+              'H5容器已恢复或H5项目标记已清除，现在可以安全地重新加载数据',
+            );
+            // 清除恢复标记
+            delete (window as any).__h5ContainerRestored;
+            // 重新加载数据，但不覆盖H5容器
+            this.reloadCurrentProject();
+          } else if (checkCount < maxChecks) {
+            setTimeout(waitForH5Restoration, checkInterval);
+          } else {
+            console.warn('等待H5容器恢复超时，强制重新加载数据');
+            this.reloadCurrentProject();
+          }
+        };
+
+        // 开始等待
+        setTimeout(waitForH5Restoration, checkInterval);
+      } else {
+        console.log('普通项目，重新加载当前项目数据到编辑器');
+        // 重新加载当前项目数据到编辑器
+        this.reloadCurrentProject();
+      }
     }
 
     console.log('编辑器实例已设置');
+  }
+
+  /**
+   * 重新加载当前项目数据到编辑器
+   */
+  private async reloadCurrentProject(): Promise<void> {
+    if (!this.currentProjectId || !this.editor) {
+      console.warn('reloadCurrentProject: 没有当前项目或编辑器未初始化');
+      return;
+    }
+
+    try {
+      console.log('重新加载当前项目数据到编辑器:', this.currentProjectId);
+
+      // 加载项目数据
+      let projectData = await this.loadProjectFromAutoExport(
+        this.currentProjectId,
+      );
+      if (!projectData) {
+        projectData = await this.storageService.loadProject(
+          this.currentProjectId,
+        );
+        if (!projectData) {
+          console.error('重新加载项目失败: 项目不存在', this.currentProjectId);
+          return;
+        }
+      }
+
+      console.log('重新加载项目数据成功:', projectData.name);
+      console.log('编辑器数据:', projectData.editorData);
+
+      // 设置编辑器内容
+      this.editor.setContents(projectData.editorData);
+      console.log('编辑器内容重新设置完成');
+
+      // 同步项目设置到编辑器设置
+      if (projectData.settings) {
+        // 同步标尺设置
+        if (projectData.settings.showRuler !== undefined) {
+          this.editor.setting.set(
+            'enableRuler',
+            projectData.settings.showRuler,
+          );
+        }
+
+        // 同步网格设置
+        if (projectData.settings.showGrid !== undefined) {
+          this.editor.setting.set(
+            'enablePixelGrid',
+            projectData.settings.showGrid,
+          );
+        }
+      }
+
+      console.log('当前项目数据重新加载完成');
+    } catch (error) {
+      console.error('重新加载当前项目数据失败:', error);
+    }
   }
 
   /**
@@ -95,11 +218,18 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
     try {
       console.log('打开项目:', projectId);
 
-      // 加载项目数据
-      const projectData = await this.storageService.loadProject(projectId);
+      // 加载项目数据 - 优先从自动导出的文件加载，如果文件不存在则从localStorage加载
+      let projectData = await this.loadProjectFromAutoExport(projectId);
       if (!projectData) {
-        console.error('项目不存在:', projectId);
-        return false;
+        // 如果自动导出文件不存在，从localStorage加载
+        projectData = await this.storageService.loadProject(projectId);
+        if (!projectData) {
+          console.error('项目不存在:', projectId);
+          return false;
+        }
+        console.log('从localStorage加载项目数据:', projectData.name);
+      } else {
+        console.log('从自动导出文件加载项目数据:', projectData.name);
       }
 
       console.log('项目数据加载成功:', projectData.name);
@@ -113,9 +243,32 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         this.autoSaveService.setCurrentProject(projectId);
       }
 
-      // 直接设置编辑器内容，无需复杂的数据隔离
+      // 检查项目类型并设置模式标记
+      const hasH5Container = this.checkIfProjectHasH5Container(
+        projectData.editorData,
+      );
+
+      if (hasH5Container) {
+        console.log('检测到H5项目，将在H5模式下打开');
+        (window as any).__isH5Project = true;
+        (window as any).__projectType = 'h5';
+      } else {
+        console.log('未检测到H5容器，标记为设计项目');
+        (window as any).__isH5Project = false;
+        (window as any).__projectType = 'design';
+      }
+
+      // 根据项目类型进行状态隔离处理
       if (this.editor) {
-        console.log('设置编辑器内容...');
+        console.log(
+          '开始设置编辑器内容，项目类型:',
+          (window as any).__projectType,
+        );
+
+        // 清理现有状态，确保模式切换时状态干净
+        this.clearEditorState();
+
+        // 设置编辑器内容
         this.editor.setContents(projectData.editorData);
         console.log('编辑器内容设置完成');
 
@@ -154,6 +307,107 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
+   * 清理编辑器状态，确保模式切换时状态干净
+   */
+  private clearEditorState(): void {
+    if (!this.editor) return;
+
+    try {
+      console.log('清理编辑器状态，准备模式切换');
+
+      // 清理画布上的所有元素
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (currentCanvas) {
+        const children = currentCanvas.getChildren();
+        children.forEach((child) => {
+          currentCanvas.removeChild(child);
+        });
+        console.log('画布已清理，移除了', children.length, '个元素');
+      }
+
+      // 清理选择状态
+      if (this.editor.selectedElements) {
+        this.editor.selectedElements.clear();
+        console.log('选择状态已清理');
+      }
+
+      // 重置视口到默认状态
+      if (this.editor.viewportManager) {
+        this.editor.viewportManager.setViewportSize({
+          width: 800,
+          height: 600,
+        });
+        this.editor.viewportManager.setZoom(1, { x: 0, y: 0 });
+        console.log('视口已重置');
+      }
+
+      // 清理命令历史（如果存在clear方法）
+      if (
+        this.editor.commandManager &&
+        typeof (this.editor.commandManager as any).clear === 'function'
+      ) {
+        (this.editor.commandManager as any).clear();
+        console.log('命令历史已清理');
+      }
+
+      console.log('编辑器状态清理完成');
+    } catch (error) {
+      console.warn('清理编辑器状态时出错:', error);
+    }
+  }
+
+  /**
+   * 检查项目数据是否包含H5容器
+   */
+  private checkIfProjectHasH5Container(editorData: any): boolean {
+    try {
+      if (!editorData || !editorData.data || !Array.isArray(editorData.data)) {
+        console.log('H5检测: 数据结构无效', {
+          hasEditorData: !!editorData,
+          hasData: !!editorData?.data,
+          isArray: Array.isArray(editorData?.data),
+        });
+        return false;
+      }
+
+      // 详细检查每个数据项
+      const allTypes = editorData.data.map((item: any, index: number) => ({
+        index,
+        type: item.type,
+        id: item.id || item.attrs?.id,
+        hasAttrs: !!item.attrs,
+        attrsType: item.attrs?.type,
+      }));
+
+      console.log('H5检测: 所有数据项类型:', allTypes);
+
+      // 检查多种可能的H5Container标识
+      const hasH5Container = editorData.data.some((item: any) => {
+        return (
+          item.type === 'H5Container' ||
+          item.attrs?.type === 'H5Container' ||
+          (item.type && item.type.toString() === 'H5Container')
+        );
+      });
+
+      console.log('检查H5容器结果:', {
+        hasH5Container,
+        dataCount: editorData.data.length,
+        types: editorData.data.map((item: any) => item.type).slice(0, 10), // 显示前10个类型
+        h5ContainerItems: editorData.data.filter(
+          (item: any) =>
+            item.type === 'H5Container' || item.attrs?.type === 'H5Container',
+        ),
+      });
+
+      return hasH5Container;
+    } catch (error) {
+      console.warn('检查H5容器时出错:', error);
+      return false;
+    }
+  }
+
+  /**
    * 重命名项目
    */
   async renameProject(projectId: string, newName: string): Promise<boolean> {
@@ -182,18 +436,31 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
    */
   async deleteProject(projectId: string): Promise<boolean> {
     try {
+      // 先获取项目数据，用于删除自动导出的文件
+      const projectData = await this.storageService.loadProject(projectId);
+
+      // 删除localStorage中的数据
       await this.storageService.softDeleteProject(projectId);
+
+      // 删除自动导出的文件
+      if (projectData) {
+        try {
+          const filename =
+            this.autoExportService.generateAutoExportFilename(projectData);
+          await this.autoExportService.deleteExportedFile(filename);
+          console.log('已删除自动导出文件:', filename);
+        } catch (error) {
+          console.warn('删除自动导出文件失败:', error);
+        }
+      }
 
       // 如果删除的是当前项目，清空编辑器
       if (this.currentProjectId === projectId) {
         this.currentProjectId = null;
         if (this.editor) {
-          // 清空编辑器内容
-          this.editor.setContents({
-            appVersion: 'g-asset-forge-editor_1.0.0',
-            paperId: '',
-            data: [],
-          });
+          // 清空编辑器内容 - 直接清空所有画布，不创建新的
+          this.editor.doc.clear();
+          // 不需要设置 paperId，因为编辑器已经清空
         }
       }
 
@@ -253,10 +520,15 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         this.autoSaveService.manualSave();
       }
 
+      // 同步自动导出设置（确保获取最新状态）
+      this.syncAutoExportSettings();
+
       // 如果启用了自动导出，则自动导出GAF文件到本地
       if (this.autoExportEnabled) {
         console.log('关闭项目时触发自动导出...');
         this.triggerAutoExport();
+      } else {
+        console.log('自动导出未启用，跳过自动导出');
       }
 
       this.emit('projectClosed', projectId);
@@ -266,13 +538,10 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         this.autoSaveService.setCurrentProject(null);
       }
 
-      // 清空编辑器内容
+      // 清空编辑器内容 - 直接清空所有画布，不创建新的
       if (this.editor) {
-        this.editor.setContents({
-          appVersion: 'g-asset-forge-editor_1.0.0',
-          paperId: '',
-          data: [],
-        });
+        this.editor.doc.clear();
+        // 不需要设置 paperId，因为编辑器已经清空
       }
 
       // 最后清空当前项目ID
@@ -312,10 +581,28 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
+   * 从 localStorage 加载自动导出设置
+   */
+  private loadAutoExportSettings(): void {
+    try {
+      const saved = localStorage.getItem('autoExportEnabled');
+      if (saved !== null) {
+        this.autoExportEnabled = JSON.parse(saved);
+        console.log('已加载自动导出设置:', this.autoExportEnabled);
+      }
+    } catch (error) {
+      console.warn('加载自动导出设置失败:', error);
+      this.autoExportEnabled = false;
+    }
+  }
+
+  /**
    * 启用自动导出
    */
   enableAutoExport(): void {
     this.autoExportEnabled = true;
+    // 同步到 localStorage
+    localStorage.setItem('autoExportEnabled', JSON.stringify(true));
     console.log('自动导出已启用');
   }
 
@@ -324,6 +611,8 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
    */
   disableAutoExport(): void {
     this.autoExportEnabled = false;
+    // 同步到 localStorage
+    localStorage.setItem('autoExportEnabled', JSON.stringify(false));
     console.log('自动导出已禁用');
   }
 
@@ -332,6 +621,46 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
    */
   isAutoExportEnabled(): boolean {
     return this.autoExportEnabled;
+  }
+
+  /**
+   * 同步自动导出设置（从 localStorage 重新加载）
+   */
+  syncAutoExportSettings(): void {
+    this.loadAutoExportSettings();
+  }
+
+  /**
+   * 从自动导出文件加载项目数据
+   * @param projectId 项目ID
+   * @returns Promise<ProjectData | null> 项目数据
+   */
+  private async loadProjectFromAutoExport(
+    projectId: string,
+  ): Promise<ProjectData | null> {
+    try {
+      // 先从localStorage获取项目元数据
+      const projectMetadata = await this.storageService.loadProject(projectId);
+      if (!projectMetadata) {
+        return null;
+      }
+
+      // 生成自动导出文件名
+      const filename =
+        this.autoExportService.generateAutoExportFilename(projectMetadata);
+
+      // 尝试从自动导出文件加载数据
+      const fileData = await this.autoExportService.loadExportedFile(filename);
+      if (fileData) {
+        console.log('从自动导出文件加载数据成功:', filename);
+        return fileData;
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('从自动导出文件加载数据失败:', error);
+      return null;
+    }
   }
 
   /**
@@ -350,12 +679,26 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         return false;
       }
 
+      // 检查自动导出的保存方式
+      const saveMethod = this.autoExportService.getAutoExportSaveMethod();
+      console.log('自动导出保存方式:', saveMethod.description);
+
+      if (saveMethod.warning) {
+        console.warn('自动导出警告:', saveMethod.warning);
+        // 可以在这里添加用户通知逻辑
+      }
+
       const success = await this.autoExportService.autoExportProject(
         projectData,
       );
       if (success) {
         this.emit('projectAutoExported', projectData);
         console.log('项目自动导出成功:', projectData.name);
+
+        // 如果使用了非最优的保存方式，可以通知用户
+        if (!saveMethod.isOptimal) {
+          console.warn('自动导出使用了非最优的保存方式，建议检查设置');
+        }
       } else {
         this.emit(
           'autoExportError',
@@ -476,3 +819,5 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
     console.log('项目管理服务已销毁');
   }
 }
+
+export default ProjectManagementService;

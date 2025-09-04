@@ -8,9 +8,9 @@ import { type GAssetForgeEditor } from '../editor';
 import { type GAssetForgeGraphics } from '../graphics';
 import {
   type BatchExportOptions,
+  downloadBlob,
   ExportFormat,
   type ExportOptions,
-  downloadBlob,
 } from './enhanced_export_service';
 
 export interface BatchExportProgress {

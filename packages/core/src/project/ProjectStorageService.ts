@@ -37,13 +37,13 @@ interface ProjectStorageEvents {
 }
 
 export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
-  private readonly PROJECTS_KEY = 'g-asset-forge-projects';
-  private readonly PROJECT_PREFIX = 'g-asset-forge-project-';
-  private readonly BACKUP_PREFIX = 'g-asset-forge-backup-';
-  private readonly CONFIG_KEY = 'g-asset-forge-project-config';
+  private readonly PROJECTS_KEY = 'g-asset-forge-projects'; // 项目的key
+  private readonly PROJECT_PREFIX = 'g-asset-forge-project-'; // 项目的key前缀
+  private readonly BACKUP_PREFIX = 'g-asset-forge-backup-'; // 备份的key前缀
+  private readonly CONFIG_KEY = 'g-asset-forge-project-config'; // 配置的key
 
-  private config: ProjectStorageConfig;
-  private recycleBinService: RecycleBinService;
+  private config: ProjectStorageConfig; // 配置
+  private recycleBinService: RecycleBinService; // 回收站服务
   // private projectDataService: ProjectDataService; // 暂时注释，后续使用
 
   constructor(config?: Partial<ProjectStorageConfig>) {
@@ -51,10 +51,10 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
 
     // 默认配置
     this.config = {
-      autoSaveInterval: 10000, // 10秒
-      maxBackupCount: 10,
-      enableAutoBackup: true,
-      autoBackupInterval: 300000, // 5分钟
+      autoSaveInterval: 10000, // 10秒自动保存间隔
+      maxBackupCount: 10, // 最大备份数量
+      enableAutoBackup: true, // 是否自动备份
+      autoBackupInterval: 300000, // 5分钟自动备份间隔
       ...config,
     };
 
@@ -164,7 +164,15 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
         return null;
       }
 
-      const project = JSON.parse(dataStr) as ProjectData;
+      const rawProject = JSON.parse(dataStr);
+
+      // 转换 Date 字符串为 Date 对象
+      const project: ProjectData = {
+        ...rawProject,
+        createdAt: new Date(rawProject.createdAt),
+        updatedAt: new Date(rawProject.updatedAt),
+        lastOpenedAt: new Date(rawProject.lastOpenedAt),
+      };
 
       // 更新最后打开时间
       project.lastOpenedAt = new Date();
@@ -293,13 +301,19 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
         return [];
       }
 
-      const projects = JSON.parse(dataStr) as ProjectMetadata[];
+      const rawProjects = JSON.parse(dataStr);
+
+      // 转换 Date 字符串为 Date 对象
+      const projects: ProjectMetadata[] = rawProjects.map((project: any) => ({
+        ...project,
+        createdAt: new Date(project.createdAt),
+        updatedAt: new Date(project.updatedAt),
+        lastOpenedAt: new Date(project.lastOpenedAt),
+      }));
 
       // 按最后打开时间排序
       return projects.sort(
-        (a, b) =>
-          new Date(b.lastOpenedAt).getTime() -
-          new Date(a.lastOpenedAt).getTime(),
+        (a, b) => b.lastOpenedAt.getTime() - a.lastOpenedAt.getTime(),
       );
     } catch (error) {
       console.error('获取项目列表失败:', error);

@@ -417,19 +417,14 @@ export class SceneGraph {
       })),
     );
 
-    // 保存现有的画布引用，在清空前先保存
-    const existingCanvases =
-      this.editor.doc.graphicsStoreManager.getCanvasItems();
-    console.log('sceneGraph.load: 现有画布数量:', existingCanvases.length);
-    console.log(
-      'sceneGraph.load: 现有画布详情:',
-      existingCanvases.map((canvas) => ({
-        id: canvas.attrs.id,
-        name: canvas.attrs.objectName,
-        isDeleted: canvas.isDeleted(),
-      })),
-    );
+    // 只有在不是应用变更时才清空文档
+    if (!isApplyChanges) {
+      console.log('sceneGraph.load: 清空文档');
+      // 清空文档
+      this.editor.doc.clear();
+    }
 
+    // 创建图形数组（包括画布）
     const graphicsArr = this.createGraphicsArr(info);
     console.log('sceneGraph.load: 创建图形数组完成，数量:', graphicsArr.length);
     console.log(
@@ -441,43 +436,10 @@ export class SceneGraph {
       })),
     );
 
-    // 只有在不是应用变更时才清空文档
-    if (!isApplyChanges) {
-      console.log('sceneGraph.load: 清空文档');
-      // 清空文档
-      this.editor.doc.clear();
-
-      // 重新添加现有的画布到存储管理器
-      for (const canvas of existingCanvases) {
-        if (canvas && !canvas.isDeleted()) {
-          console.log('sceneGraph.load: 重新添加现有画布:', canvas.attrs.id);
-          this.editor.doc.graphicsStoreManager.add(canvas);
-          // 确保画布也被添加到场景图中
-          this.editor.sceneGraph.addItems([canvas]);
-        }
-      }
-    }
-
     // 添加新的图形项目
     console.log('sceneGraph.load: 添加新图形项目');
     this.addItems(graphicsArr);
     this.initGraphicsTree(graphicsArr);
-
-    // 如果数据中没有画布，但我们需要保持现有画布
-    if (!isApplyChanges && existingCanvases.length > 0) {
-      console.log('sceneGraph.load: 确保现有画布在场景树中正确设置');
-      // 确保现有画布在场景树中正确设置
-      for (const canvas of existingCanvases) {
-        if (canvas && !canvas.isDeleted()) {
-          // 检查画布是否已经在文档的子节点中
-          const children = this.editor.doc.getChildren();
-          if (!children.includes(canvas)) {
-            console.log('sceneGraph.load: 插入画布到文档:', canvas.attrs.id);
-            this.editor.doc.insertChild(canvas);
-          }
-        }
-      }
-    }
 
     // 加载完成后的状态检查
     const finalCanvases = this.editor.doc.graphicsStoreManager.getCanvasItems();

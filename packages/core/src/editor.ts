@@ -143,28 +143,15 @@ export class GAssetForgeEditor {
     });
     this.doc.setEditor(this);
 
-    const canvas = new GAssetForgeCanvas(
-      {
-        objectName: 'Page 1',
-      },
-      {
-        doc: this.doc,
-      },
-    );
-
-    // 确保画布被正确添加到存储管理器
-    this.doc.graphicsStoreManager.add(canvas);
+    // 在单项目模式下，不创建默认画布
+    // 等待项目数据加载时再创建画布
     this.doc.graphicsStoreManager.add(this.doc);
-
-    this.sceneGraph.addItems([this.doc, canvas]);
-    this.doc.insertChild(canvas);
+    this.sceneGraph.addItems([this.doc]);
 
     this.viewportManager.setViewportSize({
       width: options.width,
       height: options.height,
     });
-
-    this.doc.setCurrentCanvas(canvas.attrs.id);
 
     this.perfMonitor = new PerfMonitor();
     if (options.showPerfMonitor) {
@@ -189,25 +176,19 @@ export class GAssetForgeEditor {
       return;
     }
 
-    // 先加载数据
     console.log(
       'setContents: 开始加载数据，数据包含',
       data.data.length,
       '个对象',
     );
 
-    // 检查是否已经有画布，如果有则清空
-    const existingCanvases = this.doc.graphicsStoreManager.getCanvasItems();
-    if (existingCanvases.length > 0) {
-      console.log('setContents: 清空现有画布，准备加载项目数据');
-      this.doc.clear();
-    }
-
+    // 在单项目模式下，直接加载项目数据
+    // 不需要清空现有画布，因为编辑器初始化时没有创建默认画布
     this.sceneGraph.load(data.data);
     this.commandManager.clearRecords();
     this.paperId = data.paperId ?? genUuid();
 
-    // 检查是否有可用的画布
+    // 设置当前画布为项目中的第一个画布
     const availableCanvases = this.doc.graphicsStoreManager.getCanvasItems();
     console.log('setContents: 加载后可用画布数量:', availableCanvases.length);
     console.log(
@@ -215,22 +196,23 @@ export class GAssetForgeEditor {
       availableCanvases.map((canvas) => ({
         id: canvas.attrs.id,
         name: canvas.attrs.objectName,
+        type: canvas.attrs.type,
         isDeleted: canvas.isDeleted(),
       })),
     );
 
     if (availableCanvases && availableCanvases.length > 0) {
-      // 使用第一个可用的画布
+      // 使用项目中的第一个画布
       const firstCanvas = availableCanvases[0];
       console.log(
-        'setContents: 使用现有画布:',
+        'setContents: 使用项目画布:',
         firstCanvas.attrs.id,
         firstCanvas.attrs.objectName,
       );
       this.doc.setCurrentCanvas(firstCanvas.attrs.id);
     } else {
-      // 如果没有画布，创建一个新的
-      console.log('setContents: 没有可用画布，创建新画布');
+      // 如果项目数据中没有画布，创建一个新的
+      console.log('setContents: 项目数据中没有画布，创建新画布');
       const canvas = new GAssetForgeCanvas(
         {
           objectName: 'Page 1',
@@ -242,9 +224,9 @@ export class GAssetForgeEditor {
 
       // 确保画布被正确添加到存储管理器
       this.doc.graphicsStoreManager.add(canvas);
-
       this.sceneGraph.addItems([canvas]);
       this.doc.insertChild(canvas);
+
       console.log('setContents: 创建新画布完成:', canvas.attrs.id);
       this.doc.setCurrentCanvas(canvas.attrs.id);
     }

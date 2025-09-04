@@ -6,9 +6,9 @@ import {
 
 import { dataCompatibilityV3 } from './data-compatibility-v3';
 
-const STORE_KEY = 'g-asset-forge-paper';
-const BACKUP_KEY_PREFIX = 'g-asset-forge-backup-';
-const VERSION_KEY = 'g-asset-forge-version-';
+const STORE_KEY = 'g-asset-forge-paper'; // 图纸的key
+const BACKUP_KEY_PREFIX = 'g-asset-forge-backup-'; //备份的key前缀
+const VERSION_KEY = 'g-asset-forge-version-'; // 版本的key
 
 interface BackupEntry {
   timestamp: number;
@@ -22,10 +22,10 @@ interface BackupEntry {
  * 扩展现有的 AutoSaveGraphics 功能，支持版本管理和数据压缩
  */
 export class AutoSaveGraphics {
-  private compressionEnabled = true;
+  private compressionEnabled = true; // 是否压缩
   private maxBackups = 10;
   private backupInterval = 5 * 60 * 1000; // 5分钟备份间隔
-  private lastBackupTime = 0;
+  private lastBackupTime = 0; // 上次备份时间
   private saveCount = 0;
 
   constructor(private editor: GAssetForgeEditor) {

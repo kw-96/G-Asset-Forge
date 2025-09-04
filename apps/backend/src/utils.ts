@@ -5,7 +5,7 @@ export const generateInitialDoc = () => {
     return initialDocBuffer;
   }
   const gAssetForgeDoc = {
-    objectName: 'Document',
+    objectName: 'Document', // 文档名称
     width: 0,
     height: 0,
     type: 'Document',
@@ -14,12 +14,12 @@ export const generateInitialDoc = () => {
     strokeWidth: 1,
   };
   const gAssetForgeCanvas = {
-    objectName: 'Page 1',
-    width: 0,
-    height: 0,
+    objectName: 'Page 1', // 画布名称
+    width: 0, // 画布宽度
+    height: 0, // 画布高度
     type: 'Canvas',
     id: '0-1',
-    transform: [1, 0, 0, 1, 0, 0],
+    transform: [1, 0, 0, 1, 0, 0], // 画布变换
     strokeWidth: 1,
   };
 

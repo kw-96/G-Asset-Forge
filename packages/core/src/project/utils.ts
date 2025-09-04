@@ -158,12 +158,15 @@ export function validateProjectData(project: any): project is ProjectData {
   const requiredFields = [
     'id',
     'name',
+    'description',
     'type',
     'editorData',
     'settings',
     'createdAt',
     'updatedAt',
     'lastOpenedAt',
+    'usedAssets',
+    'usedTemplates',
     'version',
     'appVersion',
   ];
@@ -184,10 +187,19 @@ export function validateProjectData(project: any): project is ProjectData {
   // 检查编辑器数据
   if (
     !project.editorData ||
+    !project.editorData.appVersion ||
     !project.editorData.paperId ||
     !Array.isArray(project.editorData.data)
   ) {
     console.error('编辑器数据格式无效');
+    console.error('项目数据:', project);
+    console.error('editorData:', project.editorData);
+    if (project.editorData) {
+      console.error('appVersion:', project.editorData.appVersion);
+      console.error('paperId:', project.editorData.paperId);
+      console.error('data type:', typeof project.editorData.data);
+      console.error('data is array:', Array.isArray(project.editorData.data));
+    }
     return false;
   }
 

@@ -197,10 +197,32 @@ export const createEditorHealthChecker = (editor: GAssetForgeEditor) => {
   // 每5秒检查一次
   const intervalId = setInterval(healthCheck, 5000);
 
+  // 注册到全局定时器列表，便于清理
+  if (typeof window !== 'undefined') {
+    if (!(window as any).__G_ASSET_FORGE_TIMERS__) {
+      (window as any).__G_ASSET_FORGE_TIMERS__ = [];
+    }
+    (window as any).__G_ASSET_FORGE_TIMERS__.push(intervalId);
+  }
+
   // 返回清理函数
   return () => {
     isDestroyed = true;
     clearInterval(intervalId);
+
+    // 从全局定时器列表中移除
+    if (
+      typeof window !== 'undefined' &&
+      (window as any).__G_ASSET_FORGE_TIMERS__
+    ) {
+      const index = (window as any).__G_ASSET_FORGE_TIMERS__.indexOf(
+        intervalId,
+      );
+      if (index > -1) {
+        (window as any).__G_ASSET_FORGE_TIMERS__.splice(index, 1);
+      }
+    }
+
     console.log('编辑器健康检查已停止');
   };
 };

@@ -8,7 +8,7 @@ import {
 } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../editor';
-import { GraphicsObjectSuffix, GAssetForgeFrame, GAssetForgeGraphics } from '../graphics';
+import { GAssetForgeFrame, GAssetForgeGraphics,GraphicsObjectSuffix } from '../graphics';
 import { Transaction } from '../transaction';
 import { getNoConflictObjectName, getParentIdSet } from '../utils';
 export const groupAndRecord = (

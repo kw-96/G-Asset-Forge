@@ -1,9 +1,9 @@
 import { UpdateGraphicsAttrsCmd } from '../commands';
 import { type GAssetForgeEditor } from '../editor';
 import {
+  type GAssetForgeGraphics,
   type GraphicsAttrs,
   isFrameGraphics,
-  type GAssetForgeGraphics,
 } from '../graphics';
 import { getChildNodeSet, getParentIdSet, updateNodeSize } from '../utils';
 

@@ -16,6 +16,17 @@
   min-height: 400px;
 }
 
+.h5-canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none; // 允许事件穿透到编辑器
+  z-index: 1; // 确保在编辑器画布之上，但不阻止交互
+}
+
 // H5容器占位符样式
 .h5-container-placeholder {
   display: flex;
@@ -26,8 +37,6 @@
 }
 
 .h5-container-outline {
-  width: 375px;
-  height: 667px;
   border: 2px dashed #d9d9d9;
   border-radius: 8px;
   background-color: #ffffff;
@@ -74,8 +83,6 @@
 }
 
 .h5-block-preview {
-  width: 375px;
-  min-height: 60px;
   background-color: #ffffff;
   border: 1px solid #e8e8e8;
   border-radius: 6px;

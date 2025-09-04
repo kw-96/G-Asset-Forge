@@ -14,7 +14,14 @@ import {
   performanceService,
   type SettingValue,
 } from '@g-asset-forge/core';
-import { type FC, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type FC,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { EditorContext } from '../context';
 import { useProjectManagement } from '../hooks/useProjectManagement';
@@ -33,7 +40,6 @@ import { Header } from './Header/Header';
 import { InfoPanel } from './InfoPanel/InfoPanel';
 import { LayerPanel } from './LayerPanel/LayerPanel';
 import { Modal } from './Modal/Modal';
-import { ModeSwitcher } from './ModeSwitcher/ModeSwitcher';
 import { Pages } from './Pages/Pages';
 import { ProjectLibraryPanel } from './ProjectLibraryPanel/ProjectLibraryPanel';
 import { type IProjectMetadata } from './ProjectLibraryPanel/types';
@@ -79,7 +85,7 @@ const Editor: FC<EditorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [editor, setEditor] = useState<GAssetForgeEditor | null>(null);
-  const [editorMode, setEditorMode] = useState<'design' | 'h5'>(initialMode);
+  const [editorMode] = useState<'design' | 'h5'>(initialMode);
 
   // 弹窗状态管理
   const [showAssetLibrary, setShowAssetLibrary] = useState(false);
@@ -95,252 +101,250 @@ const Editor: FC<EditorProps> = ({
     getCurrentProject,
   } = useProjectManagement(projectManagementService);
 
-  useEffect(() => {
-    if (!containerRef.current) {
-      console.warn('容器元素不存在，跳过编辑器初始化');
-      return;
-    }
-
-    // 使用安全的编辑器初始化函数
-    const initializeEditor = async () => {
-      const container = containerRef.current;
-      if (!container) {
-        console.warn('容器元素在初始化时丢失');
-        return;
-      }
-
-      const userPreferenceEncoded = localStorage.getItem(USER_PREFERENCE_KEY);
-      const userPreference = userPreferenceEncoded
-        ? (JSON.parse(userPreferenceEncoded) as Partial<SettingValue>)
-        : undefined;
-
-      // 确保有有效的尺寸 - 针对Electron环境优化
-      const isElectron = typeof window !== 'undefined' && window.electronAPI;
-      let containerWidth, containerHeight;
-
-      if (isElectron) {
-        // Electron环境：使用窗口内部尺寸
-        containerWidth = Math.max(window.innerWidth - leftRightMargin, 800);
-        containerHeight = Math.max(window.innerHeight - topMargin, 600);
-      } else {
-        // Web环境：使用容器的实际尺寸
-        const containerRect = container.getBoundingClientRect();
-        containerWidth = Math.max(containerRect.width || 800, 800);
-        containerHeight = Math.max(containerRect.height || 600, 600);
-
-        // 如果容器尺寸为0，使用body尺寸作为后备
-        if (containerWidth === 800 && containerHeight === 600) {
-          containerWidth = Math.max(
-            document.body.clientWidth - leftRightMargin,
-            800,
-          );
-          containerHeight = Math.max(
-            document.body.clientHeight - topMargin,
-            600,
-          );
-        }
-      }
-
-      console.log('Editor 初始化尺寸:', {
-        containerWidth,
-        containerHeight,
-        isElectron,
-        containerRect: container.getBoundingClientRect(),
-        windowSize: { width: window.innerWidth, height: window.innerHeight },
-        bodySize: {
-          width: document.body.clientWidth,
-          height: document.body.clientHeight,
-        },
-      });
-
-      // 使用安全的初始化函数
-      const initResult = await initializeEditorSafely({
-        containerElement: container,
-        width: containerWidth,
-        height: containerHeight,
-        offsetY: 48,
-        offsetX: 240,
-        showPerfMonitor: false,
-        userPreference: userPreference,
-      });
-
-      if (!initResult.success || !initResult.editor) {
-        console.error('编辑器初始化失败:', initResult.error);
-        return;
-      }
-
-      const editor = initResult.editor;
-
-      editor.setting.on(
-        'update',
-        (value: SettingValue, changedKey: keyof SettingValue) => {
-          if (!storeKeys.includes(changedKey)) return;
-
-          localStorage.setItem(
-            USER_PREFERENCE_KEY,
-            JSON.stringify(pick(value, storeKeys)),
-          );
-        },
-      );
-
-      (window as any).editor = editor;
-
-      new AutoSaveGraphics(editor);
-
-      // 初始化性能服务
-      performanceService.initialize(container);
-
-      // 设置性能服务事件监听
-      performanceService.on('memoryWarning', (usage) => {
-        console.warn(`内存使用警告: ${(usage / 1024 / 1024).toFixed(2)}MB`);
-      });
-
-      performanceService.on('performanceDegraded', (reason) => {
-        console.warn(`性能下降: ${reason}`);
-      });
-
-      // 设置项目管理的编辑器实例
-      setProjectEditor(editor);
-
-      // 确保项目管理服务在全局可用，供其他组件使用
-      if (projectManagementService) {
-        (window as any).__PROJECT_MANAGEMENT_SERVICE__ =
-          projectManagementService;
-        console.log('项目管理服务已设置为全局可用');
-      }
-
-      // 尝试手动配置编辑器设置
-      try {
-        // 确保滚轮缩放功能正常
-        if (editor.setting) {
-          console.log('编辑器设置管理器可用');
-        }
-
-        // 尝试启用标尺
-        if (editor.setting) {
-          console.log('编辑器设置管理器已初始化');
-        }
-      } catch (error) {
-        console.warn('配置编辑器设置时出错:', error);
-      }
-
-      // 添加调试信息
-      console.log('编辑器初始化完成:', {
-        editor: !!editor,
-        toolManager: !!editor.toolManager,
-        viewportManager: !!editor.viewportManager,
-        setting: !!editor.setting,
-      });
-
-      // 检查编辑器容器的事件绑定
-
-      if (containerRef.current) {
-        const container = containerRef.current;
-        // 等待一帧后再次检查尺寸，确保 DOM 已完全渲染
-        requestAnimationFrame(() => {
-          if (container) {
-            console.log('编辑器容器信息 (延迟检查):', {
-              element: container,
-              hasEventListeners: !!(container as any)._events,
-              style: container.style.cssText,
-              dimensions: {
-                width: container.offsetWidth,
-                height: container.offsetHeight,
-                clientWidth: container.clientWidth,
-                clientHeight: container.clientHeight,
-              },
-              computedStyle: window.getComputedStyle(container),
-              parentDimensions: {
-                parentWidth: container.parentElement?.clientWidth,
-                parentHeight: container.parentElement?.clientHeight,
-              },
-            });
-          }
-        });
-
-        // 滚轮事件处理已移除 - 由核心包的 host_event_manager 统一处理
-        // 核心包中的滚轮处理逻辑：
-        // - Ctrl/Cmd + 滚轮：缩放画布
-        // - 普通滚轮：平移画布
-        console.log('滚轮事件由核心包统一处理，无需在此处重复绑定');
-
-        // 添加更多调试信息
-        console.log('编辑器状态检查:', {
-          hasEditor: !!editor,
-          hasToolManager: !!editor?.toolManager,
-          hasViewportManager: !!editor?.viewportManager,
-          hasSetting: !!editor?.setting,
-          containerElement: !!containerRef.current,
-          containerStyle: containerRef.current?.style.cssText,
-        });
-      }
-
-      const changeViewport = throttle(
-        () => {
-          const newWidth = Math.max(
-            document.body.clientWidth - leftRightMargin,
-            800,
-          );
-          const newHeight = Math.max(
-            document.body.clientHeight - topMargin,
-            600,
-          );
-
-          console.log('视口尺寸更新:', { newWidth, newHeight });
-
-          editor.viewportManager.setViewportSize({
-            width: newWidth,
-            height: newHeight,
-          });
-          editor.render();
-        },
-        10,
-        { leading: false },
-      );
-
-      // 使用 passive: true 来避免滚轮事件冲突
-      window.addEventListener('resize', changeViewport, { passive: true });
-
-      // 启动编辑器健康检查
-      const stopHealthCheck = createEditorHealthChecker(editor);
-
-      // 输出诊断信息（仅在开发环境）
-      if (import.meta.env?.DEV) {
-        setTimeout(() => {
-          diagnoseEditorState(editor);
-        }, 1000);
-      }
-
-      setEditor(editor);
-
-      return () => {
-        try {
-          // 停止健康检查
-          stopHealthCheck();
-
-          // 滚轮事件监听器已移除，由核心包统一处理
-
-          // 安全检查编辑器是否存在且未被销毁
-          if (editor && editor.containerElement) {
-            editor.destroy();
-          }
-
-          window.removeEventListener('resize', changeViewport);
-          changeViewport.cancel();
-
-          console.log('Editor组件清理完成');
-        } catch (error) {
-          console.warn('Editor组件清理过程中出现警告:', error);
-        }
-      };
-    };
-
-    // 使用requestAnimationFrame确保DOM完全渲染后再初始化
+  useLayoutEffect(() => {
+    // 使用requestAnimationFrame确保DOM完全渲染后再检查
     const rafId = requestAnimationFrame(async () => {
-      // 再次检查容器是否存在
-      if (containerRef.current) {
-        await initializeEditor();
+      if (!containerRef.current) {
+        console.debug('容器元素尚未就绪，延迟初始化');
+        return;
       }
+
+      // 使用安全的编辑器初始化函数
+      const initializeEditor = async () => {
+        const container = containerRef.current;
+        if (!container) {
+          console.warn('容器元素在初始化时丢失');
+          return;
+        }
+
+        const userPreferenceEncoded = localStorage.getItem(USER_PREFERENCE_KEY);
+        const userPreference = userPreferenceEncoded
+          ? (JSON.parse(userPreferenceEncoded) as Partial<SettingValue>)
+          : undefined;
+
+        // 确保有有效的尺寸 - 针对Electron环境优化
+        const isElectron = typeof window !== 'undefined' && window.electronAPI;
+        let containerWidth, containerHeight;
+
+        if (isElectron) {
+          // Electron环境：使用窗口内部尺寸
+          containerWidth = Math.max(window.innerWidth - leftRightMargin, 800);
+          containerHeight = Math.max(window.innerHeight - topMargin, 600);
+        } else {
+          // Web环境：使用容器的实际尺寸
+          const containerRect = container.getBoundingClientRect();
+          containerWidth = Math.max(containerRect.width || 800, 800);
+          containerHeight = Math.max(containerRect.height || 600, 600);
+
+          // 如果容器尺寸为0，使用body尺寸作为后备
+          if (containerWidth === 800 && containerHeight === 600) {
+            containerWidth = Math.max(
+              document.body.clientWidth - leftRightMargin,
+              800,
+            );
+            containerHeight = Math.max(
+              document.body.clientHeight - topMargin,
+              600,
+            );
+          }
+        }
+
+        console.log('Editor 初始化尺寸:', {
+          containerWidth,
+          containerHeight,
+          isElectron,
+          containerRect: container.getBoundingClientRect(),
+          windowSize: { width: window.innerWidth, height: window.innerHeight },
+          bodySize: {
+            width: document.body.clientWidth,
+            height: document.body.clientHeight,
+          },
+        });
+
+        // 使用安全的初始化函数
+        const initResult = await initializeEditorSafely({
+          containerElement: container,
+          width: containerWidth,
+          height: containerHeight,
+          offsetY: 48,
+          offsetX: 240,
+          showPerfMonitor: false,
+          userPreference: userPreference,
+        });
+
+        if (!initResult.success || !initResult.editor) {
+          console.error('编辑器初始化失败:', initResult.error);
+          return;
+        }
+
+        const editor = initResult.editor;
+
+        editor.setting.on(
+          'update',
+          (value: SettingValue, changedKey: keyof SettingValue) => {
+            if (!storeKeys.includes(changedKey)) return;
+
+            localStorage.setItem(
+              USER_PREFERENCE_KEY,
+              JSON.stringify(pick(value, storeKeys)),
+            );
+          },
+        );
+
+        (window as any).editor = editor;
+
+        new AutoSaveGraphics(editor);
+
+        // 初始化性能服务
+        performanceService.initialize(container);
+
+        // 设置性能服务事件监听
+        performanceService.on('memoryWarning', (usage) => {
+          console.warn(`内存使用警告: ${(usage / 1024 / 1024).toFixed(2)}MB`);
+        });
+
+        performanceService.on('performanceDegraded', (reason) => {
+          console.warn(`性能下降: ${reason}`);
+        });
+
+        // 设置项目管理的编辑器实例
+        setProjectEditor(editor);
+
+        // 确保项目管理服务在全局可用，供其他组件使用
+        if (projectManagementService) {
+          (window as any).__PROJECT_MANAGEMENT_SERVICE__ =
+            projectManagementService;
+          console.log('项目管理服务已设置为全局可用');
+        }
+
+        // 尝试手动配置编辑器设置
+        try {
+          // 确保滚轮缩放功能正常
+          if (editor.setting) {
+            console.log('编辑器设置管理器可用');
+          }
+
+          // 尝试启用标尺
+          if (editor.setting) {
+            console.log('编辑器设置管理器已初始化');
+          }
+        } catch (error) {
+          console.warn('配置编辑器设置时出错:', error);
+        }
+
+        // 添加调试信息
+        console.log('编辑器初始化完成:', {
+          editor: !!editor,
+          toolManager: !!editor.toolManager,
+          viewportManager: !!editor.viewportManager,
+          setting: !!editor.setting,
+        });
+
+        // 检查编辑器容器的事件绑定
+
+        if (containerRef.current) {
+          const container = containerRef.current;
+          // 等待一帧后再次检查尺寸，确保 DOM 已完全渲染
+          requestAnimationFrame(() => {
+            if (container) {
+              console.log('编辑器容器信息 (延迟检查):', {
+                element: container,
+                hasEventListeners: !!(container as any)._events,
+                style: container.style.cssText,
+                dimensions: {
+                  width: container.offsetWidth,
+                  height: container.offsetHeight,
+                  clientWidth: container.clientWidth,
+                  clientHeight: container.clientHeight,
+                },
+                computedStyle: window.getComputedStyle(container),
+                parentDimensions: {
+                  parentWidth: container.parentElement?.clientWidth,
+                  parentHeight: container.parentElement?.clientHeight,
+                },
+              });
+            }
+          });
+
+          // 滚轮事件处理已移除 - 由核心包的 host_event_manager 统一处理
+          // 核心包中的滚轮处理逻辑：
+          // - Ctrl/Cmd + 滚轮：缩放画布
+          // - 普通滚轮：平移画布
+          console.log('滚轮事件由核心包统一处理，无需在此处重复绑定');
+
+          // 添加更多调试信息
+          console.log('编辑器状态检查:', {
+            hasEditor: !!editor,
+            hasToolManager: !!editor?.toolManager,
+            hasViewportManager: !!editor?.viewportManager,
+            hasSetting: !!editor?.setting,
+            containerElement: !!containerRef.current,
+            containerStyle: containerRef.current?.style.cssText,
+          });
+        }
+
+        const changeViewport = throttle(
+          () => {
+            const newWidth = Math.max(
+              document.body.clientWidth - leftRightMargin,
+              800,
+            );
+            const newHeight = Math.max(
+              document.body.clientHeight - topMargin,
+              600,
+            );
+
+            console.log('视口尺寸更新:', { newWidth, newHeight });
+
+            editor.viewportManager.setViewportSize({
+              width: newWidth,
+              height: newHeight,
+            });
+            editor.render();
+          },
+          10,
+          { leading: false },
+        );
+
+        // 使用 passive: true 来避免滚轮事件冲突
+        window.addEventListener('resize', changeViewport, { passive: true });
+
+        // 启动编辑器健康检查
+        const stopHealthCheck = createEditorHealthChecker(editor);
+
+        // 输出诊断信息（仅在开发环境）
+        if (import.meta.env?.DEV) {
+          setTimeout(() => {
+            diagnoseEditorState(editor);
+          }, 1000);
+        }
+
+        setEditor(editor);
+
+        return () => {
+          try {
+            // 停止健康检查
+            stopHealthCheck();
+
+            // 滚轮事件监听器已移除，由核心包统一处理
+
+            // 安全检查编辑器是否存在且未被销毁
+            if (editor && editor.containerElement) {
+              editor.destroy();
+            }
+
+            window.removeEventListener('resize', changeViewport);
+            changeViewport.cancel();
+
+            console.log('Editor组件清理完成');
+          } catch (error) {
+            console.warn('Editor组件清理过程中出现警告:', error);
+          }
+        };
+      };
+
+      // 执行初始化
+      await initializeEditor();
     });
 
     return () => {
@@ -375,10 +379,6 @@ const Editor: FC<EditorProps> = ({
         });
     }
   }, [currentProjectId, projectManagementService]);
-
-  const handleModeSwitch = (mode: 'design' | 'h5') => {
-    setEditorMode(mode);
-  };
 
   // 弹窗处理函数
   const handleOpenAssetLibraryModal = useCallback(() => {
@@ -560,20 +560,13 @@ const Editor: FC<EditorProps> = ({
             title="g-asset-forge"
             onBackToHome={onBackToHome}
             showHomeButton={!!onBackToHome}
-          >
-            <div className="header-controls">
-              <ModeSwitcher
-                currentMode={editorMode}
-                onModeChange={handleModeSwitch}
-              />
-            </div>
-          </Header>
+          />
         )}
 
         {/* 主体内容区域 */}
         <div className="body">
           {editorMode === 'h5' ? (
-            <H5EditorMode onModeSwitch={handleModeSwitch} />
+            <H5EditorMode containerRef={containerRef} />
           ) : (
             <>
               <div className="g-asset-forge-editor-left-area">

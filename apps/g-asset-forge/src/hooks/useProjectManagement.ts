@@ -5,7 +5,7 @@
 import { type GAssetForgeEditor } from '@g-asset-forge/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ProjectManagementService } from '../services/ProjectManagementService';
+import ProjectManagementService from '../services/ProjectManagementService';
 
 export interface UseProjectManagementReturn {
   // 状态

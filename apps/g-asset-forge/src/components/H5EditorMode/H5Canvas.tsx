@@ -22,8 +22,8 @@ interface H5CanvasProps {
 }
 
 export const H5Canvas: FC<H5CanvasProps> = ({
-  contentBlocks,
-  selectedBlockId,
+  contentBlocks: _contentBlocks, // 未使用，但需要保持接口一致性
+  selectedBlockId: _selectedBlockId, // 未使用，但需要保持接口一致性
   onBlockSelect,
   h5Service,
 }) => {
@@ -54,7 +54,7 @@ export const H5Canvas: FC<H5CanvasProps> = ({
         }
       }, 200);
     }
-  }, [editor, h5Service, contentBlocks]);
+  }, [editor, h5Service]);
 
   const handleCanvasClick = (event: React.MouseEvent) => {
     // 点击画布空白区域时取消选择
@@ -64,22 +64,13 @@ export const H5Canvas: FC<H5CanvasProps> = ({
   };
 
   return (
-    <div className="h5-canvas-container">
-      {/* 编辑器画布区域 - 编辑器会自动渲染H5容器到这里 */}
-      <div
-        ref={canvasRef}
-        className="h5-canvas-wrapper"
-        onClick={handleCanvasClick}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          overflow: 'hidden',
-        }}
-      >
-        {/* 编辑器画布由GAssetForgeEditor自动管理，H5容器会在这里显示 */}
-        {/* 如果看不到H5容器，请检查控制台输出 */}
-      </div>
+    <div
+      ref={canvasRef}
+      className="h5-canvas-wrapper h5-canvas-overlay"
+      onClick={handleCanvasClick}
+    >
+      {/* 编辑器画布由GAssetForgeEditor自动管理，H5容器会在这里显示 */}
+      {/* 如果看不到H5容器，请检查控制台输出 */}
     </div>
   );
 };

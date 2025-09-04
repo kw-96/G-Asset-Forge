@@ -48,10 +48,14 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
     this.editor = editor;
   }
 
-  clear() {
+  clear(immediate = true) {
     // TODO: update doc.updateInfo
     this.graphicsStoreManager.clear();
-    this.currentCanvasId = '';
+    // 如果immediate为true，立即清空currentCanvasId
+    // 如果immediate为false，保持currentCanvasId不变，等待后续设置
+    if (immediate) {
+      this.currentCanvasId = '';
+    }
   }
 
   getGraphicsById(id: string) {
@@ -296,7 +300,9 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
     for (const id of this.changes.updatedIds) {
       const graphics = this.getGraphicsById(id);
       if (!graphics) {
-        console.warn(`graphics ${id} is lost!`);
+        console.warn(
+          `graphics ${id} is lost! 可能的原因: 1.图形被删除但未正确清理引用 2.H5容器重新创建导致ID变化 3.数据加载时序问题`,
+        );
         continue;
       }
       updates.set(id, graphics.getUpdatedAttrs());

@@ -2,7 +2,11 @@
 import { type IPaint, PaintType } from '../../paint';
 import { type Optional } from '../../type';
 import { GAssetForgeFrame } from '../frame';
-import { type GraphicsAttrs, type IGraphicsOpts } from '../graphics';
+import {
+  GAssetForgeGraphics,
+  type GraphicsAttrs,
+  type IGraphicsOpts,
+} from '../graphics';
 import {
   H5ButtonBlock,
   type H5ContentBlock,
@@ -10,6 +14,7 @@ import {
   H5ImageBlock,
   H5TextBlock,
 } from './content_block';
+import { H5ContainerAttrsController } from './h5_container_attrs';
 
 // H5 容器属性 - 继承Graphics的所有属性，添加H5特有的属性
 export interface H5ContainerAttrs extends GraphicsAttrs {
@@ -23,6 +28,8 @@ export interface H5ContainerAttrs extends GraphicsAttrs {
   fill?: IPaint[];
   stroke?: IPaint[];
   strokeWidth?: number;
+  // 子元素数据，用于序列化/反序列化
+  children?: any[];
 }
 
 // H5 容器类 - 轻量级实现，继承自Frame
@@ -43,11 +50,11 @@ export class H5Container extends GAssetForgeFrame {
     super(
       {
         ...attrs,
-        type: 'Frame' as any, // 使用Frame类型，保持兼容性
+        type: 'H5Container' as any, // 使用H5Container类型，确保序列化/反序列化一致
         resizeToFit: false, // H5容器不自动调整尺寸
         objectName: attrs.objectName || 'H5长图容器',
-        width: attrs.width || 375,
-        height: attrs.height || 667,
+        width: attrs.width || 1080,
+        height: attrs.height || 2220,
         // 添加默认的填充和边框，确保容器可见
         fill: attrs.fill || [
           {
@@ -64,15 +71,121 @@ export class H5Container extends GAssetForgeFrame {
           } as IPaint,
         ],
         strokeWidth: attrs.strokeWidth || 1,
+        // 不设置lock，通过重写方法控制移动行为
       },
       opts,
     );
 
     // 设置H5特有属性
-    this.mobileWidth = attrs.mobileWidth || 375;
+    this.mobileWidth = attrs.mobileWidth || 1080;
     this.padding = attrs.padding || 16;
     this.gap = attrs.gap || 12;
     this.autoLayout = attrs.autoLayout !== false; // 默认开启自动布局
+
+    // 反序列化子元素
+    if ((attrs as any).children && Array.isArray((attrs as any).children)) {
+      console.log('H5Container: 开始反序列化子元素', {
+        containerId: this.attrs.id,
+        childrenCount: (attrs as any).children.length,
+        children: (attrs as any).children.map((child: any) => ({
+          id: child.id,
+          type: child.type,
+        })),
+      });
+      this.deserializeChildren((attrs as any).children);
+    } else {
+      console.log('H5Container: 没有找到子元素数据', {
+        containerId: this.attrs.id,
+        hasChildren: !!(attrs as any).children,
+        childrenType: typeof (attrs as any).children,
+      });
+    }
+  }
+
+  // 反序列化子元素
+  private deserializeChildren(childrenData: any[]): void {
+    console.log('H5Container.deserializeChildren: 开始反序列化', {
+      containerId: this.attrs.id,
+      childrenCount: childrenData.length,
+    });
+
+    for (const childData of childrenData) {
+      try {
+        console.log('H5Container.deserializeChildren: 处理子元素', {
+          containerId: this.attrs.id,
+          childId: childData.id,
+          childType: childData.type,
+        });
+
+        let child: H5ContentBlock | GAssetForgeGraphics;
+
+        // 根据类型创建子元素
+        if (childData.type === 'H5TextBlock') {
+          child = new H5TextBlock(childData, { doc: this.doc });
+        } else if (childData.type === 'H5ImageBlock') {
+          child = new H5ImageBlock(childData, { doc: this.doc });
+        } else if (childData.type === 'H5ButtonBlock') {
+          child = new H5ButtonBlock(childData, { doc: this.doc });
+        } else {
+          // 对于其他类型的图形（如矩形），需要从图形构造函数映射中创建
+          const graphCtorMap = (this.doc as any).editor?.sceneGraph
+            ?.graphCtorMap;
+          if (graphCtorMap && graphCtorMap[childData.type]) {
+            const Ctor = graphCtorMap[childData.type];
+            child = new Ctor(childData, { doc: this.doc });
+          } else {
+            console.warn(
+              'H5Container: 无法反序列化子元素类型:',
+              childData.type,
+            );
+            continue;
+          }
+        }
+
+        // 添加到容器中
+        this.insertChild(child as any);
+        console.log('H5Container.deserializeChildren: 子元素添加成功', {
+          containerId: this.attrs.id,
+          childId: childData.id,
+          childType: childData.type,
+        });
+      } catch (error) {
+        console.error('H5Container: 反序列化子元素失败:', error, childData);
+      }
+    }
+
+    console.log('H5Container.deserializeChildren: 反序列化完成', {
+      containerId: this.attrs.id,
+      finalChildrenCount: this.getChildren().length,
+    });
+  }
+
+  // 重写updateAttrs方法，禁止移动但允许调整尺寸
+  override updateAttrs(
+    partialAttrs: Partial<GraphicsAttrs> & any,
+    options?: { finishRecomputed?: boolean },
+  ) {
+    // 使用H5容器属性控制器过滤属性
+    const filteredAttrs = H5ContainerAttrsController.filterAttrsForUpdate(
+      partialAttrs,
+      this.attrs.transform,
+    );
+
+    // 验证属性更新
+    const validation =
+      H5ContainerAttrsController.validateAttrsUpdate(partialAttrs);
+    if (!validation.isValid) {
+      console.warn(
+        'H5容器属性更新被阻止，包含禁止的属性:',
+        validation.forbiddenKeys,
+      );
+    }
+    if (validation.warnings.length > 0) {
+      console.warn('H5容器属性更新警告:', validation.warnings);
+    }
+
+    // 调用父类的updateAttrs方法
+    super.updateAttrs(filteredAttrs, options);
   }
 
   // 获取移动端宽度
@@ -285,6 +398,49 @@ export class H5Container extends GAssetForgeFrame {
     if (this.autoLayout) {
       this.performAutoLayout();
     }
+  }
+
+  // 序列化为JSON，包含子元素
+  override toJSON(): any {
+    console.log('H5Container.toJSON: 方法被调用', {
+      containerId: this.attrs.id,
+      type: this.type,
+    });
+
+    const baseData = super.toJSON();
+    const children = this.getChildren();
+
+    console.log('H5Container.toJSON: 开始序列化', {
+      containerId: this.attrs.id,
+      childrenCount: children.length,
+      children: children.map((child) => ({
+        id: child.attrs?.id,
+        type: child.type,
+      })),
+    });
+
+    const result = {
+      ...baseData,
+      children: children.map((child) => {
+        // 如果子元素有toJSON方法，使用它；否则使用attrs
+        if (typeof child.toJSON === 'function') {
+          return child.toJSON();
+        } else {
+          return child.attrs;
+        }
+      }),
+    };
+
+    console.log('H5Container.toJSON: 序列化完成', {
+      containerId: this.attrs.id,
+      resultChildrenCount: result.children.length,
+      resultChildren: result.children.map((child) => ({
+        id: child.id,
+        type: child.type,
+      })),
+    });
+
+    return result;
   }
 
   // 销毁容器
