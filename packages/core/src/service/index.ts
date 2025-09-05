@@ -20,3 +20,14 @@ export * from './file_read_service';
 export * from './file_system_access_service';
 export * from './project_data_service';
 export * from './project_recovery_service';
+
+// H5 模式隔离相关服务
+export * from './EditorStateIntegration';
+export * from './EditorStateIsolator';
+export * from './ProjectDataValidator';
+export * from './ProjectTypeManager';
+export * from './state-managers';
+export * from './StateConsistencyValidator';
+
+// 项目处理器系统
+export * from './project-handlers';

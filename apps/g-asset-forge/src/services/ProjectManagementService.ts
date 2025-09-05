@@ -4,11 +4,18 @@
 import { EventEmitter } from '@g-asset-forge/common';
 import {
   AutoExportService,
+  EditorStateIsolator,
   type GAssetForgeEditor,
+  globalProjectHandlerFactory,
+  type IProjectHandler,
   ProjectAutoSave,
   type ProjectData,
+  ProjectDataValidator,
   type ProjectMetadata,
   ProjectStorageService,
+  ProjectType,
+  type ProjectTypeIdentificationResult,
+  ProjectTypeManager,
 } from '@g-asset-forge/core';
 
 interface ProjectManagementEvents {
@@ -19,6 +26,16 @@ interface ProjectManagementEvents {
   projectDeleted: (projectId: string) => void;
   projectAutoExported: (project: ProjectData) => void;
   autoExportError: (projectId: string, error: any) => void;
+  projectTypeChanged: (
+    projectId: string,
+    oldType: ProjectType | null,
+    newType: ProjectType,
+  ) => void;
+  projectTypeIdentified: (
+    projectId: string,
+    result: ProjectTypeIdentificationResult,
+  ) => void;
+  error: (error: Error) => void;
 }
 
 export class ProjectManagementService extends EventEmitter<ProjectManagementEvents> {
@@ -28,14 +45,58 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   private editor: GAssetForgeEditor | null = null;
   private currentProjectId: string | null = null;
   private autoExportEnabled: boolean = true;
+  private projectTypeManager: ProjectTypeManager;
+  private dataValidator: ProjectDataValidator;
+  private stateIsolator: EditorStateIsolator;
+  private currentProjectHandler: IProjectHandler | null = null;
 
   constructor() {
     super();
     this.storageService = new ProjectStorageService();
     this.autoExportService = new AutoExportService();
+    this.projectTypeManager = new ProjectTypeManager();
+    this.dataValidator = new ProjectDataValidator();
+    this.stateIsolator = new EditorStateIsolator();
+
+    // 设置项目类型管理器事件监听
+    this.setupProjectTypeManagerEvents();
 
     // 从 localStorage 读取自动导出设置
     this.loadAutoExportSettings();
+
+    // 监听项目类型管理器事件
+    this.setupProjectTypeManagerListeners();
+  }
+
+  /**
+   * 设置项目类型管理器事件监听
+   */
+  private setupProjectTypeManagerListeners(): void {
+    this.projectTypeManager.on('typeChanged', (oldType, newType) => {
+      if (this.currentProjectId) {
+        console.log('项目类型变更:', {
+          projectId: this.currentProjectId,
+          oldType,
+          newType,
+        });
+        this.emit(
+          'projectTypeChanged',
+          this.currentProjectId,
+          oldType,
+          newType,
+        );
+      }
+    });
+
+    this.projectTypeManager.on('typeIdentified', (result) => {
+      if (this.currentProjectId) {
+        console.log('项目类型识别完成:', {
+          projectId: this.currentProjectId,
+          result,
+        });
+        this.emit('projectTypeIdentified', this.currentProjectId, result);
+      }
+    });
   }
 
   /**
@@ -212,7 +273,7 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
-   * 打开项目 - 简化版本
+   * 打开项目 - 重构版本，使用新的组件架构
    */
   async openProject(projectId: string): Promise<boolean> {
     try {
@@ -235,6 +296,34 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       console.log('项目数据加载成功:', projectData.name);
       console.log('编辑器数据:', projectData.editorData);
 
+      // 验证项目数据
+      const validationResult = await this.dataValidator.validateProjectData(
+        projectData,
+      );
+      if (!validationResult.isValid) {
+        console.warn(
+          '加载的项目数据验证失败，尝试自动修复:',
+          validationResult.errors,
+        );
+
+        // 尝试自动修复
+        const repairResult = await this.dataValidator.repairProjectData(
+          projectData as any,
+        );
+        if (repairResult.result.isValid) {
+          console.log('项目数据已自动修复:', repairResult.result.fixedIssues);
+          projectData = repairResult.data as any;
+
+          // 保存修复后的数据
+          await this.storageService.saveProject(projectData as any);
+        } else {
+          console.error('项目数据修复失败，可能存在兼容性问题');
+          // 继续加载，但用户可能会遇到问题
+        }
+      } else if (validationResult.warnings.length > 0) {
+        console.warn('项目数据验证警告:', validationResult.warnings);
+      }
+
       // 先更新当前项目ID和自动保存服务，避免在设置内容时触发自动保存
       this.currentProjectId = projectId;
 
@@ -243,17 +332,30 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         this.autoSaveService.setCurrentProject(projectId);
       }
 
-      // 检查项目类型并设置模式标记
-      const hasH5Container = this.checkIfProjectHasH5Container(
-        projectData.editorData,
+      // 使用项目类型管理器识别项目类型
+      const typeResult = this.projectTypeManager.identifyProjectType(
+        projectData as any,
+        projectId,
+        projectData?.name || '',
       );
 
-      if (hasH5Container) {
+      console.log('项目类型识别结果:', {
+        projectId,
+        type: typeResult.type,
+        confidence: typeResult.confidence,
+        evidence: typeResult.evidence,
+      });
+
+      // 设置当前项目类型
+      this.projectTypeManager.setCurrentProjectType(projectId, typeResult.type);
+
+      // 为了兼容现有代码，暂时保留全局标记（后续会被移除）
+      if (typeResult.type === ProjectType.H5) {
         console.log('检测到H5项目，将在H5模式下打开');
         (window as any).__isH5Project = true;
         (window as any).__projectType = 'h5';
       } else {
-        console.log('未检测到H5容器，标记为设计项目');
+        console.log('检测到设计项目，将在设计模式下打开');
         (window as any).__isH5Project = false;
         (window as any).__projectType = 'design';
       }
@@ -269,11 +371,11 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
         this.clearEditorState();
 
         // 设置编辑器内容
-        this.editor.setContents(projectData.editorData);
+        this.editor.setContents(projectData?.editorData as any);
         console.log('编辑器内容设置完成');
 
         // 同步项目设置到编辑器设置
-        if (projectData.settings) {
+        if (projectData?.settings) {
           // 同步标尺设置
           if (projectData.settings.showRuler !== undefined) {
             this.editor.setting.set(
@@ -296,7 +398,7 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       }
 
       // 发射事件
-      this.emit('projectOpened', projectData);
+      this.emit('projectOpened', projectData as any);
 
       console.log('项目打开完成:', projectId);
       return true;
@@ -332,14 +434,14 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       }
 
       // 重置视口到默认状态
-      if (this.editor.viewportManager) {
-        this.editor.viewportManager.setViewportSize({
-          width: 800,
-          height: 600,
-        });
-        this.editor.viewportManager.setZoom(1, { x: 0, y: 0 });
-        console.log('视口已重置');
-      }
+      // if (this.editor.viewportManager) {
+      //   this.editor.viewportManager.setViewportSize({
+      //     width: 800,
+      //     height: 600,
+      //   });
+      //   this.editor.viewportManager.setZoom(1, { x: 0, y: 0 });
+      //   console.log('视口已重置');
+      // }
 
       // 清理命令历史（如果存在clear方法）
       if (
@@ -357,54 +459,53 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
-   * 检查项目数据是否包含H5容器
+   * 获取项目类型管理器
    */
-  private checkIfProjectHasH5Container(editorData: any): boolean {
-    try {
-      if (!editorData || !editorData.data || !Array.isArray(editorData.data)) {
-        console.log('H5检测: 数据结构无效', {
-          hasEditorData: !!editorData,
-          hasData: !!editorData?.data,
-          isArray: Array.isArray(editorData?.data),
-        });
-        return false;
-      }
+  getProjectTypeManager(): ProjectTypeManager {
+    return this.projectTypeManager;
+  }
 
-      // 详细检查每个数据项
-      const allTypes = editorData.data.map((item: any, index: number) => ({
-        index,
-        type: item.type,
-        id: item.id || item.attrs?.id,
-        hasAttrs: !!item.attrs,
-        attrsType: item.attrs?.type,
-      }));
+  /**
+   * 获取当前项目类型
+   */
+  getCurrentProjectType(): ProjectType | null {
+    return this.projectTypeManager.getCurrentProjectType();
+  }
 
-      console.log('H5检测: 所有数据项类型:', allTypes);
+  /**
+   * 检查当前项目是否为H5项目
+   */
+  isCurrentProjectH5(): boolean {
+    return this.projectTypeManager.isH5Project();
+  }
 
-      // 检查多种可能的H5Container标识
-      const hasH5Container = editorData.data.some((item: any) => {
-        return (
-          item.type === 'H5Container' ||
-          item.attrs?.type === 'H5Container' ||
-          (item.type && item.type.toString() === 'H5Container')
-        );
-      });
+  /**
+   * 检查当前项目是否为设计项目
+   */
+  isCurrentProjectDesign(): boolean {
+    return this.projectTypeManager.isDesignProject();
+  }
 
-      console.log('检查H5容器结果:', {
-        hasH5Container,
-        dataCount: editorData.data.length,
-        types: editorData.data.map((item: any) => item.type).slice(0, 10), // 显示前10个类型
-        h5ContainerItems: editorData.data.filter(
-          (item: any) =>
-            item.type === 'H5Container' || item.attrs?.type === 'H5Container',
-        ),
-      });
+  /**
+   * 获取项目类型（兼容方法，使用新的项目类型管理器）
+   */
+  getProjectType(projectId: string, projectData?: any): ProjectType | null {
+    return this.projectTypeManager.getProjectType(projectId, projectData);
+  }
 
-      return hasH5Container;
-    } catch (error) {
-      console.warn('检查H5容器时出错:', error);
-      return false;
-    }
+  /**
+   * 验证项目类型
+   */
+  validateProjectType(
+    projectId: string,
+    expectedType: ProjectType,
+    projectData?: any,
+  ): boolean {
+    return this.projectTypeManager.validateProjectType(
+      projectId,
+      expectedType,
+      projectData,
+    );
   }
 
   /**
@@ -547,12 +648,18 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
       // 最后清空当前项目ID
       this.currentProjectId = null;
 
+      // 重置项目类型管理器
+      this.projectTypeManager.resetCurrentProject();
+
       // 清理全局状态
       if (typeof window !== 'undefined') {
         // 清理全局编辑器实例
         (window as any).editor = null;
         // 清理全局项目管理服务引用
         (window as any).__PROJECT_MANAGEMENT_SERVICE__ = null;
+        // 清理项目类型标记（兼容性，后续会移除）
+        delete (window as any).__isH5Project;
+        delete (window as any).__projectType;
       }
     }
   }
@@ -783,6 +890,28 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
           this.editor.setting.get('enablePixelGrid');
       }
 
+      // 验证项目数据
+      const validationResult = await this.dataValidator.validateProjectData(
+        projectData,
+      );
+      if (!validationResult.isValid) {
+        console.warn(
+          '项目数据验证失败，尝试自动修复:',
+          validationResult.errors,
+        );
+
+        // 尝试自动修复
+        const repairResult = await this.dataValidator.repairProjectData(
+          projectData as any,
+        );
+        if (repairResult.result.isValid) {
+          console.log('项目数据已自动修复:', repairResult.result.fixedIssues);
+          Object.assign(projectData, repairResult.data as any);
+        } else {
+          console.error('项目数据修复失败，仍然保存但可能存在问题');
+        }
+      }
+
       // 保存项目
       await this.storageService.saveProject(projectData);
 
@@ -803,20 +932,226 @@ export class ProjectManagementService extends EventEmitter<ProjectManagementEven
   }
 
   /**
-   * 销毁服务
+   * 设置项目类型管理器事件监听
    */
-  destroy(): void {
-    // 保存当前项目（使用手动保存，只在有未保存更改时才保存）
-    if (this.currentProjectId) {
-      this.manualSave();
+  private setupProjectTypeManagerEvents(): void {
+    this.projectTypeManager.on('typeChanged', (oldType, newType) => {
+      console.log(`项目类型变更: 从 ${oldType} 变为 ${newType}`);
+      if (this.currentProjectId) {
+        this.emit(
+          'projectTypeChanged',
+          this.currentProjectId,
+          oldType,
+          newType,
+        );
+      }
+    });
+
+    this.projectTypeManager.on('typeIdentified', (result) => {
+      console.log(`项目类型识别完成:`, result);
+      if (this.currentProjectId) {
+        this.emit('projectTypeIdentified', this.currentProjectId, result);
+      }
+    });
+  }
+
+  /**
+   * 初始化项目处理器
+   */
+  private async initializeProjectHandler(
+    projectType: ProjectType,
+    projectData: ProjectData,
+  ): Promise<IProjectHandler | null> {
+    try {
+      if (!this.editor) {
+        throw new Error('编辑器实例不存在');
+      }
+
+      // 清理当前项目处理器
+      if (this.currentProjectHandler) {
+        await this.currentProjectHandler.cleanup();
+        await this.currentProjectHandler.destroy();
+        this.currentProjectHandler = null;
+      }
+
+      // 创建新的项目处理器
+      const handler = globalProjectHandlerFactory.createHandler(projectType);
+      if (!handler) {
+        throw new Error(`无法创建项目处理器: ${projectType}`);
+      }
+
+      // 初始化项目处理器
+      const initializedHandler = await handler;
+      await initializedHandler.initialize(this.editor);
+
+      // 加载项目数据
+      const success = await initializedHandler.loadProjectData(
+        projectData as any,
+      );
+      if (!success) {
+        throw new Error('项目数据加载失败');
+      }
+
+      this.currentProjectHandler = initializedHandler;
+      console.log(`项目处理器初始化成功: ${projectType}`);
+
+      return initializedHandler;
+    } catch (error) {
+      console.error('项目处理器初始化失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 切换项目类型
+   */
+  private async switchProjectType(
+    projectId: string,
+    newType: ProjectType,
+    projectData: ProjectData,
+  ): Promise<boolean> {
+    try {
+      if (!this.editor) {
+        throw new Error('编辑器实例不存在');
+      }
+
+      console.log(`切换项目类型: ${projectId} -> ${newType}`);
+
+      // 保存当前状态
+      if (this.currentProjectHandler) {
+        const currentState = this.currentProjectHandler.getProjectState();
+        if (currentState) {
+          console.log('保存当前项目状态');
+        }
+      }
+
+      // 使用状态隔离器切换项目类型
+      // await this.stateIsolator.switchProjectType(
+      //   this.editor,
+      //   newType,
+      //   projectData,
+      // );
+
+      // 初始化新的项目处理器
+      const handler = await this.initializeProjectHandler(newType, projectData);
+      if (!handler) {
+        throw new Error('项目处理器初始化失败');
+      }
+
+      // 更新项目类型管理器
+      this.projectTypeManager.setCurrentProjectType(projectId, newType);
+
+      console.log(`项目类型切换成功: ${newType}`);
+      return true;
+    } catch (error) {
+      console.error('项目类型切换失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 验证项目状态一致性
+   */
+  private async validateProjectState(): Promise<boolean> {
+    try {
+      if (!this.currentProjectHandler || !this.currentProjectId) {
+        return true; // 没有当前项目时认为是一致的
+      }
+
+      // 验证项目处理器状态
+      const handlerState = this.currentProjectHandler.getState();
+      if (handlerState === 'error' || handlerState === 'destroyed') {
+        console.error('项目处理器状态异常:', handlerState);
+        return false;
+      }
+
+      // 验证状态管理器
+      // const stateManager = this.currentProjectHandler.getStateManager();
+      // if (stateManager) {
+      //   const isValid = stateManager.validateState();
+      //   if (!isValid) {
+      //     console.error('项目状态验证失败');
+      //     return false;
+      //   }
+      // }
+
+      return true;
+    } catch (error) {
+      console.error('项目状态验证异常:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 处理项目打开错误
+   */
+  private async handleProjectOpenError(
+    projectId: string,
+    error: Error,
+  ): Promise<void> {
+    console.error(`项目打开失败: ${projectId}`, error);
+
+    // 清理状态
+    if (this.currentProjectHandler) {
+      try {
+        await this.currentProjectHandler.cleanup();
+        await this.currentProjectHandler.destroy();
+      } catch (cleanupError) {
+        console.error('清理项目处理器失败:', cleanupError);
+      }
+      this.currentProjectHandler = null;
     }
 
-    // 清理资源
-    this.autoSaveService = null;
-    this.editor = null;
+    // 重置当前项目ID
     this.currentProjectId = null;
 
-    console.log('项目管理服务已销毁');
+    // 清理状态隔离器
+    if (this.editor) {
+      try {
+        // await this.stateIsolator.cleanup(this.editor);
+      } catch (cleanupError) {
+        console.error('清理状态隔离器失败:', cleanupError);
+      }
+    }
+
+    // 发出错误事件
+    this.emit('error', error);
+  }
+
+  /**
+   * 销毁服务
+   */
+  async destroy(): Promise<void> {
+    try {
+      // 保存当前项目（使用手动保存，只在有未保存更改时才保存）
+      if (this.currentProjectId) {
+        this.manualSave();
+      }
+
+      // 清理当前项目处理器
+      if (this.currentProjectHandler) {
+        await this.currentProjectHandler.cleanup();
+        await this.currentProjectHandler.destroy();
+        this.currentProjectHandler = null;
+      }
+
+      // 清理状态隔离器
+      if (this.editor) {
+        // await this.stateIsolator.cleanup(this.editor);
+      }
+
+      // 清理项目类型管理器
+      this.projectTypeManager.destroy();
+
+      // 清理资源
+      this.autoSaveService = null;
+      this.editor = null;
+      this.currentProjectId = null;
+
+      console.log('项目管理服务已销毁');
+    } catch (error) {
+      console.error('销毁项目管理服务时发生错误:', error);
+    }
   }
 }
 

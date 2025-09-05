@@ -22,42 +22,66 @@ interface H5CanvasProps {
 }
 
 export const H5Canvas: FC<H5CanvasProps> = ({
-  contentBlocks: _contentBlocks, // 未使用，但需要保持接口一致性
-  selectedBlockId: _selectedBlockId, // 未使用，但需要保持接口一致性
+  contentBlocks: _contentBlocks,
+  selectedBlockId: _selectedBlockId,
   onBlockSelect,
   h5Service,
 }) => {
   const editor = useContext(EditorContext);
-  const canvasRef = useRef<HTMLDivElement>(null);
+  // 移除canvasRef，不再需要DOM引用
 
-  // 确保编辑器画布正确显示H5容器
+  // 确保编辑器正确显示H5容器
   useEffect(() => {
-    if (editor && canvasRef.current && h5Service) {
-      // 强制重新渲染编辑器，确保H5容器可见
-      editor?.editor?.render();
+    console.log('H5Canvas useEffect 触发', {
+      hasEditor: !!editor?.editor,
+      hasH5Service: !!h5Service,
+    });
 
-      // 延迟调整视口，确保H5容器已完全初始化
+    if (editor?.editor && h5Service) {
+      console.log('H5Canvas: 开始调试画布内容');
+      // 直接操作编辑器实例
+      editor.editor.render();
+
+      // 延迟检查画布内容
       setTimeout(() => {
         try {
-          // 直接通过H5Service获取容器信息
+          const currentCanvas = editor.editor?.doc.getCurrentCanvas();
+          const children = currentCanvas?.getChildren();
+          console.log('画布子元素:', children);
+
+          const h5Container = children?.find(
+            (child) => child.type === ('H5Container' as any),
+          );
+          console.log('找到H5容器:', h5Container);
+
+          if (h5Container) {
+            console.log('H5容器属性:', {
+              id: h5Container.attrs.id,
+              width: h5Container.attrs.width,
+              height: h5Container.attrs.height,
+              visible: h5Container.attrs.visible,
+            });
+          }
+
           const container = h5Service.getCurrentContainer();
           if (container) {
             console.log('H5Canvas: 通过H5Service找到H5容器', container);
-            // 使用编辑器的视口管理聚焦到H5容器
-            editor?.editor?.viewportManager.zoomToFit(1);
-            editor?.editor?.render();
           } else {
             console.warn('H5Canvas: H5Service中没有找到容器');
           }
         } catch (error) {
-          console.warn('H5Canvas: 调整视口失败', error);
+          console.warn('H5Canvas: 调试失败', error);
         }
-      }, 200);
+      }, 500);
+    } else {
+      console.log('H5Canvas: 条件不满足', {
+        editor: !!editor?.editor,
+        h5Service: !!h5Service,
+      });
     }
   }, [editor, h5Service]);
 
   const handleCanvasClick = (event: React.MouseEvent) => {
-    // 点击画布空白区域时取消选择
     if (event.target === event.currentTarget) {
       onBlockSelect('');
     }
@@ -65,12 +89,10 @@ export const H5Canvas: FC<H5CanvasProps> = ({
 
   return (
     <div
-      ref={canvasRef}
       className="h5-canvas-wrapper h5-canvas-overlay"
       onClick={handleCanvasClick}
     >
-      {/* 编辑器画布由GAssetForgeEditor自动管理，H5容器会在这里显示 */}
-      {/* 如果看不到H5容器，请检查控制台输出 */}
+      {/* 编辑器已经在父容器中正确挂载，这里提供交互层 */}
     </div>
   );
 };

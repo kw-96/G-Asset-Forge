@@ -231,3 +231,367 @@
   border-color: #28a745 !important;
   background-color: rgba(40, 167, 69, 0.1) !important;
 }
+// 内容块面板优化样式
+
+.content-block-panel {
+  // 加载状态
+  .panel-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 12px;
+    color: #666;
+
+    .loading-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  // 错误提示
+  .panel-error {
+    padding: 8px 12px;
+    background: #fff3cd;
+    border-bottom: 1px solid #ffeaa7;
+    font-size: 11px;
+    color: #856404;
+  }
+
+  // 面板头部优化
+  .panel-header {
+    .panel-tabs {
+      .tab-button {
+        position: relative;
+        font-size: 12px;
+        padding: 8px 12px;
+
+        // 添加计数器样式
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: transparent;
+          transition: background-color 0.2s;
+        }
+
+        &.active::after {
+          background: #007bff;
+        }
+      }
+    }
+  }
+
+  // 组件库样式优化
+  .blocks-section {
+    .block-types {
+      .block-type-item {
+        cursor: pointer;
+        transition: all 0.2s;
+        border-radius: 6px;
+
+        &:hover {
+          background: #f8f9fa;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .block-info {
+          .block-description {
+            font-size: 10px;
+            color: #999;
+            margin-top: 2px;
+          }
+        }
+      }
+    }
+
+    // 内容块列表优化
+    .content-blocks-list {
+      .content-block-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px;
+        margin: 2px 0;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+
+        &:hover {
+          background: #f8f9fa;
+        }
+
+        &.selected {
+          background: #e3f2fd;
+          border-color: #2196f3;
+        }
+
+        &.locked {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        &.hidden {
+          opacity: 0.4;
+        }
+
+        &.dragging {
+          opacity: 0.5;
+          transform: rotate(2deg);
+        }
+
+        .block-main {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+
+          .block-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+
+            .unknown-icon {
+              width: 16px;
+              height: 16px;
+              background: #ddd;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 10px;
+              color: #999;
+            }
+          }
+
+          .block-details {
+            flex: 1;
+
+            .block-name {
+              font-size: 12px;
+              font-weight: 500;
+              color: #333;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+
+              .block-status {
+                font-size: 10px;
+                color: #999;
+                font-weight: normal;
+              }
+            }
+
+            .block-type-label {
+              font-size: 10px;
+              color: #666;
+              text-transform: uppercase;
+            }
+          }
+        }
+
+        .block-controls {
+          display: flex;
+          gap: 4px;
+          opacity: 0;
+          transition: opacity 0.2s;
+
+          .control-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s;
+
+            &:hover {
+              background: rgba(0, 0, 0, 0.1);
+            }
+
+            &.visibility-btn {
+              color: #666;
+
+              &:hover {
+                color: #007bff;
+              }
+            }
+
+            &.lock-btn {
+              color: #666;
+
+              &:hover {
+                color: #ffa502;
+              }
+            }
+
+            &.delete-btn {
+              color: #666;
+
+              &:hover {
+                color: #ff4757;
+              }
+
+              &:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+              }
+            }
+          }
+        }
+
+        &:hover .block-controls {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  // 图层列表样式
+  .layers-section {
+    .layers-list {
+      .layer-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 8px;
+        margin: 1px 0;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+
+        &:hover {
+          background: #f8f9fa;
+        }
+
+        &.selected {
+          background: #e8f5e8;
+          border-color: #4caf50;
+        }
+
+        &.locked {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        &.hidden {
+          opacity: 0.4;
+        }
+
+        .layer-main {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex: 1;
+
+          .layer-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 10px;
+          }
+
+          .layer-details {
+            flex: 1;
+
+            .layer-name {
+              font-size: 11px;
+              font-weight: 500;
+              color: #333;
+            }
+
+            .layer-type {
+              font-size: 9px;
+              color: #666;
+              text-transform: uppercase;
+            }
+          }
+        }
+
+        .layer-controls {
+          display: flex;
+          gap: 2px;
+          opacity: 0;
+          transition: opacity 0.2s;
+
+          .control-btn {
+            width: 16px;
+            height: 16px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+            transition: all 0.2s;
+
+            &:hover {
+              background: rgba(0, 0, 0, 0.1);
+              color: #007bff;
+            }
+          }
+        }
+
+        &:hover .layer-controls {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  // 空状态提示
+  .empty-hint {
+    font-size: 10px;
+    color: #999;
+    font-style: italic;
+    margin-left: 8px;
+  }
+
+  // 节标题优化
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: #333;
+    padding: 8px 0 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 8px;
+  }
+}
+
+// 旋转动画
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

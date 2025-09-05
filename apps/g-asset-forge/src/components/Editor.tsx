@@ -12,6 +12,7 @@ import { pick, throttle } from '@g-asset-forge/common';
 import {
   GAssetForgeEditor,
   performanceService,
+  ProjectType,
   type SettingValue,
 } from '@g-asset-forge/core';
 import {
@@ -70,6 +71,8 @@ interface EditorProps {
   showHeader?: boolean; // 控制是否显示Header，默认true
   projectManagementService?: any; // 项目管理服务
   currentProjectId?: string | null; // 当前项目ID
+  onModeSwitch?: (newMode: 'design' | 'h5') => void; // 模式切换回调
+  enableModeTransition?: boolean; // 启用模式切换动画
 }
 
 const Editor: FC<EditorProps> = ({
@@ -81,25 +84,150 @@ const Editor: FC<EditorProps> = ({
   showHeader = true,
   projectManagementService,
   currentProjectId,
+  onModeSwitch,
+  enableModeTransition = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [editor, setEditor] = useState<GAssetForgeEditor | null>(null);
-  const [editorMode] = useState<'design' | 'h5'>(initialMode);
+  const [editorMode, setEditorMode] = useState<'design' | 'h5'>(initialMode);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionError, setTransitionError] = useState<string | null>(null);
 
   // 弹窗状态管理
   const [showAssetLibrary, setShowAssetLibrary] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showProjectLibrary, setShowProjectLibrary] = useState(false);
 
-  // 项目管理Hook - 统一状态管理
+  // 项目管理Hook - 重构版本，集成新的状态管理
   const {
+    loading,
+    error,
+    projectType,
+    project,
     openProject,
     renameProject,
     deleteProject,
+    switchProjectType,
     setEditor: setProjectEditor,
     getCurrentProject,
+    clearError,
+    refreshProject,
   } = useProjectManagement(projectManagementService);
+
+  // 模式切换处理函数
+  const handleModeSwitch = useCallback(
+    async (newMode: 'design' | 'h5') => {
+      if (newMode === editorMode || isTransitioning) {
+        return;
+      }
+
+      console.log(`切换编辑器模式: ${editorMode} -> ${newMode}`);
+
+      setIsTransitioning(true);
+      setTransitionError(null);
+
+      try {
+        // 如果有项目打开，需要切换项目类型
+        if (project.currentProjectId && project.isProjectOpen) {
+          const targetType =
+            newMode === 'h5' ? ProjectType.H5 : ProjectType.DESIGN;
+          const success = await switchProjectType(
+            project.currentProjectId,
+            targetType,
+          );
+
+          if (!success) {
+            throw new Error(`项目类型切换失败: ${targetType}`);
+          }
+        }
+
+        // 执行模式切换动画（如果启用）
+        if (enableModeTransition) {
+          // 添加切换动画类
+          if (containerRef.current) {
+            containerRef.current.classList.add('mode-transitioning');
+          }
+
+          // 等待动画完成
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        // 更新编辑器模式
+        setEditorMode(newMode);
+
+        // 通知外部组件
+        onModeSwitch?.(newMode);
+
+        // 移除动画类
+        if (enableModeTransition && containerRef.current) {
+          containerRef.current.classList.remove('mode-transitioning');
+        }
+
+        console.log(`编辑器模式切换完成: ${newMode}`);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : '模式切换失败';
+        setTransitionError(errorMessage);
+        console.error('编辑器模式切换失败:', error);
+      } finally {
+        setIsTransitioning(false);
+      }
+    },
+    [
+      editorMode,
+      isTransitioning,
+      project.currentProjectId,
+      project.isProjectOpen,
+      switchProjectType,
+      enableModeTransition,
+      onModeSwitch,
+    ],
+  );
+
+  // 监听项目类型变化，自动切换编辑器模式
+  useEffect(() => {
+    if (projectType.currentType) {
+      const newMode =
+        projectType.currentType === ProjectType.H5 ? 'h5' : 'design';
+      if (newMode !== editorMode && !projectType.isTypeChanging) {
+        handleModeSwitch(newMode);
+      }
+    }
+  }, [
+    projectType.currentType,
+    projectType.isTypeChanging,
+    editorMode,
+    handleModeSwitch,
+  ]);
+
+  // 错误恢复处理
+  const handleErrorRecovery = useCallback(async () => {
+    console.log('尝试错误恢复...');
+
+    try {
+      // 清除所有错误状态
+      clearError();
+      setTransitionError(null);
+
+      // 如果有当前项目，尝试刷新
+      if (project.currentProjectId) {
+        const success = await refreshProject();
+        if (!success) {
+          console.warn('项目刷新失败，但继续运行');
+        }
+      }
+
+      // 验证编辑器状态
+      if (editor) {
+        // 健康检查器会自动运行，这里不需要手动调用
+      }
+
+      console.log('错误恢复完成');
+    } catch (error) {
+      console.error('错误恢复失败:', error);
+    }
+  }, [clearError, project.currentProjectId, refreshProject, editor]);
 
   useLayoutEffect(() => {
     // 使用requestAnimationFrame确保DOM完全渲染后再检查
@@ -548,7 +676,7 @@ const Editor: FC<EditorProps> = ({
   );
 
   return (
-    <div>
+    <div className={`editor-root ${isTransitioning ? 'transitioning' : ''}`}>
       <EditorContext.Provider
         value={{
           editor,
@@ -563,10 +691,51 @@ const Editor: FC<EditorProps> = ({
           />
         )}
 
+        {/* 模式切换加载指示器 */}
+        {(isTransitioning || loading.isSwitchingType) && (
+          <div className="mode-transition-overlay">
+            <div className="transition-indicator">
+              <div className="spinner" />
+              <span>正在切换模式...</span>
+            </div>
+          </div>
+        )}
+
+        {/* 错误提示 */}
+        {(error.error || error.typeError || transitionError) && (
+          <div className="error-banner">
+            <div className="error-content">
+              <span className="error-message">
+                {transitionError || error.typeError || error.error}
+              </span>
+              <button
+                className="error-recovery-btn"
+                onClick={handleErrorRecovery}
+              >
+                重试
+              </button>
+              <button
+                className="error-dismiss-btn"
+                onClick={() => {
+                  clearError();
+                  setTransitionError(null);
+                }}
+              >
+                忽略
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 主体内容区域 */}
-        <div className="body">
+        <div className={`body mode-${editorMode}`}>
           {editorMode === 'h5' ? (
-            <H5EditorMode containerRef={containerRef} />
+            <H5EditorMode
+              containerRef={containerRef}
+              projectType={projectType}
+              loading={loading}
+              error={error}
+            />
           ) : (
             <>
               <div className="g-asset-forge-editor-left-area">

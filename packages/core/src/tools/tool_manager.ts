@@ -369,4 +369,13 @@ export class ToolManager {
       this.currViewportPoint.y,
     );
   }
+
+  getActiveTool(): ITool | null {
+    return this.currentTool;
+  }
+
+  getToolOptions(): any {
+    // 返回当前工具的选项，这里返回空对象作为占位符
+    return {};
+  }
 }

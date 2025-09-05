@@ -234,6 +234,26 @@ export class GAssetForgeEditor {
     this.viewportManager.zoomToFit(1);
   }
 
+  /**
+   * 获取编辑器内容数据
+   * @returns 编辑器数据，包含所有图形元素
+   */
+  getContents(): IEditorPaperData {
+    if (!this.doc) {
+      throw new Error('编辑器文档未初始化');
+    }
+
+    // 获取所有图形元素的属性数据
+    const allGraphics = this.doc.graphicsStoreManager.getAll();
+    const data: GraphicsAttrs[] = allGraphics.map((graphics) => graphics.attrs);
+
+    return {
+      appVersion: '1.0.0', // 可以从配置中获取
+      paperId: this.doc.attrs.id,
+      data: data,
+    };
+  }
+
   destroy() {
     try {
       // 检查是否已经被销毁

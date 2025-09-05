@@ -42,6 +42,8 @@ export interface IEditorPaperData {
   appVersion: string;
   paperId: string;
   data: GraphicsAttrs[];
+  canvases?: any[];
+  graphics?: any[];
 }
 
 export interface IVerticalLine {

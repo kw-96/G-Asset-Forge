@@ -166,4 +166,16 @@ export class CommandManager {
     this.undoStack = [];
     this.emitStatusChange();
   }
+
+  canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
+
+  getCurrentIndex(): number {
+    return this.undoStack.length;
+  }
 }

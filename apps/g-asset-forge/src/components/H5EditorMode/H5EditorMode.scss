@@ -41,6 +41,43 @@
     background-size: 20px 20px;
   }
 
+  .h5-canvas-loading {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+
+    .loading-content {
+      text-align: center;
+      color: #666666;
+
+      .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid #e6e6e6;
+        border-top: 3px solid #1890ff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+
+      .loading-text {
+        font-size: 14px;
+        color: #999999;
+      }
+    }
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
   .h5-right-panel {
     width: 240px; // 调整为与设计模式一致
     background: #ffffff;
@@ -96,5 +133,129 @@
     .h5-right-panel {
       display: none; // 在小屏幕上隐藏预览面板
     }
+  }
+}
+// H5编辑器模式的状态指示器和错误处理样式
+
+.h5-editor-mode {
+  position: relative;
+
+  // H5Service初始化覆盖层
+  .h5-initialization-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    .initialization-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      span {
+        font-size: 13px;
+        color: #666;
+      }
+    }
+  }
+
+  // H5错误提示横幅
+  .h5-error-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #ff4757;
+    color: white;
+    padding: 8px 12px;
+    z-index: 999;
+    font-size: 12px;
+
+    .error-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .error-message {
+        flex: 1;
+      }
+
+      .error-recovery-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        margin-left: 8px;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      }
+    }
+  }
+
+  // H5健康状态警告
+  .h5-health-warning {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #ffa502;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 0 0 0 6px;
+    font-size: 11px;
+    z-index: 998;
+
+    details {
+      margin-top: 4px;
+
+      summary {
+        cursor: pointer;
+        font-size: 10px;
+      }
+
+      ul {
+        margin: 4px 0 0 0;
+        padding-left: 16px;
+        font-size: 10px;
+
+        li {
+          margin: 2px 0;
+        }
+      }
+    }
+  }
+}
+
+// 旋转动画
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
