@@ -1,7 +1,6 @@
 // H5模式界面 - 重构版本
 import './H5EditorMode.scss';
 
-import { ProjectType } from '@g-asset-forge/core';
 import {
   type FC,
   useCallback,
@@ -12,10 +11,11 @@ import {
 } from 'react';
 
 import { EditorContext } from '../../context';
-import type {
-  ProjectErrorState,
-  ProjectLoadingState,
-  ProjectTypeState,
+import {
+  type ProjectErrorState,
+  type ProjectLoadingState,
+  type ProjectTypeState,
+  useProjectManagement,
 } from '../../hooks/useProjectManagement';
 import { AutoSaveGraphics } from '../../store/auto-save-graphs';
 import { ContentBlockPanel } from './ContentBlockPanel';
@@ -27,6 +27,7 @@ interface H5EditorModeProps {
   projectType?: ProjectTypeState;
   loading?: ProjectLoadingState;
   error?: ProjectErrorState;
+  projectData?: any; // 添加项目数据
 }
 
 export const H5EditorMode: FC<H5EditorModeProps> = ({
@@ -34,8 +35,10 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   projectType,
   loading,
   error,
+  projectData,
 }) => {
   const editor = useContext(EditorContext);
+  const { getCurrentProject } = useProjectManagement();
   const h5ServiceRef = useRef<any>(null); // 使用any类型避免循环依赖
   const autoSaveRef = useRef<AutoSaveGraphics | null>(null);
   const initializationRef = useRef<boolean>(false);
@@ -149,7 +152,9 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
       // 初始化H5Service
       console.log('正在调用h5Service.initialize...');
-      await h5Service.initialize(editor.editor);
+      // 获取当前项目数据
+      const currentProjectData = await getCurrentProject();
+      await h5Service.initialize(editor.editor, currentProjectData);
       console.log('h5Service.initialize调用成功');
 
       // 设置事件监听器
@@ -262,13 +267,29 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
           if (h5ServiceRef.current) {
             const currentCanvas = editor?.editor?.doc?.getCurrentCanvas();
             if (currentCanvas) {
-              const hasH5Container = currentCanvas
+              const h5Containers = currentCanvas
                 .getChildren()
-                .some((child: any) => child.type === 'H5Container');
+                .filter((child: any) => child.type === 'H5Container');
 
-              if (!hasH5Container) {
+              console.log('当前画布中的H5容器数量:', h5Containers.length);
+
+              // 如果H5容器数量为0，且不是在项目加载过程中，才重新添加
+              if (
+                h5Containers.length === 0 &&
+                !(window as any).__isProjectLoading
+              ) {
                 console.log('检测到H5容器丢失，重新添加');
                 h5ServiceRef.current.addH5ContainerToCanvas?.();
+                // 设置H5容器恢复标记
+                (window as any).__h5ContainerRestored = true;
+              } else if (h5Containers.length > 1) {
+                console.warn('检测到多个H5容器，这可能是异常情况');
+                // 保留第一个，删除多余的
+                for (let i = 1; i < h5Containers.length; i++) {
+                  const extraContainer = h5Containers[i];
+                  console.log('删除多余的H5容器:', extraContainer.attrs.id);
+                  extraContainer.removeFromParent();
+                }
               }
             }
           }
@@ -493,7 +514,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       console.error('H5Service错误恢复失败:', error);
       setInitializationError('错误恢复失败');
     }
-  }, [cleanupH5Service, initializeH5Service]);
+  }, [cleanupH5Service, initializeH5Service, getCurrentProject]);
 
   const handleBlockSelect = (blockId: string) => {
     setSelectedBlockId(blockId);
@@ -667,6 +688,26 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
           setAllElements(Array.isArray(children) ? children : []);
           console.log('H5EditorMode: 更新所有元素列表，数量:', children.length);
         } else {
+          // 如果容器不存在，尝试从编辑器直接获取
+          if (editor?.editor) {
+            const currentCanvas = editor.editor.doc.getCurrentCanvas();
+            if (currentCanvas) {
+              const h5Container = currentCanvas
+                .getChildren()
+                .find((child: any) => child.type === 'H5Container');
+              if (h5Container) {
+                const children = h5Container.getChildren
+                  ? h5Container.getChildren()
+                  : [];
+                setAllElements(Array.isArray(children) ? children : []);
+                console.log(
+                  'H5EditorMode: 从编辑器直接获取元素列表，数量:',
+                  children.length,
+                );
+                return;
+              }
+            }
+          }
           setAllElements([]);
         }
       } catch (error) {
@@ -674,12 +715,70 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         setAllElements([]);
       }
     }
-  }, []);
+  }, [editor]);
 
   // 监听H5容器的变化
   useEffect(() => {
     updateAllElements();
   }, [updateAllElements, contentBlocks]);
+
+  // 监听H5Service的内容块变化事件
+  useEffect(() => {
+    if (h5ServiceRef.current) {
+      const handleContentBlocksChanged = () => {
+        // 检查H5Service是否仍然有效
+        if (
+          !h5ServiceRef.current ||
+          h5ServiceRef.current.state === 'DESTROYED'
+        ) {
+          console.warn('H5Service已销毁，忽略内容块变化事件');
+          return;
+        }
+        console.log('H5EditorMode: 收到内容块变化事件，更新列表');
+        updateContentBlocksList();
+        updateAllElements();
+      };
+
+      h5ServiceRef.current.on(
+        'contentBlocksChanged',
+        handleContentBlocksChanged,
+      );
+      h5ServiceRef.current.on('contentBlockAdded', handleContentBlocksChanged);
+      h5ServiceRef.current.on(
+        'contentBlockRemoved',
+        handleContentBlocksChanged,
+      );
+      h5ServiceRef.current.on(
+        'contentBlockUpdated',
+        handleContentBlocksChanged,
+      );
+
+      return () => {
+        if (h5ServiceRef.current) {
+          try {
+            h5ServiceRef.current.off(
+              'contentBlocksChanged',
+              handleContentBlocksChanged,
+            );
+            h5ServiceRef.current.off(
+              'contentBlockAdded',
+              handleContentBlocksChanged,
+            );
+            h5ServiceRef.current.off(
+              'contentBlockRemoved',
+              handleContentBlocksChanged,
+            );
+            h5ServiceRef.current.off(
+              'contentBlockUpdated',
+              handleContentBlocksChanged,
+            );
+          } catch (error) {
+            console.warn('清理H5Service事件监听器时出错:', error);
+          }
+        }
+      };
+    }
+  }, [updateContentBlocksList, updateAllElements]);
 
   return (
     <div className="h5-editor-mode g-asset-forge-h5-mode">

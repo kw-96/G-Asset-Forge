@@ -735,6 +735,7 @@ const Editor: FC<EditorProps> = ({
               projectType={projectType}
               loading={loading}
               error={error}
+              projectData={null} // 暂时传递 null，后续通过 getCurrentProject 获取
             />
           ) : (
             <>

@@ -22,6 +22,7 @@ export interface H5ContainerData {
   gap?: number;
   autoLayout?: boolean;
   childrenIds?: string[];
+  children?: any[]; // 添加子元素数组
 }
 
 /**
@@ -124,7 +125,7 @@ export class H5ProjectHandler extends BaseProjectHandler {
     await this.stateManager.initialize(editor, this.h5Service);
 
     // 配置编辑器为H5模式
-    this.configureH5Mode(editor);
+    this.configureH5Mode();
 
     console.log('H5项目处理器初始化完成');
   }
@@ -143,6 +144,9 @@ export class H5ProjectHandler extends BaseProjectHandler {
       // 清理当前编辑器状态
       this.clearEditorState();
 
+      // 设置项目加载标记，防止H5EditorMode重新创建容器
+      (window as any).__isProjectLoading = true;
+
       // 加载项目数据到编辑器
       this.editor.setContents(projectData.data);
 
@@ -156,6 +160,9 @@ export class H5ProjectHandler extends BaseProjectHandler {
         this.h5Service.initializeH5Mode();
       }
 
+      // 等待H5容器完全恢复后再恢复项目状态
+      await this.waitForH5ContainerReady();
+
       // 恢复项目状态
       if (projectData.state) {
         await this.stateManager.restoreState(projectData.state);
@@ -166,6 +173,9 @@ export class H5ProjectHandler extends BaseProjectHandler {
 
       // 渲染编辑器
       this.editor.render();
+
+      // 清除项目加载标记
+      (window as any).__isProjectLoading = false;
 
       console.log('H5项目数据加载成功');
       return true;
@@ -395,7 +405,7 @@ export class H5ProjectHandler extends BaseProjectHandler {
   /**
    * 配置编辑器为H5模式
    */
-  private configureH5Mode(_editor: GAssetForgeEditor): void {
+  private configureH5Mode(): void {
     // 启用H5特定功能
     // 这里可以配置编辑器的H5模式设置
 
@@ -449,6 +459,23 @@ export class H5ProjectHandler extends BaseProjectHandler {
   }
 
   /**
+   * 等待H5容器准备就绪
+   */
+  private async waitForH5ContainerReady(): Promise<void> {
+    return new Promise((resolve) => {
+      const checkContainer = () => {
+        if (this.h5Service?.getCurrentContainer()) {
+          console.log('H5容器已准备就绪');
+          resolve();
+        } else {
+          setTimeout(checkContainer, 100);
+        }
+      };
+      checkContainer();
+    });
+  }
+
+  /**
    * 恢复H5容器
    */
   private async restoreH5Container(
@@ -464,17 +491,33 @@ export class H5ProjectHandler extends BaseProjectHandler {
       const editorData = currentCanvas?.getChildren();
 
       if (editorData && editorData.length > 0) {
-        const h5Container = editorData.find(
+        // 查找所有H5容器
+        const h5Containers = editorData.filter(
           (child: any) => child && child.type === 'H5Container',
         );
 
-        if (h5Container) {
-          return this.h5Service.restoreExistingH5Container(h5Container);
+        console.log('找到H5容器数量:', h5Containers.length);
+
+        if (h5Containers.length > 0) {
+          // 选择最新的H5容器（通常是最后一个）
+          const latestContainer = h5Containers[h5Containers.length - 1];
+          console.log('选择最新的H5容器:', latestContainer.attrs?.id);
+
+          // 删除其他H5容器，只保留最新的
+          h5Containers.forEach((container, index) => {
+            if (index < h5Containers.length - 1) {
+              console.log('删除旧的H5容器:', container.attrs?.id);
+              currentCanvas?.removeChild(container);
+            }
+          });
+
+          return this.h5Service.restoreExistingH5Container(latestContainer);
         }
       }
 
       // 如果项目数据中有H5容器信息，尝试恢复
       if (projectData.h5Container) {
+        console.log('从项目数据恢复H5容器:', projectData.h5Container.id);
         return this.h5Service.restoreExistingH5Container(
           projectData.h5Container,
         );

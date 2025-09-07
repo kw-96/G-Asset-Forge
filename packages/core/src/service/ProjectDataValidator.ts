@@ -879,6 +879,7 @@ export class ProjectDataValidator {
           gap: 12,
           autoLayout: true,
           childrenIds: [],
+          children: [], // 添加子元素数组
         };
         result.fixedIssues?.push('添加了默认H5容器');
       }

@@ -7,6 +7,7 @@ import { EventEmitter } from '@g-asset-forge/common';
 
 import type { GAssetForgeEditor } from '../editor';
 import { H5Container } from '../graphics/h5/h5_container';
+// import { GraphicsType } from '../type'; // 暂时未使用
 import type {
   ContentBlockData,
   H5ContainerData,
@@ -76,7 +77,8 @@ export class H5Service
   private healthCheckTimer: ReturnType<typeof setTimeout> | null = null;
   private performanceMetrics: Map<string, number> = new Map();
   private lastHealthCheck: HealthCheckResult | null = null;
-  removeAllListeners: any;
+  private dataRecoveryTimer: ReturnType<typeof setInterval> | null = null;
+  private dataRecoveryCleanup: (() => void) | null = null;
 
   constructor(options: Partial<H5ServiceOptions> = {}) {
     super();
@@ -95,7 +97,10 @@ export class H5Service
   /**
    * 初始化H5Service
    */
-  async initialize(editor: GAssetForgeEditor): Promise<void> {
+  async initialize(
+    editor: GAssetForgeEditor,
+    projectData?: any,
+  ): Promise<void> {
     if (this.state !== H5ServiceState.IDLE) {
       throw new Error(`无法初始化H5Service，当前状态: ${this.state}`);
     }
@@ -105,8 +110,8 @@ export class H5Service
     try {
       this.editor = editor;
 
-      // 初始化H5模式
-      this.initializeH5Mode();
+      // 初始化H5模式，传递项目数据
+      this.initializeH5Mode(projectData);
 
       // 启动健康检查
       if (this.options.autoHealthCheck) {
@@ -147,20 +152,107 @@ export class H5Service
       return;
     }
 
+    // 将ContentBlockData转换为H5ContentBlockAttrs
+    const blockAttrs = this.convertContentBlockDataToAttrs(block);
+
     // 将内容块添加到H5容器
-    if (typeof h5Container.addContentBlock === 'function') {
-      h5Container.addContentBlock(block).catch((error: any) => {
-        console.error('添加内容块到容器失败:', error);
-      });
+    if (typeof (h5Container as any).addContentBlock === 'function') {
+      (h5Container as any)
+        .addContentBlock(blockAttrs)
+        .then((addedBlock: any) => {
+          console.log('内容块已成功添加到H5容器:', addedBlock?.attrs?.id);
+
+          // 触发内容块变化事件，确保UI同步
+          this.emit('contentBlocksChanged', this.getContentBlocks());
+        })
+        .catch((error: any) => {
+          console.error('添加内容块到容器失败:', error);
+        });
     } else {
       console.warn('H5容器不支持addContentBlock方法');
     }
   }
 
   /**
+   * 将ContentBlockData转换为H5ContentBlockAttrs
+   */
+  private convertContentBlockDataToAttrs(block: ContentBlockData): any {
+    // 根据ContentBlockData的type字段映射到blockType
+    let blockType: 'text' | 'image' | 'button';
+    switch (block.type) {
+      case 'H5TextBlock':
+        blockType = 'text';
+        break;
+      case 'H5ImageBlock':
+        blockType = 'image';
+        break;
+      case 'H5ButtonBlock':
+        blockType = 'button';
+        break;
+      default:
+        console.warn('未知的内容块类型:', block.type);
+        blockType = 'text';
+    }
+
+    // 构建H5ContentBlockAttrs对象
+    const attrs: any = {
+      id: block.id,
+      blockType: blockType,
+      order: block.order,
+      objectName: `内容块 ${block.order + 1}`,
+      // 基础图形属性
+      width: 200, // 默认宽度，H5Container会自动调整
+      height: 50, // 默认高度，H5Container会自动调整
+      visible: true,
+      locked: false,
+    };
+
+    // 根据内容块类型设置特定属性
+    switch (blockType) {
+      case 'text':
+        attrs.content = block.content?.text || '文本内容';
+        attrs.fontSize = block.style?.fontSize || 16;
+        attrs.textColor = block.style?.color || '#333333';
+        attrs.textAlign = block.style?.textAlign || 'left';
+        attrs.fontFamily = block.style?.fontFamily || 'Arial, sans-serif';
+        attrs.lineHeight = block.style?.lineHeight || 1.5;
+        break;
+      case 'image':
+        attrs.src = block.content?.src || '';
+        attrs.alt = block.content?.alt || '图片';
+        attrs.objectFit = block.style?.objectFit || 'cover';
+        attrs.borderRadius = block.style?.borderRadius || 4;
+        break;
+      case 'button':
+        attrs.text = block.content?.text || '按钮';
+        attrs.backgroundColor = block.style?.backgroundColor || '#007bff';
+        attrs.textColor = block.style?.textColor || '#ffffff';
+        attrs.borderRadius = block.style?.borderRadius || 4;
+        attrs.fontSize = block.style?.fontSize || 14;
+        attrs.paddingTop = 12;
+        attrs.paddingBottom = 12;
+        attrs.paddingLeft = 24;
+        attrs.paddingRight = 24;
+        break;
+    }
+
+    // 合并样式属性
+    if (block.style) {
+      Object.assign(attrs, block.style);
+    }
+
+    console.log('转换内容块数据:', {
+      original: block,
+      converted: attrs,
+    });
+
+    return attrs;
+  }
+
+  /**
    * 添加H5容器到画布
    */
-  private addH5ContainerToCanvas(): void {
+  private addH5ContainerToCanvas(containerData?: any): void {
     if (!this.editor || !this.currentContainer) {
       console.warn('无法添加H5容器：编辑器或容器不存在');
       return;
@@ -179,6 +271,8 @@ export class H5Service
 
     if (existingContainer) {
       console.log('H5容器已存在，跳过添加');
+      // 更新当前容器引用，确保使用现有的容器
+      this.currentContainer = existingContainer;
       return;
     }
 
@@ -186,10 +280,14 @@ export class H5Service
     const savedContentBlocks = Array.from(this.contentBlocks.values());
     console.log('保存现有内容块数据:', savedContentBlocks.length, '个');
 
+    // 使用固定的容器ID，避免重复创建时ID变化
+    const containerId =
+      this.currentContainer.id || `h5_container_${Date.now()}`;
+
     // 创建H5Container图形对象
     const h5Container = new H5Container(
       {
-        id: this.currentContainer.id,
+        id: containerId,
         objectName: 'H5长图容器',
         width: this.currentContainer.width,
         height: this.currentContainer.height,
@@ -198,12 +296,23 @@ export class H5Service
         gap: this.currentContainer.gap,
         autoLayout: this.currentContainer.autoLayout,
         resizeToFit: false,
+        // 传递子元素数据 - 优先使用传入的容器数据
+        children:
+          containerData?.children || this.currentContainer.children || [],
       },
       { doc: this.editor.doc },
     );
 
     // 添加到画布
     currentCanvas.insertChild(h5Container);
+
+    // 注册到图形管理器
+    if (this.editor && this.editor.doc) {
+      this.editor.doc.addGraphics(h5Container);
+    }
+
+    // 更新当前容器引用
+    this.currentContainer = h5Container;
 
     // 恢复内容块数据
     if (savedContentBlocks.length > 0) {
@@ -217,7 +326,9 @@ export class H5Service
               h5Container &&
               typeof h5Container.addContentBlock === 'function'
             ) {
-              await h5Container.addContentBlock(blockData);
+              // 将 ContentBlockData 转换为 H5ContentBlockAttrs
+              const blockAttrs = this.convertContentBlockDataToAttrs(blockData);
+              await h5Container.addContentBlock(blockAttrs);
             }
           }
           console.log('内容块恢复完成');
@@ -230,13 +341,82 @@ export class H5Service
     // 触发重新渲染
     this.editor.render();
 
+    // 设置H5容器恢复标记
+    if (typeof window !== 'undefined') {
+      (window as any).__h5ContainerRestored = true;
+    }
+
     console.log('H5容器已添加到画布');
+  }
+
+  /**
+   * 设置数据恢复监听器
+   */
+  private setupDataRecoveryListener(): void {
+    if (!this.editor) {
+      return;
+    }
+
+    // 先清理现有的监听器
+    this.cleanupDataRecoveryListener();
+
+    // 监听画布变化，确保H5容器存在
+    const checkH5Container = () => {
+      // 检查服务是否已被销毁
+      if (this.state === H5ServiceState.DESTROYED) {
+        return;
+      }
+
+      const currentCanvas = this.editor?.doc.getCurrentCanvas();
+      if (currentCanvas) {
+        const h5Container = currentCanvas
+          .getChildren()
+          .find((child: any) => child.type === 'H5Container');
+
+        if (!h5Container && this.currentContainer) {
+          console.warn('H5容器丢失，尝试恢复...');
+          this.addH5ContainerToCanvas();
+        }
+      }
+    };
+
+    // 定期检查H5容器状态
+    this.dataRecoveryTimer = setInterval(checkH5Container, 5000);
+
+    // 监听编辑器变化事件
+    this.editor.on('canvasChanged' as any, checkH5Container);
+    this.editor.on('graphicsChanged' as any, checkH5Container);
+
+    // 保存清理函数
+    this.dataRecoveryCleanup = () => {
+      if (this.dataRecoveryTimer) {
+        clearInterval(this.dataRecoveryTimer);
+        this.dataRecoveryTimer = null;
+      }
+      if (this.editor) {
+        this.editor.off('canvasChanged' as any, checkH5Container);
+        this.editor.off('graphicsChanged' as any, checkH5Container);
+      }
+    };
+
+    console.log('数据恢复监听器已设置');
+  }
+
+  /**
+   * 清理数据恢复监听器
+   */
+  private cleanupDataRecoveryListener(): void {
+    if (this.dataRecoveryCleanup) {
+      this.dataRecoveryCleanup();
+      this.dataRecoveryCleanup = null;
+    }
+    console.log('数据恢复监听器已清理');
   }
 
   /**
    * 初始化H5模式
    */
-  initializeH5Mode(): any {
+  initializeH5Mode(projectData?: any): any {
     const startTime = performance.now();
 
     try {
@@ -244,24 +424,45 @@ export class H5Service
         throw new Error('编辑器实例不存在');
       }
 
-      // 创建默认H5容器
+      // 如果有项目数据，尝试恢复现有的H5容器
+      if (projectData?.h5Container) {
+        console.log('尝试恢复现有H5容器:', projectData.h5Container.id);
+        const restored = this.restoreExistingH5Container(
+          projectData.h5Container,
+        );
+        if (restored) {
+          console.log('H5容器恢复成功');
+          // 设置数据恢复监听器，但不清空现有数据
+          this.setupDataRecoveryListener();
+          return this.currentContainer;
+        }
+      }
+
+      // 如果没有项目数据或恢复失败，创建默认H5容器
       const container = this.createDefaultContainer();
       this.currentContainer = container;
 
       // 延迟添加H5容器，确保在setContents完成后执行
       setTimeout(() => {
         this.addH5ContainerToCanvas();
+        // 设置数据恢复监听器
+        this.setupDataRecoveryListener();
       }, 100);
 
       console.log('H5模式初始化完成');
 
-      // 清空内容块
-      this.contentBlocks.clear();
-      this.selectedBlocks.clear();
+      // 只有在没有项目数据时才清空内容块
+      if (!projectData?.h5Container) {
+        this.contentBlocks.clear();
+        this.selectedBlocks.clear();
+      }
 
       // 触发事件
-      this.emit('containerChanged', container);
-      this.emit('contentBlocksChanged', []);
+      this.emit('containerChanged', this.currentContainer);
+      this.emit(
+        'contentBlocksChanged',
+        Array.from(this.contentBlocks.values()),
+      );
 
       this.recordPerformance('initializeH5Mode', performance.now() - startTime);
       console.log('H5模式初始化完成');
@@ -295,19 +496,67 @@ export class H5Service
       // 设置当前容器
       this.currentContainer = container;
 
-      // 恢复内容块
-      if (container.childrenIds && Array.isArray(container.childrenIds)) {
-        this.restoreContentBlocks(container.childrenIds);
+      // 如果容器是图形对象（已经在画布上），直接使用
+      if (container.attrs && container.type === 'H5Container') {
+        console.log('H5容器已在画布上，直接使用:', container.attrs.id);
+
+        // 恢复内容块
+        if (container.childrenIds && Array.isArray(container.childrenIds)) {
+          this.restoreContentBlocks(container.childrenIds);
+        }
+
+        // 如果有内容块数据，也恢复它们
+        if (container.contentBlocks && Array.isArray(container.contentBlocks)) {
+          console.log('恢复内容块数据:', container.contentBlocks.length, '个');
+          this.contentBlocks.clear();
+          container.contentBlocks.forEach((block: any) => {
+            if (block && block.id) {
+              this.contentBlocks.set(block.id, block);
+            }
+          });
+        }
+
+        // 设置H5容器恢复标记，防止H5EditorMode重新创建
+        (window as any).__h5ContainerRestored = true;
+      } else {
+        // 如果容器是数据对象，需要重新创建
+        console.log('H5容器是数据对象，需要重新创建:', container.id);
+
+        // 清空现有内容块
+        this.contentBlocks.clear();
+        this.selectedBlocks.clear();
+
+        // 如果有内容块数据，恢复它们
+        if (container.contentBlocks && Array.isArray(container.contentBlocks)) {
+          console.log('恢复内容块数据:', container.contentBlocks.length, '个');
+          container.contentBlocks.forEach((block: any) => {
+            if (block && block.id) {
+              this.contentBlocks.set(block.id, block);
+            }
+          });
+        }
+
+        // 重新创建H5容器到画布，并传递子元素数据
+        this.addH5ContainerToCanvas(container);
       }
 
       // 触发事件
-      this.emit('containerChanged', container);
+      this.emit('containerChanged', this.currentContainer);
+      this.emit(
+        'contentBlocksChanged',
+        Array.from(this.contentBlocks.values()),
+      );
 
       this.recordPerformance(
         'restoreExistingH5Container',
         performance.now() - startTime,
       );
-      console.log('H5容器恢复成功:', container.id);
+      console.log(
+        'H5容器恢复成功:',
+        this.currentContainer.attrs?.id || this.currentContainer.id,
+        '内容块数量:',
+        this.contentBlocks.size,
+      );
 
       return true;
     } catch (error) {
@@ -491,6 +740,26 @@ export class H5Service
         return false;
       }
 
+      // 从H5容器中删除内容块
+      if (this.editor) {
+        const currentCanvas = this.editor.doc.getCurrentCanvas();
+        if (currentCanvas) {
+          const h5Container = currentCanvas
+            .getChildren()
+            .find((child: any) => child.type === 'H5Container');
+
+          if (
+            h5Container &&
+            typeof (h5Container as any).removeContentBlock === 'function'
+          ) {
+            const success = (h5Container as any).removeContentBlock(blockId);
+            if (!success) {
+              console.warn('从H5容器删除内容块失败:', blockId);
+            }
+          }
+        }
+      }
+
       this.contentBlocks.delete(blockId);
       this.selectedBlocks.delete(blockId);
 
@@ -539,6 +808,31 @@ export class H5Service
 
       this.contentBlocks.set(blockId, updatedBlock);
 
+      // 同步更新H5容器中的内容块
+      if (this.editor) {
+        const currentCanvas = this.editor.doc.getCurrentCanvas();
+        if (currentCanvas) {
+          const h5Container = currentCanvas
+            .getChildren()
+            .find((child: any) => child.type === 'H5Container');
+
+          if (
+            h5Container &&
+            typeof (h5Container as any).updateContentBlock === 'function'
+          ) {
+            const blockAttrs =
+              this.convertContentBlockDataToAttrs(updatedBlock);
+            const success = (h5Container as any).updateContentBlock(
+              blockId,
+              blockAttrs,
+            );
+            if (!success) {
+              console.warn('更新H5容器中的内容块失败:', blockId);
+            }
+          }
+        }
+      }
+
       this.emit('contentBlockUpdated', blockId, attrs);
       this.emit(
         'contentBlocksChanged',
@@ -570,9 +864,154 @@ export class H5Service
    * 获取所有内容块
    */
   getContentBlocks(): ContentBlockData[] {
+    // 首先尝试从H5容器中获取实际的内容块
+    if (this.editor) {
+      try {
+        const currentCanvas = this.editor.doc.getCurrentCanvas();
+        if (currentCanvas) {
+          const h5Container = currentCanvas
+            .getChildren()
+            .find((child: any) => child.type === 'H5Container');
+
+          if (
+            h5Container &&
+            typeof (h5Container as any).getAllContentBlocks === 'function'
+          ) {
+            const containerBlocks = (h5Container as any).getAllContentBlocks();
+            console.log('从H5容器获取内容块:', containerBlocks.length, '个');
+
+            // 将H5ContentBlock转换为ContentBlockData格式
+            const convertedBlocks = containerBlocks.map((block: any) => {
+              const blockData: ContentBlockData = {
+                id: block.attrs.id,
+                type: this.mapBlockTypeToContentBlockType(
+                  block.attrs.blockType,
+                ),
+                parentId: this.currentContainer?.id || '',
+                order: block.attrs.order || 0,
+                content: this.extractBlockContent(block),
+                style: this.extractBlockStyle(block),
+              };
+              return blockData;
+            });
+
+            // 更新内存中的内容块Map，但保留现有的数据作为备份
+            const existingBlocks = new Map(this.contentBlocks);
+            this.contentBlocks.clear();
+            convertedBlocks.forEach((block: ContentBlockData) => {
+              this.contentBlocks.set(block.id, block);
+            });
+
+            // 如果容器中的块数量为0，但内存中有数据，可能是时序问题
+            if (convertedBlocks.length === 0 && existingBlocks.size > 0) {
+              console.warn(
+                'H5容器中无内容块，但内存中有数据，可能存在时序问题',
+              );
+              // 暂时返回内存中的数据
+              existingBlocks.forEach((block, id) => {
+                this.contentBlocks.set(id, block);
+              });
+              return Array.from(existingBlocks.values()).sort(
+                (a, b) => a.order - b.order,
+              );
+            }
+
+            return convertedBlocks.sort(
+              (a: ContentBlockData, b: ContentBlockData) => a.order - b.order,
+            );
+          }
+        }
+      } catch (error) {
+        console.warn('从H5容器获取内容块失败，使用内存数据:', error);
+      }
+    }
+
+    // 如果无法从容器获取，则返回内存中的数据
     return Array.from(this.contentBlocks.values()).sort(
       (a, b) => a.order - b.order,
     );
+  }
+
+  /**
+   * 将H5ContentBlock的blockType映射到ContentBlockData的type
+   */
+  private mapBlockTypeToContentBlockType(
+    blockType: string,
+  ): 'H5TextBlock' | 'H5ImageBlock' | 'H5ButtonBlock' {
+    switch (blockType) {
+      case 'text':
+        return 'H5TextBlock';
+      case 'image':
+        return 'H5ImageBlock';
+      case 'button':
+        return 'H5ButtonBlock';
+      default:
+        return 'H5TextBlock';
+    }
+  }
+
+  /**
+   * 从H5ContentBlock中提取内容
+   */
+  private extractBlockContent(block: any): any {
+    switch (block.attrs.blockType) {
+      case 'text':
+        return {
+          text: block.attrs.content || '文本内容',
+        };
+      case 'image':
+        return {
+          src: block.attrs.src || '',
+          alt: block.attrs.alt || '图片',
+        };
+      case 'button':
+        return {
+          text: block.attrs.text || '按钮',
+        };
+      default:
+        return {};
+    }
+  }
+
+  /**
+   * 从H5ContentBlock中提取样式
+   */
+  private extractBlockStyle(block: any): any {
+    const style: any = {};
+
+    // 基础样式属性
+    if (block.attrs.fontSize !== undefined)
+      style.fontSize = block.attrs.fontSize;
+    if (block.attrs.textColor !== undefined)
+      style.color = block.attrs.textColor;
+    if (block.attrs.textAlign !== undefined)
+      style.textAlign = block.attrs.textAlign;
+    if (block.attrs.fontFamily !== undefined)
+      style.fontFamily = block.attrs.fontFamily;
+    if (block.attrs.lineHeight !== undefined)
+      style.lineHeight = block.attrs.lineHeight;
+    if (block.attrs.backgroundColor !== undefined)
+      style.backgroundColor = block.attrs.backgroundColor;
+    if (block.attrs.borderRadius !== undefined)
+      style.borderRadius = block.attrs.borderRadius;
+    if (block.attrs.objectFit !== undefined)
+      style.objectFit = block.attrs.objectFit;
+
+    // 边距和内边距
+    if (block.attrs.marginTop !== undefined)
+      style.marginTop = block.attrs.marginTop;
+    if (block.attrs.marginBottom !== undefined)
+      style.marginBottom = block.attrs.marginBottom;
+    if (block.attrs.paddingTop !== undefined)
+      style.paddingTop = block.attrs.paddingTop;
+    if (block.attrs.paddingBottom !== undefined)
+      style.paddingBottom = block.attrs.paddingBottom;
+    if (block.attrs.paddingLeft !== undefined)
+      style.paddingLeft = block.attrs.paddingLeft;
+    if (block.attrs.paddingRight !== undefined)
+      style.paddingRight = block.attrs.paddingRight;
+
+    return style;
   }
 
   /**
@@ -778,6 +1217,9 @@ export class H5Service
       // 停止健康检查
       this.stopHealthCheck();
 
+      // 清理数据恢复监听器
+      this.cleanupDataRecoveryListener();
+
       // 清理选择状态
       this.clearSelection();
 
@@ -812,8 +1254,8 @@ export class H5Service
       // 清理编辑器引用
       this.editor = null;
 
-      // 清理所有事件监听器
-      this.removeAllListeners();
+      // 清理所有事件监听器 - EventEmitter 没有 removeAllListeners 方法
+      // 由于 EventEmitter 没有提供清理所有监听器的方法，这里跳过
 
       // 设置状态
       this.setState(H5ServiceState.DESTROYED);
@@ -856,8 +1298,25 @@ export class H5Service
    * 验证容器数据
    */
   private validateContainerData(container: any): boolean {
+    if (!container) {
+      return false;
+    }
+
+    // 如果是图形对象，检查其属性
+    if (container.attrs) {
+      const attrs = container.attrs;
+      return (
+        typeof attrs.id === 'string' &&
+        container.type === 'H5Container' &&
+        typeof attrs.width === 'number' &&
+        typeof attrs.height === 'number' &&
+        attrs.width > 0 &&
+        attrs.height > 0
+      );
+    }
+
+    // 如果是数据对象，直接检查
     return (
-      container &&
       typeof container.id === 'string' &&
       container.type === 'H5Container' &&
       typeof container.width === 'number' &&

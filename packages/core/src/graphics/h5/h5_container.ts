@@ -55,6 +55,8 @@ export class H5Container extends GAssetForgeFrame {
         objectName: attrs.objectName || 'H5长图容器',
         width: attrs.width || 1080,
         height: attrs.height || 2220,
+        // 强制设置位置为(0,0)，确保H5容器不可移动
+        transform: [1, 0, 0, 1, 0, 0], // 单位矩阵，位置为(0,0)
         // 添加默认的填充和边框，确保容器可见
         fill: attrs.fill || [
           {
