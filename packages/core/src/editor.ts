@@ -5,7 +5,7 @@
  * 提供了编辑器的性能监控、调试工具等功能
  */
 
-import { EventEmitter, genUuid } from '@g-asset-forge/common';
+import { EventEmitter } from '@g-asset-forge/common';
 import { mergeBoxes } from '@g-asset-forge/geo';
 
 import { CanvasDragger } from './canvas_dragger';
@@ -29,6 +29,7 @@ import { Setting, type SettingValue } from './setting';
 import { TextEditor } from './text/text_editor';
 import { ToolManager } from './tools';
 import { type IChanges, type IEditorPaperData } from './type';
+import { getNoConflictObjectName } from './utils';
 import { ViewportManager } from './viewport_manager';
 
 interface IEditorOptions {
@@ -133,7 +134,7 @@ export class GAssetForgeEditor {
       this.render();
     });
 
-    this.paperId = genUuid();
+    this.paperId = 'g-asset-forge-paper-1'; // 使用固定ID
 
     this.doc = new GAssetForgeDocument({
       id: '0-0',
@@ -176,6 +177,13 @@ export class GAssetForgeEditor {
       return;
     }
 
+    // 防重复加载检查
+    if ((this as any).isLoadingContents) {
+      return;
+    }
+
+    (this as any).isLoadingContents = true;
+
     console.log(
       'setContents: 开始加载数据，数据包含',
       data.data.length,
@@ -186,20 +194,10 @@ export class GAssetForgeEditor {
     // 不需要清空现有画布，因为编辑器初始化时没有创建默认画布
     this.sceneGraph.load(data.data);
     this.commandManager.clearRecords();
-    this.paperId = data.paperId ?? genUuid();
+    this.paperId = data.paperId ?? 'g-asset-forge-paper-1'; // 使用固定ID
 
     // 设置当前画布为项目中的第一个画布
     const availableCanvases = this.doc.graphicsStoreManager.getCanvasItems();
-    console.log('setContents: 加载后可用画布数量:', availableCanvases.length);
-    console.log(
-      'setContents: 可用画布详情:',
-      availableCanvases.map((canvas) => ({
-        id: canvas.attrs.id,
-        name: canvas.attrs.objectName,
-        type: canvas.attrs.type,
-        isDeleted: canvas.isDeleted(),
-      })),
-    );
 
     if (availableCanvases && availableCanvases.length > 0) {
       // 使用项目中的第一个画布
@@ -209,13 +207,16 @@ export class GAssetForgeEditor {
         firstCanvas.attrs.id,
         firstCanvas.attrs.objectName,
       );
-      this.doc.setCurrentCanvas(firstCanvas.attrs.id);
+
+      // 直接设置currentCanvasId，避免触发无效ID检查
+      this.doc.setCurrentCanvasId(firstCanvas.attrs.id);
     } else {
       // 如果项目数据中没有画布，创建一个新的
       console.log('setContents: 项目数据中没有画布，创建新画布');
+      const canvasName = getNoConflictObjectName(this.doc, 'Page');
       const canvas = new GAssetForgeCanvas(
         {
-          objectName: 'Page 1',
+          objectName: canvasName,
         },
         {
           doc: this.doc,
@@ -228,10 +229,14 @@ export class GAssetForgeEditor {
       this.doc.insertChild(canvas);
 
       console.log('setContents: 创建新画布完成:', canvas.attrs.id);
-      this.doc.setCurrentCanvas(canvas.attrs.id);
+      // 直接设置currentCanvasId，避免触发无效ID检查
+      this.doc.setCurrentCanvasId(canvas.attrs.id);
     }
 
     this.viewportManager.zoomToFit(1);
+
+    // 重置加载标志位
+    (this as any).isLoadingContents = false;
   }
 
   /**

@@ -29,12 +29,30 @@ export class AutoSaveGraphics {
   private saveCount = 0;
 
   constructor(private editor: GAssetForgeEditor) {
+    // 不立即加载缓存数据，等待项目数据加载完成
+    this.autoSave();
+    this.editor.on('destroy', () => this.stopAutoSave());
+
+    // 定期清理旧备份
+    this.cleanupOldBackups();
+  }
+
+  /**
+   * 加载缓存数据（由外部调用）
+   */
+  loadCachedData(): void {
+    // 检查是否有项目正在加载，如果有则跳过缓存数据加载
+    if ((window as any).__isProjectLoading) {
+      console.log('项目正在加载中，跳过缓存数据加载');
+      return;
+    }
+
     let data = this.load();
     if (data) {
-      if (data.appVersion !== editor.appVersion) {
+      if (data.appVersion !== this.editor.appVersion) {
         if (data.appVersion === 'g-asset-forge-editor_0.0.2') {
           data = dataCompatibilityV3(data);
-          editor.setContents(data);
+          this.editor.setContents(data);
         } else {
           window.alert(
             '编辑器版本和图纸版本不兼容，将清空本地缓存(version not match, to clear data)',
@@ -43,15 +61,9 @@ export class AutoSaveGraphics {
           data = null;
         }
       } else {
-        editor.setContents(data);
+        this.editor.setContents(data);
       }
     }
-
-    this.autoSave();
-    this.editor.on('destroy', () => this.stopAutoSave());
-
-    // 定期清理旧备份
-    this.cleanupOldBackups();
   }
 
   private listener = debounce(() => {

@@ -250,6 +250,78 @@ export class H5Service
   }
 
   /**
+   * 设置编辑器实例
+   */
+  setEditor(editor: GAssetForgeEditor): void {
+    this.editor = editor;
+    console.log('H5Service: 编辑器实例已设置');
+
+    // 设置editor后立即同步H5容器
+    this.syncH5Container();
+  }
+
+  /**
+   * 同步H5容器状态
+   */
+  private syncH5Container(): void {
+    if (!this.editor?.doc) {
+      console.warn('H5Service: 编辑器或文档不存在，无法同步H5容器');
+      return;
+    }
+
+    try {
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      if (!currentCanvas) {
+        console.warn('H5Service: 当前画布不存在，无法同步H5容器');
+        return;
+      }
+
+      // 查找画布中的H5容器
+      const children = currentCanvas.getChildren();
+      const h5Container = children.find((child: any) => {
+        // 使用与canvas.ts相同的识别逻辑
+        return (
+          child.type === 'H5Container' ||
+          child.constructor?.name === 'H5Container' ||
+          (child.attrs &&
+            child.attrs.id &&
+            child.attrs.id.includes('h5_container')) ||
+          (child.attrs &&
+            child.attrs.id &&
+            child.attrs.id.includes('h5-container'))
+        );
+      });
+
+      if (h5Container) {
+        console.log(
+          'H5Service: 同步H5容器状态',
+          h5Container.attrs.id,
+          '类型:',
+          h5Container.type,
+        );
+        this.currentContainer = h5Container;
+        this.emit('containerChanged', this.currentContainer);
+        return;
+      }
+
+      console.log(
+        'H5Service: 画布中未找到H5容器，当前子元素数量:',
+        children.length,
+      );
+      console.log(
+        'H5Service: 子元素详情:',
+        children.map((child: any) => ({
+          type: child.type,
+          id: child.attrs?.id,
+          constructor: child.constructor?.name,
+        })),
+      );
+    } catch (error) {
+      console.error('H5Service: 同步H5容器失败', error);
+    }
+  }
+
+  /**
    * 添加H5容器到画布
    */
   private addH5ContainerToCanvas(containerData?: any): void {
@@ -260,7 +332,11 @@ export class H5Service
 
     const currentCanvas = this.editor.doc.getCurrentCanvas();
     if (!currentCanvas) {
-      console.warn('无法添加H5容器：当前画布不存在');
+      console.warn('无法添加H5容器：当前画布不存在，尝试等待画布创建');
+      // 延迟重试，等待画布创建
+      setTimeout(() => {
+        this.addH5ContainerToCanvas(containerData);
+      }, 500);
       return;
     }
 
@@ -270,9 +346,11 @@ export class H5Service
       .find((child: any) => child.type === 'H5Container');
 
     if (existingContainer) {
-      console.log('H5容器已存在，跳过添加');
+      console.log('H5容器已存在，跳过添加:', existingContainer.attrs?.id);
       // 更新当前容器引用，确保使用现有的容器
       this.currentContainer = existingContainer;
+      // 设置恢复标记，防止重复添加
+      (window as any).__h5ContainerRestored = true;
       return;
     }
 
@@ -281,8 +359,7 @@ export class H5Service
     console.log('保存现有内容块数据:', savedContentBlocks.length, '个');
 
     // 使用固定的容器ID，避免重复创建时ID变化
-    const containerId =
-      this.currentContainer.id || `h5_container_${Date.now()}`;
+    const containerId = this.currentContainer.id || 'h5-container-1'; // 使用固定ID
 
     // 创建H5Container图形对象
     const h5Container = new H5Container(
@@ -303,12 +380,24 @@ export class H5Service
       { doc: this.editor.doc },
     );
 
-    // 添加到画布
-    currentCanvas.insertChild(h5Container);
+    // 添加到画布，使用正确的排序索引
+    currentCanvas.insertChild(h5Container, 'a0');
 
     // 注册到图形管理器
     if (this.editor && this.editor.doc) {
-      this.editor.doc.addGraphics(h5Container);
+      // 检查是否已经存在，避免重复添加
+      const existingGraphics = this.editor.doc.graphicsStoreManager.get(
+        h5Container.attrs.id,
+      );
+      if (!existingGraphics) {
+        this.editor.doc.addGraphics(h5Container);
+        console.log('H5容器已添加到图形管理器:', h5Container.attrs.id);
+      } else {
+        console.log(
+          'H5容器已存在于图形管理器中，跳过添加:',
+          h5Container.attrs.id,
+        );
+      }
     }
 
     // 更新当前容器引用
@@ -360,32 +449,13 @@ export class H5Service
     // 先清理现有的监听器
     this.cleanupDataRecoveryListener();
 
-    // 监听画布变化，确保H5容器存在
-    const checkH5Container = () => {
-      // 检查服务是否已被销毁
-      if (this.state === H5ServiceState.DESTROYED) {
-        return;
-      }
+    // 完全禁用H5容器检查，简化系统
+    // const checkH5Container = () => { ... };
 
-      const currentCanvas = this.editor?.doc.getCurrentCanvas();
-      if (currentCanvas) {
-        const h5Container = currentCanvas
-          .getChildren()
-          .find((child: any) => child.type === 'H5Container');
-
-        if (!h5Container && this.currentContainer) {
-          console.warn('H5容器丢失，尝试恢复...');
-          this.addH5ContainerToCanvas();
-        }
-      }
-    };
-
-    // 定期检查H5容器状态
-    this.dataRecoveryTimer = setInterval(checkH5Container, 5000);
-
-    // 监听编辑器变化事件
-    this.editor.on('canvasChanged' as any, checkH5Container);
-    this.editor.on('graphicsChanged' as any, checkH5Container);
+    // 完全禁用所有恢复机制，简化系统
+    // this.dataRecoveryTimer = setInterval(checkH5Container, 30000);
+    // this.editor.on('canvasChanged' as any, checkH5Container);
+    // this.editor.on('graphicsChanged' as any, checkH5Container);
 
     // 保存清理函数
     this.dataRecoveryCleanup = () => {
@@ -393,10 +463,7 @@ export class H5Service
         clearInterval(this.dataRecoveryTimer);
         this.dataRecoveryTimer = null;
       }
-      if (this.editor) {
-        this.editor.off('canvasChanged' as any, checkH5Container);
-        this.editor.off('graphicsChanged' as any, checkH5Container);
-      }
+      // 所有事件监听器已被禁用，无需清理
     };
 
     console.log('数据恢复监听器已设置');
@@ -424,8 +491,8 @@ export class H5Service
         throw new Error('编辑器实例不存在');
       }
 
-      // 如果有项目数据，尝试恢复现有的H5容器
-      if (projectData?.h5Container) {
+      // 如果有项目数据且不是新建项目，尝试恢复现有的H5容器
+      if (projectData?.h5Container && !projectData.isNewProject) {
         console.log('尝试恢复现有H5容器:', projectData.h5Container.id);
         const restored = this.restoreExistingH5Container(
           projectData.h5Container,
@@ -442,12 +509,13 @@ export class H5Service
       const container = this.createDefaultContainer();
       this.currentContainer = container;
 
-      // 延迟添加H5容器，确保在setContents完成后执行
-      setTimeout(() => {
-        this.addH5ContainerToCanvas();
-        // 设置数据恢复监听器
-        this.setupDataRecoveryListener();
-      }, 100);
+      // 直接添加H5容器，避免延迟操作导致重复setContents
+      this.addH5ContainerToCanvas();
+      // 设置数据恢复监听器
+      this.setupDataRecoveryListener();
+
+      // 添加H5容器后立即同步状态
+      this.syncH5Container();
 
       console.log('H5模式初始化完成');
 
@@ -518,6 +586,9 @@ export class H5Service
 
         // 设置H5容器恢复标记，防止H5EditorMode重新创建
         (window as any).__h5ContainerRestored = true;
+
+        // 确保H5Service的currentContainer引用正确
+        this.currentContainer = container;
       } else {
         // 如果容器是数据对象，需要重新创建
         console.log('H5容器是数据对象，需要重新创建:', container.id);
@@ -602,7 +673,7 @@ export class H5Service
 
     try {
       const block: ContentBlockData = {
-        id: `text_block_${Date.now()}`,
+        id: `text_block_${this.contentBlocks.size + 1}`, // 使用序号ID
         type: 'H5TextBlock',
         parentId: this.currentContainer?.id || '',
         order: this.contentBlocks.size,
@@ -646,7 +717,7 @@ export class H5Service
 
     try {
       const block: ContentBlockData = {
-        id: `image_block_${Date.now()}`,
+        id: `image_block_${this.contentBlocks.size + 1}`, // 使用序号ID
         type: 'H5ImageBlock',
         parentId: this.currentContainer?.id || '',
         order: this.contentBlocks.size,
@@ -690,7 +761,7 @@ export class H5Service
 
     try {
       const block: ContentBlockData = {
-        id: `button_block_${Date.now()}`,
+        id: `button_block_${this.contentBlocks.size + 1}`, // 使用序号ID
         type: 'H5ButtonBlock',
         parentId: this.currentContainer?.id || '',
         order: this.contentBlocks.size,
@@ -1282,7 +1353,7 @@ export class H5Service
    */
   private createDefaultContainer(): H5ContainerData {
     return {
-      id: `h5_container_${Date.now()}`,
+      id: 'h5-container-1', // 使用固定ID
       type: 'H5Container',
       width: 1080,
       height: 2220,
@@ -1305,9 +1376,16 @@ export class H5Service
     // 如果是图形对象，检查其属性
     if (container.attrs) {
       const attrs = container.attrs;
+      // H5Container继承自Frame，所以type是'Frame'，但可以通过id识别
+      const isH5Container =
+        container.type === 'H5Container' ||
+        (container.type === 'Frame' &&
+          (attrs.id?.includes('h5-container') ||
+            attrs.id?.includes('h5_container')));
+
       return (
         typeof attrs.id === 'string' &&
-        container.type === 'H5Container' &&
+        isH5Container &&
         typeof attrs.width === 'number' &&
         typeof attrs.height === 'number' &&
         attrs.width > 0 &&
@@ -1316,9 +1394,15 @@ export class H5Service
     }
 
     // 如果是数据对象，直接检查
+    const isH5Container =
+      container.type === 'H5Container' ||
+      (container.type === 'Frame' &&
+        (container.id?.includes('h5-container') ||
+          container.id?.includes('h5_container')));
+
     return (
       typeof container.id === 'string' &&
-      container.type === 'H5Container' &&
+      isH5Container &&
       typeof container.width === 'number' &&
       typeof container.height === 'number' &&
       container.width > 0 &&

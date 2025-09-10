@@ -17,6 +17,7 @@ import React, {
   useState,
 } from 'react';
 
+import { projectManagementService } from '../../services/ProjectManagementServiceSingleton';
 import { SvgIcon } from '../SvgIcon/SvgIcon';
 import { ProjectEditModal } from './ProjectEditModal';
 import { ProjectGrid } from './ProjectGrid';
@@ -68,50 +69,47 @@ export const ProjectLibraryPanel: React.FC<IProjectLibraryPanelProps> = ({
     mode: 'create',
   });
 
-  // 初始化存储服务
-  // 加载项目列表
-  const loadProjects = useCallback(async () => {
-    if (!storageServiceRef.current) return;
+  // 事件驱动的项目列表更新
+  const handleProjectsListUpdated = useCallback((projectsList: any[]) => {
+    // 转换数据格式
+    const formattedProjects: IProjectMetadata[] = projectsList.map(
+      (project) => ({
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        type: project.type,
+        category: project.type === 'h5' ? 'h5' : 'design',
+        tags: [], // 暂时为空，后续可以从项目数据中提取
+        createdAt: project.createdAt.toISOString(),
+        updatedAt: project.updatedAt.toISOString(),
+        lastOpenedAt: project.lastOpenedAt.toISOString(),
+        fileSize: project.fileSize,
+        usageCount: 0, // 暂时为0，后续可以从使用统计中获取
+        isFavorite: false, // 暂时为false，后续可以添加收藏功能
+      }),
+    );
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const projectsList = await storageServiceRef.current.getProjectsList();
-
-      // 转换数据格式
-      const formattedProjects: IProjectMetadata[] = projectsList.map(
-        (project) => ({
-          id: project.id,
-          name: project.name,
-          description: project.description,
-          type: project.type,
-          category: project.type === 'h5' ? 'h5' : 'design',
-          tags: [], // 暂时为空，后续可以从项目数据中提取
-          createdAt: project.createdAt.toISOString(),
-          updatedAt: project.updatedAt.toISOString(),
-          lastOpenedAt: project.lastOpenedAt.toISOString(),
-          fileSize: project.fileSize,
-          usageCount: 0, // 暂时为0，后续可以从使用统计中获取
-          isFavorite: false, // 暂时为false，后续可以添加收藏功能
-        }),
-      );
-
-      setProjects(formattedProjects);
-    } catch (err) {
-      console.error('加载项目列表失败:', err);
-      setError('加载项目列表失败');
-    } finally {
-      setIsLoading(false);
-    }
+    setProjects(formattedProjects);
+    console.log('项目库列表已更新:', formattedProjects.length, '个项目');
   }, []);
 
+  // 监听项目列表更新事件
   useEffect(() => {
-    if (!storageServiceRef.current) {
-      storageServiceRef.current = new ProjectStorageService();
-      loadProjects();
-    }
-  }, [loadProjects]);
+    const service = projectManagementService;
+
+    // 监听项目列表更新事件
+    service.on('projectsListUpdated', handleProjectsListUpdated);
+
+    // 初始加载项目列表（会触发projectsListLoaded事件，然后转发为projectsListUpdated）
+    service.getProjectsList().catch((error) => {
+      console.error('初始加载项目列表失败:', error);
+      setError('加载项目列表失败');
+    });
+
+    return () => {
+      service.off('projectsListUpdated', handleProjectsListUpdated);
+    };
+  }, [handleProjectsListUpdated]);
 
   // 筛选和排序项目
   const filteredProjects = useMemo(() => {
@@ -246,10 +244,10 @@ export const ProjectLibraryPanel: React.FC<IProjectLibraryPanelProps> = ({
     onProjectImport?.();
   }, [onProjectImport]);
 
-  // 处理刷新
+  // 处理刷新 - 现在通过事件自动更新，无需手动刷新
   const handleRefresh = useCallback(() => {
-    loadProjects();
-  }, [loadProjects]);
+    console.log('项目列表将通过事件自动更新');
+  }, []);
 
   // 处理模态框确认
   const handleModalConfirm = useCallback(
@@ -268,8 +266,7 @@ export const ProjectLibraryPanel: React.FC<IProjectLibraryPanelProps> = ({
             type: data.type,
           });
 
-          // 刷新项目列表
-          await loadProjects();
+          // 项目列表将通过事件自动更新
           onProjectCreate?.();
         } else if (modalState.mode === 'rename' && modalState.project) {
           // 重命名项目
@@ -278,15 +275,13 @@ export const ProjectLibraryPanel: React.FC<IProjectLibraryPanelProps> = ({
             description: data.description,
           });
 
-          // 刷新项目列表
-          await loadProjects();
+          // 项目列表将通过事件自动更新
           onProjectRename?.(modalState.project, data.name);
         } else if (modalState.mode === 'delete' && modalState.project) {
           // 删除项目
           await storageServiceRef.current.deleteProject(modalState.project.id);
 
-          // 刷新项目列表
-          await loadProjects();
+          // 项目列表将通过事件自动更新
           onProjectDelete?.(modalState.project);
         }
 
@@ -298,13 +293,7 @@ export const ProjectLibraryPanel: React.FC<IProjectLibraryPanelProps> = ({
         setIsLoading(false);
       }
     },
-    [
-      modalState,
-      onProjectCreate,
-      onProjectRename,
-      onProjectDelete,
-      loadProjects,
-    ],
+    [modalState, onProjectCreate, onProjectRename, onProjectDelete],
   );
 
   // 处理模态框关闭

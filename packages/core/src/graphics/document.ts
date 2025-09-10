@@ -2,7 +2,7 @@ import { EventEmitter, throttle } from '@g-asset-forge/common';
 
 import { type GAssetForgeEditor } from '../editor';
 import { GraphicsType, type Optional } from '../type';
-import { type GAssetForgeCanvas } from './canvas';
+import { GAssetForgeCanvas } from './canvas';
 import {
   GAssetForgeGraphics,
   type GraphicsAttrs,
@@ -62,6 +62,10 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
     return this.graphicsStoreManager.get(id);
   }
 
+  setCurrentCanvasId(canvasId: string) {
+    this.currentCanvasId = canvasId;
+  }
+
   getGraphicsArrByIds(ids: Set<string>) {
     const graphicsArr: GAssetForgeGraphics[] = [];
     for (const id of ids) {
@@ -83,9 +87,8 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
     try {
       const canvasItems = this.graphicsStoreManager.getCanvasItems();
 
-      // 如果没有画布项目，返回null
+      // 如果没有画布项目，静默返回null（项目数据加载过程中会创建画布）
       if (!canvasItems || canvasItems.length === 0) {
-        console.warn('没有可用的画布项目');
         return null;
       }
 
@@ -107,6 +110,13 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
       );
 
       if (validCanvas) {
+        // 如果currentCanvasId为空字符串，静默切换（初始化阶段）
+        if (this.currentCanvasId === '') {
+          this.currentCanvasId = validCanvas.attrs.id;
+          return validCanvas;
+        }
+
+        // 如果currentCanvasId不为空但无效，才显示警告
         console.warn(
           `当前画布ID "${this.currentCanvasId}" 无效，切换到有效画布: ${validCanvas.attrs.id}`,
         );

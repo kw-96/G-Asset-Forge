@@ -33,11 +33,21 @@ export const Pages: FC = () => {
 
   // 定期检查定时器引用
   const periodicCheckRef = useRef<number | null>(null);
+  // 防重复更新标志
+  const isUpdatingRef = useRef(false);
 
   useEffect(() => {
     if (!editor) return;
 
     const updatePageItems = () => {
+      // 防止重复更新
+      if (isUpdatingRef.current) {
+        console.log('Pages: 正在更新中，跳过重复更新');
+        return;
+      }
+
+      isUpdatingRef.current = true;
+
       try {
         // 延迟验证，给编辑器更多时间初始化
         setTimeout(() => {
@@ -68,12 +78,17 @@ export const Pages: FC = () => {
             }
           } catch (error) {
             console.error('延迟更新页面项目时出错:', error);
+          } finally {
+            // 重置更新标志
+            isUpdatingRef.current = false;
           }
         }, 100); // 延迟100ms等待编辑器完全初始化
       } catch (error) {
         console.error('更新页面项目时出错:', error);
         setPageItems([]);
         setCurrPageId('');
+        // 重置更新标志
+        isUpdatingRef.current = false;
       }
     };
 

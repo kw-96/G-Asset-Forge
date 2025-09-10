@@ -288,6 +288,97 @@ app.whenReady().then(() => {
       };
     }
   });
+
+  // 文件读取 IPC 处理器
+  ipcMain.handle('file:read', async (event, { filename, directory }) => {
+    try {
+      // 确定文件路径
+      let filePath;
+
+      if (directory) {
+        filePath = path.join(directory, filename);
+      } else {
+        // 使用默认目录
+        const documentsPath = path.join(os.homedir(), 'Documents');
+        const defaultDirectory = path.join(
+          documentsPath,
+          'g-asset-forge-projects',
+        );
+        filePath = path.join(defaultDirectory, filename);
+      }
+
+      // 检查文件是否存在
+      try {
+        await fs.access(filePath);
+      } catch (error) {
+        return {
+          success: false,
+          error: '文件不存在',
+        };
+      }
+
+      // 读取文件内容
+      const content = await fs.readFile(filePath, 'utf8');
+
+      console.log(`文件读取成功: ${filePath}`);
+      return {
+        success: true,
+        content: content,
+        filePath: filePath,
+      };
+    } catch (error) {
+      console.error('文件读取失败:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  // 文件删除 IPC 处理器
+  ipcMain.handle('file:delete', async (event, { filename, directory }) => {
+    try {
+      // 确定文件路径
+      let filePath;
+
+      if (directory) {
+        filePath = path.join(directory, filename);
+      } else {
+        // 使用默认目录
+        const documentsPath = path.join(os.homedir(), 'Documents');
+        const defaultDirectory = path.join(
+          documentsPath,
+          'g-asset-forge-projects',
+        );
+        filePath = path.join(defaultDirectory, filename);
+      }
+
+      // 检查文件是否存在
+      try {
+        await fs.access(filePath);
+      } catch (error) {
+        return {
+          success: false,
+          error: '文件不存在',
+        };
+      }
+
+      // 删除文件
+      await fs.unlink(filePath);
+
+      console.log(`文件删除成功: ${filePath}`);
+      return {
+        success: true,
+        filePath: filePath,
+      };
+    } catch (error) {
+      console.error('文件删除失败:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
 });
 
 // 当所有窗口都被关闭后退出

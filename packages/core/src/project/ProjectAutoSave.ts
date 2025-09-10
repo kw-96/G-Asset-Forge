@@ -48,10 +48,8 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
       autoSaveInterval: this.autoSaveInterval,
     });
 
-    // 延迟设置事件监听器，确保编辑器完全初始化
-    setTimeout(() => {
-      this.setupEventListeners();
-    }, 100);
+    // 简洁方案：直接检查并设置事件监听器
+    this.setupEventListenersIfReady();
   }
 
   /**
@@ -70,9 +68,29 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
     }
 
     // 保存当前项目（如果有未保存的更改）
-    if (this.currentProjectId && this.isDirty) {
+    // 注意：只有在编辑器数据完全清理干净后才保存，避免数据污染
+    if (this.currentProjectId && this.isDirty && this.editor) {
       console.log('保存当前项目的未保存更改');
-      this.saveCurrentProject();
+      // 增加延迟时间，确保编辑器数据完全清理干净
+      setTimeout(() => {
+        // 再次检查编辑器状态，确保数据清理完成
+        if (this.editor && this.editor.sceneGraph) {
+          const dataCount = this.editor.doc.getAllGraphicsArr().length;
+          console.log('延迟保存检查:', {
+            dataCount,
+            projectId: this.currentProjectId,
+            isDirty: this.isDirty,
+          });
+
+          // 只有在数据量合理时才保存
+          if (dataCount < 100) {
+            // 设置合理的阈值
+            this.saveCurrentProject();
+          } else {
+            console.warn('编辑器数据量异常，跳过保存:', dataCount);
+          }
+        }
+      }, 200); // 增加延迟时间到200ms
     }
 
     this.currentProjectId = projectId;
@@ -255,6 +273,48 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
   }
 
   /**
+   * 检查并设置事件监听器 - 事件驱动版本
+   */
+  private setupEventListenersIfReady(): void {
+    // 检查编辑器是否完全就绪
+    if (this.isEditorFullyReady()) {
+      this.setupEventListeners();
+    } else {
+      console.log('编辑器未就绪，等待编辑器就绪事件');
+      // 监听编辑器就绪事件，而不是重试
+      this.waitForEditorReady();
+    }
+  }
+
+  /**
+   * 等待编辑器就绪事件
+   */
+  private waitForEditorReady(): void {
+    // 监听应用级别的编辑器就绪事件
+    import('../../../../apps/g-asset-forge/src/events').then(
+      ({ appEventEmitter }) => {
+        appEventEmitter.on('editorReady', () => {
+          console.log('收到编辑器就绪事件，开始设置事件监听器');
+          this.setupEventListeners();
+        });
+      },
+    );
+  }
+
+  /**
+   * 检查编辑器是否完全就绪
+   */
+  private isEditorFullyReady(): boolean {
+    return !!(
+      this.editor &&
+      this.editor.doc &&
+      this.editor.sceneGraph &&
+      this.editor.toolManager &&
+      this.editor.viewportManager
+    );
+  }
+
+  /**
    * 设置事件监听器
    */
   private setupEventListeners(): void {
@@ -266,12 +326,8 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
 
     // 只监听文档的场景变化事件，避免与AutoSaveGraphics重复
     // AutoSaveGraphics已经监听了commandManager.on('change')
-    if (this.editor.doc) {
-      this.editor.doc.on('sceneChange', this.handleContentChange);
-      console.log('已设置 sceneChange 事件监听器');
-    } else {
-      console.error('编辑器文档不存在，无法设置 sceneChange 事件监听器');
-    }
+    this.editor!.doc!.on('sceneChange', this.handleContentChange);
+    console.log('已设置 sceneChange 事件监听器');
 
     // 注意：不监听commandManager.on('change')，因为AutoSaveGraphics已经在处理
     console.log(
@@ -283,6 +339,12 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
    * 重新启动自动保存定时器
    */
   private restartAutoSaveTimer(): void {
+    // 防止重复启动定时器
+    if (this.autoSaveTimer) {
+      console.log('自动保存定时器已存在，跳过重复启动');
+      return;
+    }
+
     this.disableAutoSave();
 
     if (this.currentProjectId) {
@@ -313,7 +375,23 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
    * 获取编辑器数据
    */
   private getEditorData(): IEditorPaperData {
-    return JSON.parse(this.editor.sceneGraph.toJSON());
+    // 确保编辑器状态完全清理后再获取数据
+    if (!this.editor || !this.editor.sceneGraph) {
+      console.warn('编辑器或场景图不存在，返回空数据');
+      return {
+        appVersion: 'g-asset-forge-editor_1.0.0',
+        paperId: 'empty-paper',
+        data: [],
+      };
+    }
+
+    const editorData = JSON.parse(this.editor.sceneGraph.toJSON());
+    console.log('获取编辑器数据:', {
+      dataCount: editorData.data?.length || 0,
+      projectId: this.currentProjectId,
+    });
+
+    return editorData;
   }
 
   /**

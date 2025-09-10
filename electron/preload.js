@@ -50,6 +50,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDefaultDirectory: async () => {
     return await ipcRenderer.invoke('file:get-default-directory');
   },
+
+  readFile: async (filename, directory) => {
+    return await ipcRenderer.invoke('file:read', { filename, directory });
+  },
+
+  deleteFile: async (filename, directory) => {
+    return await ipcRenderer.invoke('file:delete', { filename, directory });
+  },
 });
 
 // 当 DOM 加载完成后设置一些默认行为

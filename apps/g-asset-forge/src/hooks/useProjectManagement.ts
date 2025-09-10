@@ -10,6 +10,11 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import ProjectManagementService from '../services/ProjectManagementService';
+import { projectManagementService } from '../services/ProjectManagementServiceSingleton';
+
+// 模块级幂等标志，防止多组件重复初始化/重复绑定
+let HOOK_INITIALIZED = false;
+let EVENTS_WIRED = false;
 
 /**
  * 项目加载状态
@@ -66,10 +71,6 @@ export interface UseProjectManagementReturn {
   deleteProject: (projectId: string) => Promise<boolean>;
 
   // 项目类型管理
-  switchProjectType: (
-    projectId: string,
-    newType: ProjectType,
-  ) => Promise<boolean>;
   validateProjectType: (projectId: string) => Promise<boolean>;
 
   // 工具方法
@@ -81,6 +82,9 @@ export interface UseProjectManagementReturn {
 
   // 性能和内存优化
   cleanup: () => void;
+
+  // 服务实例
+  projectManagementService: ProjectManagementService;
 }
 
 /**
@@ -127,19 +131,16 @@ export const useProjectManagement = (
     hasUnsavedChanges: false,
   });
 
-  // 初始化服务（仅执行一次）
+  // 初始化服务（仅执行一次，且全局幂等）
   useEffect(() => {
-    if (isInitializedRef.current) return;
+    if (isInitializedRef.current || HOOK_INITIALIZED) return;
 
-    console.log('初始化项目管理服务 - 重构版本');
-
-    // 创建或使用外部服务
-    const service = externalService || new ProjectManagementService();
+    // 始终复用全局单例，若提供 externalService 则优先使用
+    const service = externalService || projectManagementService;
     serviceRef.current = service;
 
     // 项目事件处理
     const handleProjectOpened = (project: any) => {
-      console.log('项目已打开:', project.name);
       setProject((prev) => ({
         ...prev,
         currentProjectId: project.id,
@@ -155,8 +156,7 @@ export const useProjectManagement = (
       }));
     };
 
-    const handleProjectClosed = (projectId: string) => {
-      console.log('项目已关闭:', projectId);
+    const handleProjectClosed = () => {
       setProject((prev) => ({
         ...prev,
         currentProjectId: null,
@@ -173,7 +173,6 @@ export const useProjectManagement = (
     };
 
     const handleProjectSaved = (project: any) => {
-      console.log('项目已保存:', project.name);
       setProject((prev) => ({
         ...prev,
         currentProject: project,
@@ -188,7 +187,6 @@ export const useProjectManagement = (
       oldType: ProjectType | null,
       newType: ProjectType,
     ) => {
-      console.log(`项目类型变更: ${projectId} 从 ${oldType} 变为 ${newType}`);
       setProjectType((prev) => ({
         ...prev,
         previousType: oldType,
@@ -225,46 +223,36 @@ export const useProjectManagement = (
       });
     };
 
-    // 绑定事件监听器
-    service.on('projectOpened', handleProjectOpened);
-    service.on('projectClosed', handleProjectClosed);
-    service.on('projectSaved', handleProjectSaved);
-    service.on('projectTypeChanged', handleProjectTypeChanged);
-    service.on('projectTypeIdentified', handleProjectTypeIdentified);
-    service.on('error', handleError);
+    // 绑定事件监听器（只绑定一次）
+    if (!EVENTS_WIRED) {
+      service.on('projectOpened', handleProjectOpened);
+      service.on('projectClosed', handleProjectClosed);
+      service.on('projectSaved', handleProjectSaved);
+      service.on('projectTypeChanged', handleProjectTypeChanged);
+      service.on('projectTypeIdentified', handleProjectTypeIdentified);
+      service.on('error', handleError);
+      EVENTS_WIRED = true;
+    }
 
     isInitializedRef.current = true;
+    HOOK_INITIALIZED = true;
 
-    // 清理函数
-    const cleanup = () => {
-      if (serviceRef.current) {
-        serviceRef.current.off('projectOpened', handleProjectOpened);
-        serviceRef.current.off('projectClosed', handleProjectClosed);
-        serviceRef.current.off('projectSaved', handleProjectSaved);
-        serviceRef.current.off('projectTypeChanged', handleProjectTypeChanged);
-        serviceRef.current.off(
-          'projectTypeIdentified',
-          handleProjectTypeIdentified,
-        );
-        serviceRef.current.off('error', handleError);
-      }
-    };
+    // 清理函数：不卸载全局事件，避免多组件装载/卸载导致重复绑定/解绑
+    const cleanup = () => {};
 
     cleanupRef.current = cleanup;
 
     return cleanup;
   }, [externalService]);
 
-  // 设置编辑器实例
+  // 设置编辑器实例 - 使用 useCallback 确保引用稳定
   const setEditor = useCallback((editor: GAssetForgeEditor): void => {
-    console.log('设置编辑器实例');
-
     if (serviceRef.current) {
       serviceRef.current.setEditor(editor);
     }
-  }, []);
+  }, []); // 空依赖数组确保引用稳定
 
-  // 打开项目
+  // 打开项目 - 事件驱动方案
   const openProject = useCallback(
     async (projectId: string): Promise<boolean> => {
       if (!serviceRef.current) {
@@ -272,18 +260,26 @@ export const useProjectManagement = (
         return false;
       }
 
-      setLoading((prev) => ({
-        ...prev,
-        isLoading: true,
-        isInitializing: true,
-      }));
-      setError((prev) => ({ ...prev, error: null, initializationError: null }));
-
       try {
+        setLoading((prev) => ({
+          ...prev,
+          isLoading: true,
+          isInitializing: true,
+        }));
+        setError((prev) => ({
+          ...prev,
+          error: null,
+          initializationError: null,
+        }));
+
         const success = await serviceRef.current.openProject(projectId);
-        if (!success) {
-          setError((prev) => ({ ...prev, error: '打开项目失败' }));
-        }
+
+        setLoading((prev) => ({
+          ...prev,
+          isLoading: false,
+          isInitializing: false,
+        }));
+
         return success;
       } catch (err) {
         const errorMessage =
@@ -329,30 +325,27 @@ export const useProjectManagement = (
   );
 
   // 保存项目
-  const saveProject = useCallback(
-    async (projectId?: string): Promise<boolean> => {
-      if (!serviceRef.current) return false;
+  const saveProject = useCallback(async (): Promise<boolean> => {
+    if (!serviceRef.current) return false;
 
-      setLoading((prev) => ({ ...prev, isLoading: true }));
-      setError((prev) => ({ ...prev, error: null }));
+    setLoading((prev) => ({ ...prev, isLoading: true }));
+    setError((prev) => ({ ...prev, error: null }));
 
-      try {
-        const success = await serviceRef.current.saveProject();
-        if (!success) {
-          setError((prev) => ({ ...prev, error: '保存项目失败' }));
-        }
-        return success;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : '保存项目时发生未知错误';
-        setError((prev) => ({ ...prev, error: errorMessage }));
-        return false;
-      } finally {
-        setLoading((prev) => ({ ...prev, isLoading: false }));
+    try {
+      const success = await serviceRef.current.saveProject();
+      if (!success) {
+        setError((prev) => ({ ...prev, error: '保存项目失败' }));
       }
-    },
-    [],
-  );
+      return success;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : '保存项目时发生未知错误';
+      setError((prev) => ({ ...prev, error: errorMessage }));
+      return false;
+    } finally {
+      setLoading((prev) => ({ ...prev, isLoading: false }));
+    }
+  }, []);
 
   // 重命名项目
   const renameProject = useCallback(
@@ -409,70 +402,33 @@ export const useProjectManagement = (
     [],
   );
 
-  // 切换项目类型
-  const switchProjectType = useCallback(
-    async (projectId: string, newType: ProjectType): Promise<boolean> => {
-      if (!serviceRef.current) return false;
-
-      setLoading((prev) => ({ ...prev, isSwitchingType: true }));
-      setProjectType((prev) => ({ ...prev, isTypeChanging: true }));
-      setError((prev) => ({ ...prev, typeError: null }));
-
-      try {
-        // 这里需要调用服务的项目类型切换方法
-        // 由于当前服务可能没有这个方法，我们先模拟实现
-        console.log(`切换项目类型: ${projectId} -> ${newType}`);
-
-        // 模拟切换逻辑
-        setProjectType((prev) => ({
-          ...prev,
-          previousType: prev.currentType,
-          currentType: newType,
-          isTypeChanging: false,
-        }));
-
-        return true;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : '切换项目类型时发生未知错误';
-        setError((prev) => ({ ...prev, typeError: errorMessage }));
-        return false;
-      } finally {
-        setLoading((prev) => ({ ...prev, isSwitchingType: false }));
-        setProjectType((prev) => ({ ...prev, isTypeChanging: false }));
-      }
-    },
-    [],
-  );
+  // 切换项目类型已废弃：单项目单模式策略下不再支持
 
   // 验证项目类型
-  const validateProjectType = useCallback(
-    async (projectId: string): Promise<boolean> => {
-      if (!serviceRef.current) return false;
+  const validateProjectType = useCallback(async (): Promise<boolean> => {
+    if (!serviceRef.current) return false;
 
-      setLoading((prev) => ({ ...prev, isValidating: true }));
-      setError((prev) => ({ ...prev, validationErrors: [] }));
+    setLoading((prev) => ({ ...prev, isValidating: true }));
+    setError((prev) => ({ ...prev, validationErrors: [] }));
 
-      try {
-        // 这里需要调用服务的项目类型验证方法
-        console.log(`验证项目类型: ${projectId}`);
+    try {
+      // 这里需要调用服务的项目类型验证方法
+      console.log(`验证项目类型: 忽略参数，单项目单模式`);
 
-        // 模拟验证逻辑
-        return true;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : '验证项目类型时发生未知错误';
-        setError((prev) => ({
-          ...prev,
-          validationErrors: [errorMessage],
-        }));
-        return false;
-      } finally {
-        setLoading((prev) => ({ ...prev, isValidating: false }));
-      }
-    },
-    [],
-  );
+      // 模拟验证逻辑
+      return true;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : '验证项目类型时发生未知错误';
+      setError((prev) => ({
+        ...prev,
+        validationErrors: [errorMessage],
+      }));
+      return false;
+    } finally {
+      setLoading((prev) => ({ ...prev, isValidating: false }));
+    }
+  }, []);
 
   // 获取当前项目
   const getCurrentProject = useCallback(async () => {
@@ -577,8 +533,7 @@ export const useProjectManagement = (
     renameProject,
     deleteProject,
 
-    // 项目类型管理
-    switchProjectType,
+    // 项目类型管理（仅校验）
     validateProjectType,
 
     // 工具方法
@@ -590,5 +545,8 @@ export const useProjectManagement = (
 
     // 性能和内存优化
     cleanup,
+
+    // 服务实例
+    projectManagementService: serviceRef.current!,
   };
 };

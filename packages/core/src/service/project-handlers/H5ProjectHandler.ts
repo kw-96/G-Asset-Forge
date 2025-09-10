@@ -4,9 +4,10 @@
  */
 
 import type { GAssetForgeEditor } from '../../editor';
-import type { IEditorPaperData } from '../../type';
+import { GAssetForgeCanvas } from '../../graphics/canvas';
+import { type IPaint, PaintType } from '../../paint';
+import { GraphicsType, type IEditorPaperData } from '../../type';
 import { ProjectType } from '../ProjectTypeManager';
-import { H5StateManager } from '../state-managers/H5StateManager';
 import { BaseProjectHandler, type ProjectData } from './ProjectHandler';
 
 /**
@@ -51,24 +52,7 @@ export interface H5ProjectData extends ProjectData {
 /**
  * H5项目状态
  */
-export interface H5ProjectState {
-  selectedBlocks: string[];
-  currentContainer: string | null;
-  viewport: {
-    zoom: number;
-    offset: { x: number; y: number };
-  };
-  layoutSettings: {
-    autoLayout: boolean;
-    padding: number;
-    gap: number;
-  };
-  uiState: {
-    showContentBlocks: boolean;
-    showLayers: boolean;
-    showProperties: boolean;
-  };
-}
+export type H5ProjectState = IEditorPaperData;
 
 /**
  * H5Service接口定义
@@ -96,9 +80,13 @@ export interface IH5Service {
  * 负责H5项目的完整生命周期管理
  */
 export class H5ProjectHandler extends BaseProjectHandler {
-  private stateManager: H5StateManager | null = null;
   private h5Service: IH5Service | null = null;
   private currentProjectData: H5ProjectData | null = null;
+
+  // 添加H5容器恢复事件
+  emitH5ContainerRestored(containerId: string): void {
+    this.emitEvent('h5ContainerRestored', { containerId });
+  }
 
   constructor() {
     super();
@@ -115,14 +103,8 @@ export class H5ProjectHandler extends BaseProjectHandler {
    * 初始化H5项目处理器
    */
   protected async onInitialize(editor: GAssetForgeEditor): Promise<void> {
-    // 创建H5状态管理器
-    this.stateManager = new H5StateManager();
-
     // 创建H5Service实例
     this.h5Service = await this.createH5Service(editor);
-
-    // 初始化状态管理器
-    await this.stateManager.initialize(editor, this.h5Service);
 
     // 配置编辑器为H5模式
     this.configureH5Mode();
@@ -137,7 +119,7 @@ export class H5ProjectHandler extends BaseProjectHandler {
     projectData: H5ProjectData,
   ): Promise<boolean> {
     try {
-      if (!this.editor || !this.stateManager || !this.h5Service) {
+      if (!this.editor || !this.h5Service) {
         throw new Error('处理器未正确初始化');
       }
 
@@ -147,11 +129,31 @@ export class H5ProjectHandler extends BaseProjectHandler {
       // 设置项目加载标记，防止H5EditorMode重新创建容器
       (window as any).__isProjectLoading = true;
 
+      // 检查项目数据格式
+      console.log('H5项目数据格式检查:', {
+        hasData: !!projectData.data,
+        dataType: typeof projectData.data,
+        dataKeys: projectData.data ? Object.keys(projectData.data) : [],
+        hasH5Container: !!projectData.h5Container,
+        hasContentBlocks: !!projectData.contentBlocks,
+      });
+
       // 加载项目数据到编辑器
-      this.editor.setContents(projectData.data);
+      if (projectData.data) {
+        console.log('加载H5项目数据到编辑器:', projectData.data);
+        this.editor.setContents(projectData.data);
+      } else {
+        console.warn('H5项目数据中缺少data字段，使用默认数据');
+        // 如果没有data，使用默认的H5数据结构
+        const defaultData = this.createDefaultH5Data();
+        this.editor.setContents(defaultData);
+      }
 
       // 等待编辑器数据加载完成
       await this.waitForEditorReady();
+
+      // 确保H5项目有可用的画布
+      await this.ensureH5CanvasExists();
 
       // 恢复H5容器
       const success = await this.restoreH5Container(projectData);
@@ -163,10 +165,7 @@ export class H5ProjectHandler extends BaseProjectHandler {
       // 等待H5容器完全恢复后再恢复项目状态
       await this.waitForH5ContainerReady();
 
-      // 恢复项目状态
-      if (projectData.state) {
-        await this.stateManager.restoreState(projectData.state);
-      }
+      // 项目状态通过编辑器内容自动恢复
 
       // 保存当前项目数据引用
       this.currentProjectData = projectData;
@@ -186,10 +185,51 @@ export class H5ProjectHandler extends BaseProjectHandler {
   }
 
   /**
+   * 创建默认H5数据
+   */
+  private createDefaultH5Data(): IEditorPaperData {
+    return {
+      appVersion: 'g-asset-forge-editor_1.0.0',
+      paperId: 'h5-default-paper',
+      data: [
+        // 添加默认的H5画布（不可编辑，仅作为背景容器）
+        {
+          id: 'h5-canvas-1',
+          type: GraphicsType.Canvas,
+          objectName: 'Page 1',
+          width: 0,
+          height: 0,
+          transform: [1, 0, 0, 1, 0, 0],
+          fill: [
+            { type: PaintType.Solid, attrs: { r: 255, g: 255, b: 255, a: 1 } },
+          ],
+          lock: true, // 锁定画布，不可编辑
+        },
+        // 添加默认的H5容器
+        {
+          id: 'h5-container-1',
+          type: 'H5Container' as any,
+          objectName: 'H5长图容器',
+          width: 1080, // H5长图标准宽度
+          height: 2220, // H5长图标准高度
+          transform: [1, 0, 0, 1, 0, 0],
+          fill: [
+            { type: PaintType.Solid, attrs: { r: 248, g: 249, b: 250, a: 1 } },
+          ],
+          parentIndex: {
+            guid: 'h5-canvas-1',
+            position: '0',
+          },
+        },
+      ],
+    };
+  }
+
+  /**
    * 保存H5项目数据
    */
   protected async onSaveProjectData(): Promise<H5ProjectData> {
-    if (!this.editor || !this.stateManager || !this.h5Service) {
+    if (!this.editor || !this.h5Service) {
       throw new Error('处理器未正确初始化');
     }
 
@@ -199,8 +239,8 @@ export class H5ProjectHandler extends BaseProjectHandler {
     // 获取H5数据
     const h5Data = this.h5Service.exportData();
 
-    // 获取当前状态
-    const currentState = this.stateManager.getCurrentState();
+    // 获取当前状态（简化：直接使用编辑器内容）
+    const currentState = this.editor.getContents();
 
     // 构建项目数据
     const projectData: H5ProjectData = {
@@ -255,22 +295,24 @@ export class H5ProjectHandler extends BaseProjectHandler {
    * 获取H5项目状态
    */
   protected onGetProjectState(): H5ProjectState | null {
-    if (!this.stateManager) {
+    if (!this.editor) {
       return null;
     }
 
-    return this.stateManager.getCurrentState();
+    // 简化：直接返回编辑器内容作为状态
+    return this.editor.getContents();
   }
 
   /**
    * 恢复H5项目状态
    */
   protected async onRestoreProjectState(state: H5ProjectState): Promise<void> {
-    if (!this.stateManager) {
-      throw new Error('状态管理器未初始化');
+    if (!this.editor) {
+      throw new Error('编辑器未初始化');
     }
 
-    await this.stateManager.restoreState(state);
+    // 简化：直接设置编辑器内容
+    this.editor.setContents(state);
   }
 
   /**
@@ -301,19 +343,13 @@ export class H5ProjectHandler extends BaseProjectHandler {
         this.h5Service = null;
       }
 
-      // 清理状态管理器
-      if (this.stateManager) {
-        await this.stateManager.cleanup();
-        this.stateManager = null;
-      }
+      // 状态管理已简化，无需额外清理
 
       // 清理编辑器状态
       this.clearEditorState();
 
       // 清理项目数据引用
       this.currentProjectData = null;
-
-      console.log('H5项目资源清理完成');
     } catch (error) {
       console.error('H5项目资源清理失败:', error);
       throw error;
@@ -326,80 +362,21 @@ export class H5ProjectHandler extends BaseProjectHandler {
   private async createH5Service(
     editor: GAssetForgeEditor,
   ): Promise<IH5Service> {
-    try {
-      // 动态导入H5Service，避免循环依赖
-      const { H5Service } = await import('../h5_service');
+    // 动态导入H5Service，避免循环依赖
+    const { H5Service } = await import('../h5_service');
 
-      // 创建H5Service实例
-      const h5Service = new H5Service({
-        autoHealthCheck: true,
-        healthCheckInterval: 30000,
-        containerRecoveryTimeout: 3000, // 减少等待时间
-        enablePerformanceMonitoring: true,
-      });
+    // 创建H5Service实例
+    const h5Service = new H5Service({
+      autoHealthCheck: true,
+      healthCheckInterval: 30000,
+      containerRecoveryTimeout: 3000, // 减少等待时间
+      enablePerformanceMonitoring: true,
+    });
 
-      // 初始化H5Service
-      await h5Service.initialize(editor);
+    // 初始化H5Service
+    await h5Service.initialize(editor);
 
-      console.log('H5Service实例创建成功');
-      return h5Service;
-    } catch (error) {
-      console.error('创建H5Service实例失败:', error);
-
-      // 如果创建失败，返回一个基础的模拟实现
-      return this.createFallbackH5Service();
-    }
-  }
-
-  /**
-   * 创建备用H5Service实现
-   */
-  private createFallbackH5Service(): IH5Service {
-    console.warn('使用备用H5Service实现');
-
-    return {
-      initializeH5Mode: () => {
-        console.log('备用H5Service: 初始化H5模式');
-        return null;
-      },
-      restoreExistingH5Container: (container: any) => {
-        console.log('备用H5Service: 恢复H5容器', container);
-        return true;
-      },
-      getCurrentContainer: () => null,
-      setCurrentContainer: (container: any) => {
-        console.log('备用H5Service: 设置当前容器', container);
-      },
-      addTextBlock: (content?: string) => {
-        console.log('备用H5Service: 添加文本块', content);
-        return null;
-      },
-      addImageBlock: (src?: string, alt?: string) => {
-        console.log('备用H5Service: 添加图片块', src, alt);
-        return null;
-      },
-      addButtonBlock: (text?: string) => {
-        console.log('备用H5Service: 添加按钮块', text);
-        return null;
-      },
-      removeContentBlock: (blockId: string) => {
-        console.log('备用H5Service: 删除内容块', blockId);
-        return true;
-      },
-      updateContentBlock: (blockId: string, attrs: any) => {
-        console.log('备用H5Service: 更新内容块', blockId, attrs);
-        return true;
-      },
-      getContentBlocks: () => [],
-      getSelectedContentBlocks: () => [],
-      exportData: () => ({ h5Container: null, contentBlocks: [] }),
-      cleanup: async () => {
-        console.log('备用H5Service: 清理资源');
-      },
-      destroy: () => {
-        console.log('备用H5Service: 销毁服务');
-      },
-    };
+    return h5Service;
   }
 
   /**
@@ -433,12 +410,11 @@ export class H5ProjectHandler extends BaseProjectHandler {
         this.editor.selectedElements.clear();
       }
 
-      // 重置视口
+      // 重置视口（无限画布模式）
       if (this.editor.viewportManager) {
-        this.editor.viewportManager.setViewportSize({
-          width: 1080,
-          height: 2220,
-        });
+        // 获取容器实际尺寸，而不是固定尺寸
+        const containerSize = this.editor.viewportManager.getPageSize();
+        this.editor.viewportManager.setViewportSize(containerSize);
         this.editor.viewportManager.setZoom(1, { x: 0, y: 0 });
       }
 
@@ -456,6 +432,110 @@ export class H5ProjectHandler extends BaseProjectHandler {
       // 简单的延迟等待，实际实现中可以监听编辑器事件
       setTimeout(resolve, 200);
     });
+  }
+
+  /**
+   * 确保H5项目有可用的画布
+   */
+  private async ensureH5CanvasExists(): Promise<void> {
+    if (!this.editor) {
+      throw new Error('编辑器实例不存在');
+    }
+
+    try {
+      // 检查当前画布是否存在
+      let currentCanvas = this.editor.doc.getCurrentCanvas();
+
+      if (!currentCanvas) {
+        console.log('H5项目：当前画布不存在，尝试创建或设置画布');
+
+        // 检查是否有画布项目
+        const canvasItems =
+          this.editor.doc.graphicsStoreManager.getCanvasItems();
+
+        if (canvasItems.length > 0) {
+          // 如果有画布项目，设置第一个为当前画布
+          const firstCanvas = canvasItems[0];
+          if (firstCanvas && firstCanvas.attrs && firstCanvas.attrs.id) {
+            console.log(
+              'H5项目：设置现有画布为当前画布:',
+              firstCanvas.attrs.id,
+            );
+            this.editor.doc.setCurrentCanvas(firstCanvas.attrs.id);
+            currentCanvas = this.editor.doc.getCurrentCanvas();
+          }
+        } else {
+          // 如果没有画布项目，创建一个
+          console.log('H5项目：创建新的画布项目');
+          await this.createH5Canvas();
+          currentCanvas = this.editor.doc.getCurrentCanvas();
+        }
+      }
+
+      if (!currentCanvas) {
+        throw new Error('无法确保H5项目画布存在');
+      }
+
+      console.log('H5项目画布确保成功:', {
+        canvasId: currentCanvas.attrs?.id,
+        canvasName: currentCanvas.attrs?.objectName,
+        childrenCount: currentCanvas.getChildren?.()?.length || 0,
+      });
+    } catch (error) {
+      console.error('确保H5项目画布存在失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 创建H5画布
+   */
+  private async createH5Canvas(): Promise<void> {
+    if (!this.editor) {
+      throw new Error('编辑器实例不存在');
+    }
+
+    try {
+      // 创建无限画布图形对象（使用固定ID）
+      const canvasData = {
+        id: 'h5-canvas-1', // 固定ID，确保每次打开都一致
+        objectName: 'Page 1',
+        width: 0, // 0表示无限宽度
+        height: 0, // 0表示无限高度
+        transform: [1, 0, 0, 1, 0, 0] as [
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+        ],
+        fill: [
+          {
+            type: PaintType.Solid,
+            attrs: { r: 255, g: 255, b: 255, a: 1 },
+            visible: true,
+          } as IPaint,
+        ],
+        lock: true, // 锁定画布，不可编辑
+      };
+
+      // 创建画布图形对象
+      const canvasGraphics = new GAssetForgeCanvas(canvasData, {
+        doc: this.editor.doc,
+      });
+
+      // 添加到文档
+      this.editor.doc.addGraphics(canvasGraphics);
+
+      // 设置为当前画布
+      this.editor.doc.setCurrentCanvas(canvasData.id);
+
+      console.log('H5画布创建成功:', canvasData.id);
+    } catch (error) {
+      console.error('创建H5画布失败:', error);
+      throw error;
+    }
   }
 
   /**
@@ -511,16 +591,31 @@ export class H5ProjectHandler extends BaseProjectHandler {
             }
           });
 
-          return this.h5Service.restoreExistingH5Container(latestContainer);
+          const success =
+            this.h5Service.restoreExistingH5Container(latestContainer);
+          if (success) {
+            // 发射H5容器恢复事件，通知H5EditorMode
+            this.emitH5ContainerRestored(latestContainer.attrs?.id);
+            console.log('H5ProjectHandler: H5容器恢复成功，发射恢复事件');
+          }
+          return success;
         }
       }
 
       // 如果项目数据中有H5容器信息，尝试恢复
       if (projectData.h5Container) {
         console.log('从项目数据恢复H5容器:', projectData.h5Container.id);
-        return this.h5Service.restoreExistingH5Container(
+        const success = this.h5Service.restoreExistingH5Container(
           projectData.h5Container,
         );
+        if (success) {
+          // 发射H5容器恢复事件，通知H5EditorMode
+          this.emitH5ContainerRestored(projectData.h5Container.id);
+          console.log(
+            'H5ProjectHandler: 从项目数据恢复H5容器成功，发射恢复事件',
+          );
+        }
+        return success;
       }
 
       return false;
@@ -569,10 +664,10 @@ export class H5ProjectHandler extends BaseProjectHandler {
   }
 
   /**
-   * 获取状态管理器
+   * 获取状态管理器（已简化，不再需要）
    */
-  getStateManager(): H5StateManager | null {
-    return this.stateManager;
+  getStateManager(): null {
+    return null;
   }
 
   /**

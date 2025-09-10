@@ -12,8 +12,6 @@ export * from './service/align_and_record';
 export * from './service/arrange_and_record';
 export * from './service/auto_export_service';
 export * from './service/batch_export_manager';
-export * from './service/EditorStateIntegration';
-export * from './service/EditorStateIsolator';
 export * from './service/enhanced_export_service';
 export * from './service/export_preview_manager';
 export * from './service/export_quality_optimizer';
@@ -33,12 +31,10 @@ export {
   ProjectDataValidator,
   type RepairOptions,
   type ValidationResult,
-  type ValidationWarning
+  type ValidationWarning,
 } from './service/ProjectDataValidator';
 export * from './service/ProjectTypeManager';
 export * from './service/remove_service';
-export * from './service/state-managers';
-export * from './service/StateConsistencyValidator';
 export * from './service/ungroup_and_record';
 // 显式导出project-handlers，避免ProjectData冲突
 export {

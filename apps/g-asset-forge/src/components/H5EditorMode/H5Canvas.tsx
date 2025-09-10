@@ -38,7 +38,6 @@ export const H5Canvas: FC<H5CanvasProps> = ({
     });
 
     if (editor?.editor && h5Service) {
-      console.log('H5Canvas: 开始调试画布内容');
       // 直接操作编辑器实例
       editor.editor.render();
 
@@ -47,12 +46,20 @@ export const H5Canvas: FC<H5CanvasProps> = ({
         try {
           const currentCanvas = editor.editor?.doc.getCurrentCanvas();
           const children = currentCanvas?.getChildren();
-          console.log('画布子元素:', children);
 
-          const h5Container = children?.find(
-            (child) => child.type === ('H5Container' as any),
-          );
-          console.log('找到H5容器:', h5Container);
+          const h5Container = children?.find((child: any) => {
+            // 使用与canvas.ts相同的识别逻辑
+            return (
+              child.type === 'H5Container' ||
+              child.constructor?.name === 'H5Container' ||
+              (child.attrs &&
+                child.attrs.id &&
+                child.attrs.id.includes('h5_container')) ||
+              (child.attrs &&
+                child.attrs.id &&
+                child.attrs.id.includes('h5-container'))
+            );
+          });
 
           if (h5Container) {
             console.log('H5容器属性:', {
@@ -63,11 +70,21 @@ export const H5Canvas: FC<H5CanvasProps> = ({
             });
           }
 
-          const container = h5Service.getCurrentContainer();
-          if (container) {
-            console.log('H5Canvas: 通过H5Service找到H5容器', container);
+          // 检查H5Service是否仍然有效（避免项目关闭后的警告）
+          if (
+            h5Service &&
+            typeof h5Service.getCurrentContainer === 'function'
+          ) {
+            const container = h5Service.getCurrentContainer();
+            if (container) {
+              console.log('H5Canvas: 通过H5Service找到H5容器', container);
+            } else {
+              console.log(
+                'H5Canvas: H5Service中没有找到容器（可能正在初始化或已清理）',
+              );
+            }
           } else {
-            console.warn('H5Canvas: H5Service中没有找到容器');
+            console.log('H5Canvas: H5Service不可用（可能已清理）');
           }
         } catch (error) {
           console.warn('H5Canvas: 调试失败', error);

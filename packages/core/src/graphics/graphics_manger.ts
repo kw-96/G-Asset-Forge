@@ -15,9 +15,13 @@ export class GraphicsStoreManager {
   add(graphics: GAssetForgeGraphics) {
     const id = graphics.attrs.id;
     const graphicsStore = this.graphicsStore;
+
+    // 如果图形对象已存在，以新数据为主，替换现有对象
     if (graphicsStore.has(id)) {
-      console.warn(`graphics ${id} has added`);
+      console.log(`图形对象 ${id} 已存在，以项目数据为主，替换现有对象`);
+      this.remove(id);
     }
+
     if (graphics instanceof GAssetForgeCanvas) {
       this.canvasStore.set(id, graphics);
     } else if (graphics instanceof GAssetForgeFrame) {
@@ -28,6 +32,19 @@ export class GraphicsStoreManager {
 
   get(id: string) {
     return this.graphicsStore.get(id);
+  }
+
+  remove(id: string) {
+    const graphics = this.graphicsStore.get(id);
+    if (graphics) {
+      this.graphicsStore.delete(id);
+
+      if (graphics instanceof GAssetForgeCanvas) {
+        this.canvasStore.delete(id);
+      } else if (graphics instanceof GAssetForgeFrame) {
+        this.frameStore.delete(id);
+      }
+    }
   }
 
   getAll() {
@@ -41,7 +58,9 @@ export class GraphicsStoreManager {
   }
 
   getCanvasItems() {
-    return Array.from(this.canvasStore.values());
+    return Array.from(this.canvasStore.values()).filter(
+      (canvas) => !canvas.isDeleted(),
+    );
   }
 
   getCanvasItemsData() {

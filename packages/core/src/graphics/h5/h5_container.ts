@@ -7,6 +7,8 @@ import {
   type GraphicsAttrs,
   type IGraphicsOpts,
 } from '../graphics';
+// 移除graphCtorMap导入，避免循环依赖
+// import { graphCtorMap } from '../graphics_ctor_map';
 import {
   H5ButtonBlock,
   type H5ContentBlock,
@@ -53,8 +55,8 @@ export class H5Container extends GAssetForgeFrame {
         type: 'H5Container' as any, // 使用H5Container类型，确保序列化/反序列化一致
         resizeToFit: false, // H5容器不自动调整尺寸
         objectName: attrs.objectName || 'H5长图容器',
-        width: attrs.width || 1080,
-        height: attrs.height || 2220,
+        width: attrs.width || 1080, // H5长图标准宽度
+        height: attrs.height || 2220, // H5长图标准高度
         // 强制设置位置为(0,0)，确保H5容器不可移动
         transform: [1, 0, 0, 1, 0, 0], // 单位矩阵，位置为(0,0)
         // 添加默认的填充和边框，确保容器可见
@@ -79,7 +81,7 @@ export class H5Container extends GAssetForgeFrame {
     );
 
     // 设置H5特有属性
-    this.mobileWidth = attrs.mobileWidth || 1080;
+    this.mobileWidth = attrs.mobileWidth || 1080; // H5长图标准宽度
     this.padding = attrs.padding || 16;
     this.gap = attrs.gap || 12;
     this.autoLayout = attrs.autoLayout !== false; // 默认开启自动布局
@@ -111,55 +113,57 @@ export class H5Container extends GAssetForgeFrame {
       childrenCount: childrenData.length,
     });
 
-    for (const childData of childrenData) {
-      try {
-        console.log('H5Container.deserializeChildren: 处理子元素', {
-          containerId: this.attrs.id,
-          childId: childData.id,
-          childType: childData.type,
-        });
+    // 临时禁用更新收集，避免时序问题
+    this.cancelCollectUpdate();
 
-        let child: H5ContentBlock | GAssetForgeGraphics;
+    try {
+      for (const childData of childrenData) {
+        try {
+          console.log('H5Container.deserializeChildren: 处理子元素', {
+            containerId: this.attrs.id,
+            childId: childData.id,
+            childType: childData.type,
+          });
 
-        // 根据类型创建子元素
-        if (childData.type === 'H5TextBlock') {
-          child = new H5TextBlock(childData, { doc: this.doc });
-        } else if (childData.type === 'H5ImageBlock') {
-          child = new H5ImageBlock(childData, { doc: this.doc });
-        } else if (childData.type === 'H5ButtonBlock') {
-          child = new H5ButtonBlock(childData, { doc: this.doc });
-        } else {
-          // 对于其他类型的图形（如矩形），需要从图形构造函数映射中创建
-          const graphCtorMap = (this.doc as any).editor?.sceneGraph
-            ?.graphCtorMap;
-          if (graphCtorMap && graphCtorMap[childData.type]) {
-            const Ctor = graphCtorMap[childData.type];
-            child = new Ctor(childData, { doc: this.doc });
+          let child: H5ContentBlock | GAssetForgeGraphics;
+
+          // 根据类型创建子元素
+          if (childData.type === 'H5TextBlock') {
+            child = new H5TextBlock(childData, { doc: this.doc });
+          } else if (childData.type === 'H5ImageBlock') {
+            child = new H5ImageBlock(childData, { doc: this.doc });
+          } else if (childData.type === 'H5ButtonBlock') {
+            child = new H5ButtonBlock(childData, { doc: this.doc });
           } else {
-            console.warn(
-              'H5Container: 无法反序列化子元素类型:',
+            // 对于其他类型的图形，暂时跳过反序列化
+            // 这些图形会在sceneGraph.load中统一处理
+            console.log(
+              'H5Container: 跳过子元素反序列化，将在sceneGraph中处理:',
               childData.type,
             );
             continue;
           }
+
+          // 添加到容器中
+          this.insertChild(child as any);
+          console.log('H5Container.deserializeChildren: 子元素添加成功', {
+            containerId: this.attrs.id,
+            childId: childData.id,
+            childType: childData.type,
+          });
+        } catch (error) {
+          console.error('H5Container: 反序列化子元素失败:', error, childData);
         }
-
-        // 添加到容器中
-        this.insertChild(child as any);
-        console.log('H5Container.deserializeChildren: 子元素添加成功', {
-          containerId: this.attrs.id,
-          childId: childData.id,
-          childType: childData.type,
-        });
-      } catch (error) {
-        console.error('H5Container: 反序列化子元素失败:', error, childData);
       }
-    }
 
-    console.log('H5Container.deserializeChildren: 反序列化完成', {
-      containerId: this.attrs.id,
-      finalChildrenCount: this.getChildren().length,
-    });
+      console.log('H5Container.deserializeChildren: 反序列化完成', {
+        containerId: this.attrs.id,
+        finalChildrenCount: this.getChildren().length,
+      });
+    } finally {
+      // 恢复更新收集设置
+      this.resumeCollectUpdate();
+    }
   }
 
   // 重写updateAttrs方法，禁止移动但允许调整尺寸
@@ -222,7 +226,7 @@ export class H5Container extends GAssetForgeFrame {
 
     const newBlockAttrs = {
       ...blockAttrs,
-      id: blockAttrs.id || `block_${Date.now()}`,
+      id: blockAttrs.id || `block_${maxOrder + 1}`, // 使用序号ID
       objectName: blockAttrs.objectName || `内容块 ${maxOrder + 2}`,
       order: blockAttrs.order !== undefined ? blockAttrs.order : maxOrder + 1,
       x: this.padding,

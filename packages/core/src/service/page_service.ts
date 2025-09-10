@@ -26,7 +26,13 @@ export const addCanvasAndRecord = (
   canvasName: string | undefined,
 ) => {
   if (!canvasName) {
+    console.log(
+      'addCanvasAndRecord: 调用 getNoConflictObjectName 生成页面名称',
+    );
     canvasName = getNoConflictObjectName(editor.doc, 'Page');
+    console.log('addCanvasAndRecord: 生成的页面名称:', canvasName);
+  } else {
+    console.log('addCanvasAndRecord: 使用传入的页面名称:', canvasName);
   }
   const canvas = new GAssetForgeCanvas(
     {

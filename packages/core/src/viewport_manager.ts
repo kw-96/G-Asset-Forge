@@ -194,33 +194,15 @@ export class ViewportManager {
   }
 
   getPageSize() {
-    // 安全检查canvasElement是否存在
-    if (!this.editor.canvasElement) {
-      console.warn('Canvas元素不存在，返回默认尺寸');
+    // 直接使用容器的实际尺寸，这是最简洁有效的方法
+    const container = this.editor.containerElement;
+    if (!container) {
       return { width: 800, height: 600 };
     }
 
-    // 安全检查style属性是否存在
-    const canvasStyle = this.editor.canvasElement.style;
-    if (!canvasStyle) {
-      console.warn('Canvas样式不存在，返回默认尺寸');
-      return { width: 800, height: 600 };
-    }
-
-    // 获取样式中的宽高，如果无效则使用默认值
-    let width = parseFloat(canvasStyle.width) || 0;
-    let height = parseFloat(canvasStyle.height) || 0;
-
-    // 如果样式中没有有效尺寸，尝试从canvas元素本身获取
-    if (width === 0 || height === 0) {
-      const canvas = this.editor.canvasElement;
-      width = canvas.clientWidth || canvas.offsetWidth || 800;
-      height = canvas.clientHeight || canvas.offsetHeight || 600;
-    }
-
-    // 确保最小尺寸
-    width = Math.max(width, 800);
-    height = Math.max(height, 600);
+    const rect = container.getBoundingClientRect();
+    const width = Math.max(rect.width || 800, 100);
+    const height = Math.max(rect.height || 600, 100);
 
     return { width, height };
   }

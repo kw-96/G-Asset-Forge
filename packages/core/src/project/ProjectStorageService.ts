@@ -68,8 +68,8 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
    */
   private getDefaultSettings(): ProjectSettings {
     return {
-      canvasWidth: 800,
-      canvasHeight: 600,
+      canvasWidth: 0,
+      canvasHeight: 0,
       backgroundColor: '#ffffff',
       exportFormat: ['png', 'jpg'],
       exportQuality: 0.9,
@@ -102,9 +102,9 @@ export class ProjectStorageService extends EventEmitter<ProjectStorageEvents> {
         appVersion: 'g-asset-forge-editor_1.0.0',
         paperId: projectId,
         data: [
-          // 添加默认的Page 1 (无限画布)
+          // 添加默认的Page 1 (无限画布) - 使用固定ID
           {
-            id: `${projectId}-page-1`,
+            id: 'design-canvas-1', // 固定ID，确保每次打开都一致
             type: GraphicsType.Canvas,
             objectName: 'Page 1',
             width: 0,

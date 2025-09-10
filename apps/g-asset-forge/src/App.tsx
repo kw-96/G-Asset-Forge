@@ -8,7 +8,7 @@ import { HomePage } from './components/HomePage';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { appEventEmitter } from './events';
 import { en, type SupportedLocale, zh } from './locale';
-import ProjectManagementService from './services/ProjectManagementService';
+import { projectManagementService } from './services/ProjectManagementServiceSingleton';
 
 const messageMap = {
   zh,
@@ -35,9 +35,6 @@ function App() {
   const [locale, setLocale] = useState(getLocale());
   const [currentView, setCurrentView] = useState<AppView>('welcome');
   const [selectedMode, setSelectedMode] = useState<'design' | 'h5'>('design');
-  // 延迟初始化 ProjectManagementService，只在需要时创建
-  const [projectManagementService, setProjectManagementService] =
-    useState<ProjectManagementService | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
@@ -73,16 +70,7 @@ function App() {
     };
   });
 
-  // 确保 ProjectManagementService 已初始化
-  const ensureProjectManagementService = useCallback(() => {
-    if (!projectManagementService) {
-      console.log('延迟初始化 ProjectManagementService');
-      const service = new ProjectManagementService();
-      setProjectManagementService(service);
-      return service;
-    }
-    return projectManagementService;
-  }, [projectManagementService]);
+  // 使用全局单例，确保只初始化一次
 
   const handleWelcomeComplete = () => {
     setCurrentView('home');
@@ -92,9 +80,8 @@ function App() {
     try {
       // 如果有当前项目，关闭项目（closeProject内部会处理保存）
       if (currentProjectId && projectManagementService) {
-        console.log('关闭项目前保存当前项目:', currentProjectId);
         // 关闭项目（内部会调用manualSave）
-        projectManagementService.closeProject(currentProjectId);
+        await projectManagementService.closeProject(currentProjectId);
       }
 
       // 清理项目状态
@@ -105,14 +92,12 @@ function App() {
       if (projectManagementService) {
         // 清理编辑器实例
         projectManagementService.setEditor(null as any);
-        console.log('编辑器实例已清理');
       }
 
       // 清理全局编辑器实例
       if (typeof window !== 'undefined') {
         (window as any).editor = null;
         (window as any).__PROJECT_MANAGEMENT_SERVICE__ = null;
-        console.log('全局编辑器实例已清理');
       }
 
       // 强制清理所有可能的定时器（作为备用方案）
@@ -121,7 +106,6 @@ function App() {
         // 检查是否还有编辑器相关的定时器在运行
         const activeTimers = (window as any).__G_ASSET_FORGE_TIMERS__ || [];
         if (activeTimers.length > 0) {
-          console.log('发现未清理的定时器，强制清理:', activeTimers.length);
           activeTimers.forEach((timerId: number) => {
             clearInterval(timerId);
           });
@@ -143,66 +127,116 @@ function App() {
   };
 
   // 自动导出相关处理函数
-  const handleAutoExportToggle = useCallback(
-    (enabled: boolean) => {
-      const service = ensureProjectManagementService();
-      if (enabled) {
-        service.enableAutoExport();
-      } else {
-        service.disableAutoExport();
-      }
-    },
-    [ensureProjectManagementService],
-  );
+  const handleAutoExportToggle = useCallback((enabled: boolean) => {
+    if (enabled) {
+      projectManagementService.enableAutoExport();
+    } else {
+      projectManagementService.disableAutoExport();
+    }
+  }, []);
 
   const handleRequestFileSystemPermission =
     useCallback(async (): Promise<boolean> => {
-      const service = ensureProjectManagementService();
-      return await service.requestFileSystemPermission();
-    }, [ensureProjectManagementService]);
+      return await projectManagementService.requestFileSystemPermission();
+    }, []);
 
   // 初始化自动导出信息
   useEffect(() => {
     const updateAutoExportInfo = () => {
-      const service = ensureProjectManagementService();
-      const info = service.getAutoExportInfo();
+      const info = projectManagementService.getAutoExportInfo();
       setAutoExportInfo(info);
     };
 
     updateAutoExportInfo();
-  }, [ensureProjectManagementService]);
+  }, []);
 
-  // 加载项目列表
-  const loadProjectsList = useCallback(async () => {
-    try {
-      const service = ensureProjectManagementService();
-      const projects = await service.getProjectsList();
-      const recentProjectsData: RecentProject[] = projects.map((project) => ({
-        id: project.id,
-        name: project.name,
-        type: project.type as 'design' | 'h5',
-        lastOpenedAt:
-          (typeof project.lastOpenedAt === 'string'
-            ? project.lastOpenedAt
-            : project.lastOpenedAt?.toISOString()) ||
-          (typeof project.updatedAt === 'string'
-            ? project.updatedAt
-            : project.updatedAt?.toISOString()) ||
-          new Date().toISOString(),
-        thumbnail: project.thumbnail,
-      }));
-      setRecentProjects(recentProjectsData);
-      console.log('已加载项目列表:', recentProjectsData.length, '个项目');
-    } catch (error) {
-      console.error('加载项目列表失败:', error);
-      setRecentProjects([]);
-    }
-  }, [ensureProjectManagementService]);
-
-  // 加载项目列表
+  // 监听项目模式变化事件（简洁高效方案）
   useEffect(() => {
-    loadProjectsList();
-  }, [loadProjectsList]);
+    const service = projectManagementService;
+
+    const handleProjectModeChanged = (mode: string) => {
+      console.log('项目模式变化:', mode);
+      if (mode === 'h5') {
+        setSelectedMode('h5');
+      } else {
+        setSelectedMode('design');
+      }
+    };
+
+    // 添加事件监听
+    service.on('projectModeChanged', handleProjectModeChanged);
+
+    // 清理函数
+    return () => {
+      service.off('projectModeChanged', handleProjectModeChanged);
+    };
+  }, []);
+
+  // 事件驱动的项目列表更新
+  const handleProjectsListUpdated = useCallback((projects: any[]) => {
+    const recentProjectsData: RecentProject[] = projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      type: project.type as 'design' | 'h5',
+      lastOpenedAt:
+        (typeof project.lastOpenedAt === 'string'
+          ? project.lastOpenedAt
+          : project.lastOpenedAt?.toISOString()) ||
+        (typeof project.updatedAt === 'string'
+          ? project.updatedAt
+          : project.updatedAt?.toISOString()) ||
+        new Date().toISOString(),
+      thumbnail: project.thumbnail,
+    }));
+    setRecentProjects(recentProjectsData);
+    console.log('项目列表已更新:', recentProjectsData.length, '个项目');
+  }, []);
+
+  // 监听项目列表更新事件
+  useEffect(() => {
+    const service = projectManagementService;
+
+    // 监听项目列表更新事件
+    service.on('projectsListUpdated', handleProjectsListUpdated);
+
+    // 监听项目创建事件，触发列表更新
+    const handleProjectCreated = () => {
+      service.getProjectsList().catch((error) => {
+        console.error('刷新项目列表失败:', error);
+      });
+    };
+
+    // 监听项目关闭事件，触发列表更新
+    const handleProjectClosed = () => {
+      service.getProjectsList().catch((error) => {
+        console.error('刷新项目列表失败:', error);
+      });
+    };
+
+    // 监听项目删除事件，触发列表更新
+    const handleProjectDeleted = () => {
+      service.getProjectsList().catch((error) => {
+        console.error('刷新项目列表失败:', error);
+      });
+    };
+
+    service.on('projectCreated', handleProjectCreated);
+    service.on('projectClosed', handleProjectClosed);
+    service.on('projectDeleted', handleProjectDeleted);
+
+    // 初始加载项目列表（会触发projectsListLoaded事件，然后转发为projectsListUpdated）
+    service.getProjectsList().catch((error) => {
+      console.error('初始加载项目列表失败:', error);
+      setRecentProjects([]);
+    });
+
+    return () => {
+      service.off('projectsListUpdated', handleProjectsListUpdated);
+      service.off('projectCreated', handleProjectCreated);
+      service.off('projectClosed', handleProjectClosed);
+      service.off('projectDeleted', handleProjectDeleted);
+    };
+  }, [handleProjectsListUpdated]);
 
   // 简单的库打开处理函数（暂时为空实现）
   const handleOpenProjectLibrary = () => {
@@ -219,30 +253,18 @@ function App() {
 
   const handleCreateNewProject = async () => {
     try {
-      const service = ensureProjectManagementService();
+      const service = projectManagementService;
       const projectResult = await service.createProject({
         name: '新项目',
         type: selectedMode,
       });
 
       if (projectResult) {
-        // 打开创建的项目
-        const success = await service.openProject(projectResult.id);
-        if (success) {
-          setCurrentProjectId(projectResult.id);
-          setCurrentView('editor');
-          console.log('创建并打开新项目:', projectResult.name);
+        // 设置项目ID，让事件驱动机制处理项目打开
+        setCurrentProjectId(projectResult.id);
+        setCurrentView('editor');
 
-          // 刷新项目列表
-          loadProjectsList();
-
-          // 确保项目管理服务状态正确更新
-          setTimeout(() => {
-            console.log('项目管理服务状态已更新');
-          }, 100);
-        } else {
-          console.error('打开新创建的项目失败');
-        }
+        // 项目列表将通过事件自动更新
       } else {
         console.error('创建项目失败');
       }
@@ -253,25 +275,19 @@ function App() {
 
   const handleCreateDesignProject = async () => {
     try {
-      const service = ensureProjectManagementService();
+      const service = projectManagementService;
       const projectResult = await service.createProject({
         name: '设计项目',
         type: 'design',
       });
 
       if (projectResult) {
-        const success = await service.openProject(projectResult.id);
-        if (success) {
-          setCurrentProjectId(projectResult.id);
-          setSelectedMode('design'); // 设置编辑器模式
-          setCurrentView('editor');
-          console.log('创建并打开设计项目:', projectResult.name);
+        // 设置项目ID，让事件驱动机制处理项目打开
+        setCurrentProjectId(projectResult.id);
+        setSelectedMode('design'); // 设置编辑器模式
+        setCurrentView('editor');
 
-          // 刷新项目列表
-          loadProjectsList();
-        } else {
-          console.error('打开设计项目失败');
-        }
+        // 项目列表将通过事件自动更新
       } else {
         console.error('创建设计项目失败');
       }
@@ -282,25 +298,19 @@ function App() {
 
   const handleCreateH5Project = async () => {
     try {
-      const service = ensureProjectManagementService();
+      const service = projectManagementService;
       const projectResult = await service.createProject({
         name: 'H5项目',
         type: 'h5',
       });
 
       if (projectResult) {
-        const success = await service.openProject(projectResult.id);
-        if (success) {
-          setCurrentProjectId(projectResult.id);
-          setSelectedMode('h5'); // 设置编辑器模式
-          setCurrentView('editor');
-          console.log('创建并打开H5项目:', projectResult.name);
+        // 设置项目ID，让事件驱动机制处理项目打开
+        setCurrentProjectId(projectResult.id);
+        setSelectedMode('h5'); // 设置编辑器模式
+        setCurrentView('editor');
 
-          // 刷新项目列表
-          loadProjectsList();
-        } else {
-          console.error('打开H5项目失败');
-        }
+        // 项目列表将通过事件自动更新
       } else {
         console.error('创建H5项目失败');
       }
@@ -311,36 +321,27 @@ function App() {
 
   const handleOpenProject = async (projectId: string) => {
     try {
-      const service = ensureProjectManagementService();
-      // 打开指定项目
-      const success = await service.openProject(projectId);
-      if (success) {
-        setCurrentProjectId(projectId);
-        setCurrentView('editor');
-        console.log('打开项目成功:', projectId);
+      // 设置项目ID，让事件驱动机制处理项目打开
+      setCurrentProjectId(projectId);
+      // 切换到编辑器视图，让编辑器组件渲染
+      setCurrentView('editor');
 
-        // 获取项目数据以确定模式
-        const projectData = await service.getCurrentProject();
-        if (projectData) {
-          setSelectedMode(projectData.type);
-        }
-      } else {
-        console.error('打开项目失败:', projectId);
-      }
+      // 项目打开由事件驱动机制处理，无需手动调用
     } catch (error) {
       console.error('打开项目时发生错误:', error);
+      // 如果出错，清除currentProjectId
+      setCurrentProjectId(null);
     }
   };
 
   const handleDeleteProject = async (projectId: string) => {
     try {
-      const service = ensureProjectManagementService();
+      const service = projectManagementService;
       // 删除项目
       const success = await service.deleteProject(projectId);
       if (success) {
         console.log('删除项目成功:', projectId);
-        // 刷新项目列表
-        loadProjectsList();
+        // 项目列表将通过事件自动更新
       } else {
         console.error('删除项目失败:', projectId);
       }
@@ -372,6 +373,7 @@ function App() {
         if (currentProjectId && projectManagementService) {
           return (
             <Editor
+              key={`${currentProjectId}-${selectedMode}`} // 使用项目ID和模式作为key，确保模式切换时重新创建编辑器
               initialMode={selectedMode}
               onBackToHome={handleBackToHome}
               onOpenAssetLibrary={handleOpenAssetLibrary}

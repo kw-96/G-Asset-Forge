@@ -25,6 +25,7 @@ import {
 } from 'react';
 
 import { EditorContext } from '../context';
+import { appEventEmitter } from '../events';
 import { useProjectManagement } from '../hooks/useProjectManagement';
 import { AutoSaveGraphics } from '../store/auto-save-graphs';
 import {
@@ -94,12 +95,18 @@ const Editor: FC<EditorProps> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
+  // 防重复初始化标志位
+  const isEditorInitializedRef = useRef(false);
+
   // 弹窗状态管理
   const [showAssetLibrary, setShowAssetLibrary] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showProjectLibrary, setShowProjectLibrary] = useState(false);
 
   // 项目管理Hook - 重构版本，集成新的状态管理
+  const projectManagement = useProjectManagement(projectManagementService);
+
+  // 直接使用 projectManagement，避免不必要的 useMemo 优化
   const {
     loading,
     error,
@@ -108,12 +115,11 @@ const Editor: FC<EditorProps> = ({
     openProject,
     renameProject,
     deleteProject,
-    switchProjectType,
     setEditor: setProjectEditor,
     getCurrentProject,
     clearError,
     refreshProject,
-  } = useProjectManagement(projectManagementService);
+  } = projectManagement;
 
   // 模式切换处理函数
   const handleModeSwitch = useCallback(
@@ -122,25 +128,11 @@ const Editor: FC<EditorProps> = ({
         return;
       }
 
-      console.log(`切换编辑器模式: ${editorMode} -> ${newMode}`);
-
       setIsTransitioning(true);
       setTransitionError(null);
 
       try {
-        // 如果有项目打开，需要切换项目类型
-        if (project.currentProjectId && project.isProjectOpen) {
-          const targetType =
-            newMode === 'h5' ? ProjectType.H5 : ProjectType.DESIGN;
-          const success = await switchProjectType(
-            project.currentProjectId,
-            targetType,
-          );
-
-          if (!success) {
-            throw new Error(`项目类型切换失败: ${targetType}`);
-          }
-        }
+        // 单项目单模式策略：不再支持项目类型切换
 
         // 执行模式切换动画（如果启用）
         if (enableModeTransition) {
@@ -163,8 +155,6 @@ const Editor: FC<EditorProps> = ({
         if (enableModeTransition && containerRef.current) {
           containerRef.current.classList.remove('mode-transitioning');
         }
-
-        console.log(`编辑器模式切换完成: ${newMode}`);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : '模式切换失败';
@@ -174,15 +164,7 @@ const Editor: FC<EditorProps> = ({
         setIsTransitioning(false);
       }
     },
-    [
-      editorMode,
-      isTransitioning,
-      project.currentProjectId,
-      project.isProjectOpen,
-      switchProjectType,
-      enableModeTransition,
-      onModeSwitch,
-    ],
+    [editorMode, isTransitioning, enableModeTransition, onModeSwitch],
   );
 
   // 监听项目类型变化，自动切换编辑器模式
@@ -203,8 +185,6 @@ const Editor: FC<EditorProps> = ({
 
   // 错误恢复处理
   const handleErrorRecovery = useCallback(async () => {
-    console.log('尝试错误恢复...');
-
     try {
       // 清除所有错误状态
       clearError();
@@ -212,24 +192,43 @@ const Editor: FC<EditorProps> = ({
 
       // 如果有当前项目，尝试刷新
       if (project.currentProjectId) {
-        const success = await refreshProject();
-        if (!success) {
-          console.warn('项目刷新失败，但继续运行');
-        }
+        await refreshProject();
       }
 
       // 验证编辑器状态
       if (editor) {
         // 健康检查器会自动运行，这里不需要手动调用
       }
-
-      console.log('错误恢复完成');
     } catch (error) {
       console.error('错误恢复失败:', error);
     }
   }, [clearError, project.currentProjectId, refreshProject, editor]);
 
+  // 使用 useRef 存储服务引用，避免依赖项变化
+  const projectManagementServiceRef = useRef(projectManagementService);
+  const setProjectEditorRef = useRef(setProjectEditor);
+
+  // 更新引用
+  useEffect(() => {
+    projectManagementServiceRef.current = projectManagementService;
+    setProjectEditorRef.current = setProjectEditor;
+  }, [projectManagementService, setProjectEditor]);
+
   useLayoutEffect(() => {
+    // 更严格的防重复初始化检查
+    if (
+      isEditorInitializedRef.current ||
+      (window as any).__editorInitializing ||
+      editor // 如果编辑器已经存在，跳过初始化
+    ) {
+      return;
+    }
+
+    // 检查容器是否可用
+    if (!containerRef.current) {
+      return;
+    }
+
     // 使用requestAnimationFrame确保DOM完全渲染后再检查
     const rafId = requestAnimationFrame(async () => {
       if (!containerRef.current) {
@@ -239,9 +238,12 @@ const Editor: FC<EditorProps> = ({
 
       // 使用安全的编辑器初始化函数
       const initializeEditor = async () => {
+        // 设置初始化标志位
+        (window as any).__editorInitializing = true;
+
         const container = containerRef.current;
         if (!container) {
-          console.warn('容器元素在初始化时丢失');
+          (window as any).__editorInitializing = false;
           return;
         }
 
@@ -261,8 +263,8 @@ const Editor: FC<EditorProps> = ({
         } else {
           // Web环境：使用容器的实际尺寸
           const containerRect = container.getBoundingClientRect();
-          containerWidth = Math.max(containerRect.width || 800, 800);
-          containerHeight = Math.max(containerRect.height || 600, 600);
+          containerWidth = Math.max(containerRect.width || 800, 100);
+          containerHeight = Math.max(containerRect.height || 600, 100);
 
           // 如果容器尺寸为0，使用body尺寸作为后备
           if (containerWidth === 800 && containerHeight === 600) {
@@ -277,19 +279,7 @@ const Editor: FC<EditorProps> = ({
           }
         }
 
-        console.log('Editor 初始化尺寸:', {
-          containerWidth,
-          containerHeight,
-          isElectron,
-          containerRect: container.getBoundingClientRect(),
-          windowSize: { width: window.innerWidth, height: window.innerHeight },
-          bodySize: {
-            width: document.body.clientWidth,
-            height: document.body.clientHeight,
-          },
-        });
-
-        // 使用安全的初始化函数
+        // 使用现有的 editorInitializer - 简洁高效方案
         const initResult = await initializeEditorSafely({
           containerElement: container,
           width: containerWidth,
@@ -321,7 +311,9 @@ const Editor: FC<EditorProps> = ({
 
         (window as any).editor = editor;
 
-        new AutoSaveGraphics(editor);
+        // 创建 AutoSaveGraphics 实例并保存引用
+        const autoSaveGraphics = new AutoSaveGraphics(editor);
+        (window as any).autoSaveGraphics = autoSaveGraphics;
 
         // 初始化性能服务
         performanceService.initialize(container);
@@ -335,39 +327,42 @@ const Editor: FC<EditorProps> = ({
           console.warn(`性能下降: ${reason}`);
         });
 
-        // 设置项目管理的编辑器实例
-        setProjectEditor(editor);
-
         // 确保项目管理服务在全局可用，供其他组件使用
-        if (projectManagementService) {
+        if (projectManagementServiceRef.current) {
           (window as any).__PROJECT_MANAGEMENT_SERVICE__ =
-            projectManagementService;
+            projectManagementServiceRef.current;
           console.log('项目管理服务已设置为全局可用');
         }
+
+        // 同步设置编辑器实例到项目管理服务（在发出事件之前）
+        if (projectManagementServiceRef.current) {
+          projectManagementServiceRef.current.setEditor(editor);
+          console.log('编辑器实例已同步设置到项目管理服务');
+        }
+
+        // 设置项目管理的编辑器实例（React state，异步）
+        setProjectEditorRef.current(editor);
 
         // 尝试手动配置编辑器设置
         try {
           // 确保滚轮缩放功能正常
-          if (editor.setting) {
-            console.log('编辑器设置管理器可用');
-          }
-
           // 尝试启用标尺
           if (editor.setting) {
-            console.log('编辑器设置管理器已初始化');
+            // 编辑器设置管理器已初始化
           }
         } catch (error) {
           console.warn('配置编辑器设置时出错:', error);
         }
 
-        // 添加调试信息
-        console.log('编辑器初始化完成:', {
-          editor: !!editor,
-          toolManager: !!editor.toolManager,
-          viewportManager: !!editor.viewportManager,
-          setting: !!editor.setting,
-        });
+        // 发出编辑器就绪事件，允许项目数据加载
+        const { appEventEmitter } = await import('../events');
+        appEventEmitter.emit('editorReady' as any);
 
+        // 清除初始化标志位
+        (window as any).__editorInitializing = false;
+
+        // 设置编辑器已初始化标志位
+        isEditorInitializedRef.current = true;
         // 检查编辑器容器的事件绑定
 
         if (containerRef.current) {
@@ -375,59 +370,17 @@ const Editor: FC<EditorProps> = ({
           // 等待一帧后再次检查尺寸，确保 DOM 已完全渲染
           requestAnimationFrame(() => {
             if (container) {
-              console.log('编辑器容器信息 (延迟检查):', {
-                element: container,
-                hasEventListeners: !!(container as any)._events,
-                style: container.style.cssText,
-                dimensions: {
-                  width: container.offsetWidth,
-                  height: container.offsetHeight,
-                  clientWidth: container.clientWidth,
-                  clientHeight: container.clientHeight,
-                },
-                computedStyle: window.getComputedStyle(container),
-                parentDimensions: {
-                  parentWidth: container.parentElement?.clientWidth,
-                  parentHeight: container.parentElement?.clientHeight,
-                },
-              });
+              // 容器检查完成
             }
-          });
-
-          // 滚轮事件处理已移除 - 由核心包的 host_event_manager 统一处理
-          // 核心包中的滚轮处理逻辑：
-          // - Ctrl/Cmd + 滚轮：缩放画布
-          // - 普通滚轮：平移画布
-          console.log('滚轮事件由核心包统一处理，无需在此处重复绑定');
-
-          // 添加更多调试信息
-          console.log('编辑器状态检查:', {
-            hasEditor: !!editor,
-            hasToolManager: !!editor?.toolManager,
-            hasViewportManager: !!editor?.viewportManager,
-            hasSetting: !!editor?.setting,
-            containerElement: !!containerRef.current,
-            containerStyle: containerRef.current?.style.cssText,
           });
         }
 
         const changeViewport = throttle(
           () => {
-            const newWidth = Math.max(
-              document.body.clientWidth - leftRightMargin,
-              800,
-            );
-            const newHeight = Math.max(
-              document.body.clientHeight - topMargin,
-              600,
-            );
+            // 使用容器的实际尺寸，而不是硬编码的最小值
+            const containerSize = editor.viewportManager.getPageSize();
 
-            console.log('视口尺寸更新:', { newWidth, newHeight });
-
-            editor.viewportManager.setViewportSize({
-              width: newWidth,
-              height: newHeight,
-            });
+            editor.viewportManager.setViewportSize(containerSize);
             editor.render();
           },
           10,
@@ -442,29 +395,40 @@ const Editor: FC<EditorProps> = ({
 
         // 输出诊断信息（仅在开发环境）
         if (import.meta.env?.DEV) {
-          setTimeout(() => {
-            diagnoseEditorState(editor);
-          }, 1000);
+          // 防重复诊断检查
+          if (!(window as any).__editorDiagnosed) {
+            (window as any).__editorDiagnosed = true;
+            setTimeout(() => {
+              diagnoseEditorState(editor);
+            }, 1000);
+          }
         }
 
         setEditor(editor);
 
         return () => {
           try {
+            console.log('开始清理编辑器资源...');
+
             // 停止健康检查
             stopHealthCheck();
 
-            // 滚轮事件监听器已移除，由核心包统一处理
-
             // 安全检查编辑器是否存在且未被销毁
             if (editor && editor.containerElement) {
+              console.log('销毁编辑器实例...');
               editor.destroy();
             }
 
+            // 清理事件监听器
             window.removeEventListener('resize', changeViewport);
             changeViewport.cancel();
 
-            console.log('Editor组件清理完成');
+            // 重置初始化标志位
+            isEditorInitializedRef.current = false;
+            (window as any).__editorInitializing = false;
+            (window as any).__editorDiagnosed = false;
+
+            console.log('编辑器资源清理完成');
           } catch (error) {
             console.warn('Editor组件清理过程中出现警告:', error);
           }
@@ -478,35 +442,40 @@ const Editor: FC<EditorProps> = ({
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [containerRef, setProjectEditor, projectManagementService]);
+  }, [containerRef, editor]); // 添加 editor 依赖，但通过内部检查避免重复初始化
 
-  // 监听currentProjectId变化，自动打开项目
+  // 监听编辑器就绪事件，自动打开待处理的项目
   useEffect(() => {
-    if (currentProjectId && projectManagementService) {
-      // 检查项目是否已经打开，避免重复打开
-      const currentOpenProjectId =
-        projectManagementService.getCurrentProjectId();
-      if (currentOpenProjectId === currentProjectId) {
-        console.log('项目已经打开，跳过重复打开:', currentProjectId);
-        return;
-      }
+    const handleEditorReady = () => {
+      if (currentProjectId && projectManagementService) {
+        // 检查项目是否已经打开，避免重复打开
+        const currentOpenProjectId =
+          projectManagementService.getCurrentProjectId();
+        if (currentOpenProjectId === currentProjectId) {
+          return;
+        }
 
-      console.log('检测到项目ID变化，自动打开项目:', currentProjectId);
-      // 使用项目管理服务打开项目
-      projectManagementService
-        .openProject(currentProjectId)
-        .then((success: boolean) => {
-          if (success) {
-            console.log('项目自动打开成功:', currentProjectId);
-          } else {
-            console.error('项目自动打开失败:', currentProjectId);
-          }
-        })
-        .catch((error: any) => {
-          console.error('项目自动打开时发生错误:', error);
-        });
-    }
-  }, [currentProjectId, projectManagementService]);
+        // 编辑器就绪后打开项目
+        projectManagementService
+          .openProject(currentProjectId)
+          .then((success: boolean) => {
+            if (!success) {
+              console.error('项目自动打开失败:', currentProjectId);
+            }
+          })
+          .catch((error: any) => {
+            console.error('项目自动打开时发生错误:', error);
+          });
+      }
+    };
+
+    // 监听编辑器就绪事件
+    appEventEmitter.on('editorReady', handleEditorReady);
+
+    return () => {
+      appEventEmitter.off('editorReady', handleEditorReady);
+    };
+  }, [currentProjectId, projectManagementService, editor]);
 
   // 弹窗处理函数
   const handleOpenAssetLibraryModal = useCallback(() => {
@@ -525,31 +494,26 @@ const Editor: FC<EditorProps> = ({
   }, [onOpenProjectLibrary]);
 
   // 素材库事件处理
-  const handleAssetSelect = useCallback((asset: any) => {
-    console.log('选择素材:', asset);
+  const handleAssetSelect = useCallback((_asset: any) => {
     // TODO: 将素材添加到画布
   }, []);
 
-  const handleAssetDoubleClick = useCallback((asset: any) => {
-    console.log('双击素材:', asset);
+  const handleAssetDoubleClick = useCallback((_asset: any) => {
     // TODO: 将素材添加到画布并关闭弹窗
     setShowAssetLibrary(false);
   }, []);
 
   // 模板库事件处理
-  const handleTemplateSelect = useCallback((template: any) => {
-    console.log('选择模板:', template);
+  const handleTemplateSelect = useCallback((_template: any) => {
+    // 选择模板
   }, []);
 
   const handleTemplateApply = useCallback(
     (template: any, result?: any) => {
-      console.log('应用模板:', template, result);
-
       if (result && result.editorData && editor) {
         try {
           // 应用模板数据到编辑器
           editor.setContents(result.editorData);
-          console.log('模板应用成功:', result.templateInfo);
           setShowTemplateLibrary(false);
         } catch (error) {
           console.error('应用模板到编辑器失败:', error);
@@ -559,26 +523,21 @@ const Editor: FC<EditorProps> = ({
     [editor],
   );
 
-  const handleTemplatePreview = useCallback((template: any) => {
-    console.log('预览模板:', template);
+  const handleTemplatePreview = useCallback((_template: any) => {
     // TODO: 实现模板预览功能
   }, []);
 
-  const handleTemplateEdit = useCallback((template: any) => {
-    console.log('编辑模板:', template);
+  const handleTemplateEdit = useCallback((_template: any) => {
     // TODO: 实现模板编辑功能
   }, []);
 
-  const handleTemplateSave = useCallback((templateData: any) => {
-    console.log('保存模板:', templateData);
+  const handleTemplateSave = useCallback((_templateData: any) => {
     // TODO: 实现模板保存功能
   }, []);
 
   // 项目库事件处理
   const handleProjectOpen = useCallback(
     async (project: IProjectMetadata) => {
-      console.log('打开项目:', project);
-
       try {
         const success = await openProject(project.id);
         if (success) {
@@ -588,7 +547,6 @@ const Editor: FC<EditorProps> = ({
           const projectData = await getCurrentProject();
           if (projectData && editor) {
             editor.setContents(projectData.editorData);
-            console.log('项目数据已加载到编辑器');
           }
         }
       } catch (error) {
@@ -609,13 +567,9 @@ const Editor: FC<EditorProps> = ({
         });
 
         if (projectResult) {
-          console.log('项目创建成功:', projectResult);
-
           // 打开创建的项目
           const success = await openProject(projectResult.id);
           if (success) {
-            console.log('创建并打开新项目:', projectResult.name);
-
             // 等待一小段时间确保状态更新
             setTimeout(async () => {
               // 加载项目数据到编辑器
@@ -623,14 +577,11 @@ const Editor: FC<EditorProps> = ({
               if (projectData && editor) {
                 try {
                   editor.setContents(projectData.editorData);
-                  console.log('项目数据已加载到编辑器');
                 } catch (error) {
                   console.error('加载项目数据到编辑器失败:', error);
                 }
               }
             }, 100);
-          } else {
-            console.error('打开新创建的项目失败');
           }
         } else {
           console.error('创建项目失败');
@@ -651,8 +602,6 @@ const Editor: FC<EditorProps> = ({
 
   const handleProjectRename = useCallback(
     async (project: IProjectMetadata, newName: string) => {
-      console.log('重命名项目:', project.id, newName);
-
       try {
         await renameProject(project.id, newName);
       } catch (error) {
@@ -664,8 +613,6 @@ const Editor: FC<EditorProps> = ({
 
   const handleProjectDelete = useCallback(
     async (project: IProjectMetadata) => {
-      console.log('删除项目:', project.id);
-
       try {
         await deleteProject(project.id);
       } catch (error) {
@@ -689,16 +636,6 @@ const Editor: FC<EditorProps> = ({
             onBackToHome={onBackToHome}
             showHomeButton={!!onBackToHome}
           />
-        )}
-
-        {/* 模式切换加载指示器 */}
-        {(isTransitioning || loading.isSwitchingType) && (
-          <div className="mode-transition-overlay">
-            <div className="transition-indicator">
-              <div className="spinner" />
-              <span>正在切换模式...</span>
-            </div>
-          </div>
         )}
 
         {/* 错误提示 */}
@@ -736,6 +673,7 @@ const Editor: FC<EditorProps> = ({
               loading={loading}
               error={error}
               projectData={null} // 暂时传递 null，后续通过 getCurrentProject 获取
+              projectManagementService={projectManagementService}
             />
           ) : (
             <>

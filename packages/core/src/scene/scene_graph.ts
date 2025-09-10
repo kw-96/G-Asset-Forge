@@ -10,38 +10,16 @@ import { type IRect, Matrix } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../editor';
 import {
-  GAssetForgeCanvas,
   GAssetForgeDocument,
-  GAssetForgeEllipse,
-  GAssetForgeFrame,
   GAssetForgeGraphics,
-  GAssetForgeLine,
-  GAssetForgePath,
-  GAssetForgeRect,
-  GAssetForgeRegularPolygon,
-  GAssetForgeStar,
-  GAssetForgeText,
   type GraphicsAttrs,
   type IDrawInfo,
   isFrameGraphics,
 } from '../graphics';
+import { graphCtorMap } from '../graphics/graphics_ctor_map';
 import { Grid } from '../grid';
 import { GraphicsType, type IEditorPaperData } from '../type';
 import { rafThrottle } from '../utils';
-
-const graphCtorMap = {
-  [GraphicsType.Graph]: GAssetForgeGraphics,
-  [GraphicsType.Rect]: GAssetForgeRect,
-  [GraphicsType.Ellipse]: GAssetForgeEllipse,
-  [GraphicsType.Line]: GAssetForgeLine,
-  [GraphicsType.Text]: GAssetForgeText,
-  [GraphicsType.Path]: GAssetForgePath,
-  [GraphicsType.RegularPolygon]: GAssetForgeRegularPolygon,
-  [GraphicsType.Star]: GAssetForgeStar,
-  [GraphicsType.Frame]: GAssetForgeFrame,
-  [GraphicsType.Canvas]: GAssetForgeCanvas,
-  [GraphicsType.Document]: GAssetForgeDocument,
-};
 
 interface Events {
   render(): void;
@@ -246,9 +224,6 @@ export class SceneGraph {
 
     ctx.restore();
 
-    // 标记渲染结束并更新画布对象数量
-    // 简化版本不需要标记渲染结束和更新对象数量
-
     this.eventEmitter.emit('render');
   });
 
@@ -371,18 +346,8 @@ export class SceneGraph {
         const hasCanvasWithSameId = existingCanvases.some(
           (canvas) => canvas.attrs.id === attrs.id && !canvas.isDeleted(),
         );
-        console.log('createGraphicsArr: 检查画布冲突', {
-          canvasId: attrs.id,
-          canvasName: attrs.objectName,
-          existingCanvases: existingCanvases.length,
-          hasCanvasWithSameId,
-        });
         if (hasCanvasWithSameId) {
           // 如果存在相同ID的画布，跳过创建
-          console.log(
-            'createGraphicsArr: 跳过创建画布，已存在相同ID:',
-            attrs.id,
-          );
           continue;
         }
       }
@@ -407,7 +372,6 @@ export class SceneGraph {
   }
 
   load(info: GraphicsAttrs[], isApplyChanges?: boolean) {
-    console.log('sceneGraph.load: 开始加载', info.length, '个图形对象');
     console.log(
       'sceneGraph.load: 图形对象类型:',
       info.map((item) => ({
@@ -419,14 +383,35 @@ export class SceneGraph {
 
     // 只有在不是应用变更时才清空文档
     if (!isApplyChanges) {
-      console.log('sceneGraph.load: 清空文档');
-      // 清空文档
-      this.editor.doc.clear();
+      // H5模式下不清空文档，避免H5容器丢失
+      const currentCanvas = this.editor.doc.getCurrentCanvas();
+      const isH5Mode = currentCanvas
+        ?.getChildren()
+        .some((child: any) => child.type === 'H5Container');
+
+      if (!isH5Mode) {
+        // 清空文档
+        this.editor.doc.clear();
+      }
+
+      // 验证清空是否完全（仅在非H5模式下）
+      if (!isH5Mode) {
+        const remainingGraphics = this.editor.doc.getAllGraphicsArr();
+
+        if (remainingGraphics.length > 0) {
+          console.warn(
+            'sceneGraph.load: 清空后仍有残留图形对象:',
+            remainingGraphics.map((g) => ({
+              id: g.attrs.id,
+              type: g.attrs.type,
+            })),
+          );
+        }
+      }
     }
 
     // 创建图形数组（包括画布）
     const graphicsArr = this.createGraphicsArr(info);
-    console.log('sceneGraph.load: 创建图形数组完成，数量:', graphicsArr.length);
     console.log(
       'sceneGraph.load: 创建的图形详情:',
       graphicsArr.map((graphics) => ({
@@ -437,29 +422,15 @@ export class SceneGraph {
     );
 
     // 添加新的图形项目
-    console.log('sceneGraph.load: 添加新图形项目');
     this.addItems(graphicsArr);
     this.initGraphicsTree(graphicsArr);
 
-    // 加载完成后的状态检查
-    const finalCanvases = this.editor.doc.graphicsStoreManager.getCanvasItems();
-    console.log('sceneGraph.load: 加载完成后画布数量:', finalCanvases.length);
-    console.log(
-      'sceneGraph.load: 最终画布详情:',
-      finalCanvases.map((canvas) => ({
-        id: canvas.attrs.id,
-        name: canvas.attrs.objectName,
-        isDeleted: canvas.isDeleted(),
-      })),
-    );
   }
 
   /**
    * 清空场景图数据
    */
   clear() {
-    console.log('SceneGraph.clear: 清空场景图数据');
-
     // 清空文档数据
     this.editor.doc.clear();
 
@@ -468,8 +439,6 @@ export class SceneGraph {
 
     // 触发渲染更新
     this.render();
-
-    console.log('SceneGraph.clear: 场景图已清空');
   }
 
   on<K extends keyof Events>(eventName: K, handler: Events[K]) {

@@ -71,8 +71,6 @@ export class ProjectHandlerFactory {
       type,
       handlerClass,
     });
-
-    console.log(`项目处理器已注册: ${type}`);
   }
 
   /**
@@ -84,11 +82,17 @@ export class ProjectHandlerFactory {
   ): Promise<IProjectHandler> {
     const cacheKey = projectId || `default_${type}`;
 
-    // 如果启用缓存且存在活跃的处理器，直接返回
+    // 如果启用缓存且存在活跃的处理器，检查状态后返回
     if (this.config.enableCache && this.activeHandlers.has(cacheKey)) {
       const handler = this.activeHandlers.get(cacheKey)!;
-      this.updateHandlerUsage(type);
-      return handler;
+      // 检查处理器是否已被销毁，如果是则重新创建
+      if (handler.getState() === 'destroyed') {
+        console.log(`处理器已销毁，重新创建: ${type} (${cacheKey})`);
+        this.activeHandlers.delete(cacheKey);
+      } else {
+        this.updateHandlerUsage(type);
+        return handler;
+      }
     }
 
     // 获取处理器注册信息

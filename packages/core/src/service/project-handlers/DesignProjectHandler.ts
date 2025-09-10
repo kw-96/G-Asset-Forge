@@ -6,7 +6,6 @@
 import type { GAssetForgeEditor } from '../../editor';
 import type { IEditorPaperData } from '../../type';
 import { ProjectType } from '../ProjectTypeManager';
-import { DesignStateManager } from '../state-managers/DesignStateManager';
 import { BaseProjectHandler, type ProjectData } from './ProjectHandler';
 
 /**
@@ -21,27 +20,13 @@ export interface DesignProjectData extends ProjectData {
 /**
  * 设计项目状态
  */
-export interface DesignProjectState {
-  selectedElements: string[];
-  currentPage: string | null;
-  viewport: {
-    zoom: number;
-    offset: { x: number; y: number };
-  };
-  toolSettings: Record<string, any>;
-  uiState: {
-    showPages: boolean;
-    showLayers: boolean;
-    showProperties: boolean;
-  };
-}
+export type DesignProjectState = IEditorPaperData;
 
 /**
  * 设计项目处理器
  * 负责设计项目的完整生命周期管理
  */
 export class DesignProjectHandler extends BaseProjectHandler {
-  private stateManager: DesignStateManager | null = null;
   private currentProjectData: DesignProjectData | null = null;
 
   constructor() {
@@ -59,9 +44,7 @@ export class DesignProjectHandler extends BaseProjectHandler {
    * 初始化设计项目处理器
    */
   protected async onInitialize(editor: GAssetForgeEditor): Promise<void> {
-    // 创建设计状态管理器
-    this.stateManager = new DesignStateManager();
-    await this.stateManager.initialize(editor);
+    // 状态管理已简化，直接使用编辑器
 
     // 配置编辑器为设计模式
     this.configureDesignMode(editor);
@@ -76,7 +59,7 @@ export class DesignProjectHandler extends BaseProjectHandler {
     projectData: DesignProjectData,
   ): Promise<boolean> {
     try {
-      if (!this.editor || !this.stateManager) {
+      if (!this.editor) {
         throw new Error('处理器未正确初始化');
       }
 
@@ -86,10 +69,7 @@ export class DesignProjectHandler extends BaseProjectHandler {
       // 加载项目数据到编辑器
       this.editor.setContents(projectData.data);
 
-      // 恢复项目状态
-      if (projectData.state) {
-        await this.stateManager.restoreState(projectData.state);
-      }
+      // 项目状态通过编辑器内容自动恢复
 
       // 保存当前项目数据引用
       this.currentProjectData = projectData;
@@ -109,15 +89,15 @@ export class DesignProjectHandler extends BaseProjectHandler {
    * 保存设计项目数据
    */
   protected async onSaveProjectData(): Promise<DesignProjectData> {
-    if (!this.editor || !this.stateManager) {
+    if (!this.editor) {
       throw new Error('处理器未正确初始化');
     }
 
     // 获取编辑器数据
     const editorData = this.editor.getContents();
 
-    // 获取当前状态
-    const currentState = this.stateManager.getCurrentState();
+    // 获取当前状态（简化：直接使用编辑器内容）
+    const currentState = this.editor.getContents();
 
     // 构建项目数据
     const projectData: DesignProjectData = {
@@ -167,11 +147,12 @@ export class DesignProjectHandler extends BaseProjectHandler {
    * 获取设计项目状态
    */
   protected onGetProjectState(): DesignProjectState | null {
-    if (!this.stateManager) {
+    if (!this.editor) {
       return null;
     }
 
-    return this.stateManager.getCurrentState();
+    // 简化：直接返回编辑器内容作为状态
+    return this.editor.getContents();
   }
 
   /**
@@ -180,11 +161,12 @@ export class DesignProjectHandler extends BaseProjectHandler {
   protected async onRestoreProjectState(
     state: DesignProjectState,
   ): Promise<void> {
-    if (!this.stateManager) {
-      throw new Error('状态管理器未初始化');
+    if (!this.editor) {
+      throw new Error('编辑器未初始化');
     }
 
-    await this.stateManager.restoreState(state);
+    // 简化：直接设置编辑器内容
+    this.editor.setContents(state);
   }
 
   /**
@@ -195,11 +177,7 @@ export class DesignProjectHandler extends BaseProjectHandler {
       // 清理编辑器状态
       this.clearEditorState();
 
-      // 清理状态管理器
-      if (this.stateManager) {
-        await this.stateManager.cleanup();
-        this.stateManager = null;
-      }
+      // 状态管理已简化，无需额外清理
 
       // 清理项目数据引用
       this.currentProjectData = null;
@@ -248,12 +226,11 @@ export class DesignProjectHandler extends BaseProjectHandler {
         this.editor.selectedElements.clear();
       }
 
-      // 重置视口
+      // 重置视口（无限画布模式）
       if (this.editor.viewportManager) {
-        this.editor.viewportManager.setViewportSize({
-          width: 800,
-          height: 600,
-        });
+        // 获取容器实际尺寸，而不是固定尺寸
+        const containerSize = this.editor.viewportManager.getPageSize();
+        this.editor.viewportManager.setViewportSize(containerSize);
         this.editor.viewportManager.setZoom(1, { x: 0, y: 0 });
       }
 
@@ -307,9 +284,9 @@ export class DesignProjectHandler extends BaseProjectHandler {
   }
 
   /**
-   * 获取状态管理器
+   * 获取状态管理器（已简化，不再需要）
    */
-  getStateManager(): DesignStateManager | null {
-    return this.stateManager;
+  getStateManager(): null {
+    return null;
   }
 }

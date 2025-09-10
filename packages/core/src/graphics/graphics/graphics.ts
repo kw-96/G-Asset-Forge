@@ -1,7 +1,6 @@
 import {
   calcCoverScale,
   cloneDeep,
-  genUuid,
   isEqual,
   objectNameGenerator,
   omit,
@@ -91,7 +90,8 @@ export class GAssetForgeGraphics<ATTRS extends GraphicsAttrs = GraphicsAttrs> {
     }
 
     this.attrs = { ...attrs } as ATTRS;
-    this.attrs.id ??= genUuid();
+    // 如果没有提供ID，使用更可预测的ID生成策略
+    this.attrs.id ??= this.generatePredictableId();
     this.attrs.transform = transform;
     this.attrs.strokeWidth ??= 1;
 
@@ -184,6 +184,10 @@ export class GAssetForgeGraphics<ATTRS extends GraphicsAttrs = GraphicsAttrs> {
 
   cancelCollectUpdate() {
     this.noCollectUpdate = true;
+  }
+
+  resumeCollectUpdate() {
+    this.noCollectUpdate = false;
   }
 
   /** render stroke width */
@@ -906,7 +910,9 @@ export class GAssetForgeGraphics<ATTRS extends GraphicsAttrs = GraphicsAttrs> {
     }
     if (!sortIdx) {
       const maxSortIdx = this.getMaxChildIndex();
-      sortIdx = generateKeyBetween(maxSortIdx, null);
+      // 修复fractional indexing错误：当maxSortIdx为空字符串时，使用null
+      const validMaxSortIdx = maxSortIdx === '' ? null : maxSortIdx;
+      sortIdx = generateKeyBetween(validMaxSortIdx, null);
     }
 
     graphics.removeFromParent(); // 这个应该要删除？
@@ -1159,5 +1165,16 @@ export class GAssetForgeGraphics<ATTRS extends GraphicsAttrs = GraphicsAttrs> {
       child.forEachVisibleChildNode(callback);
     }
     callback(this);
+  }
+
+  /**
+   * 生成可预测的ID，避免每次打开项目时ID变化
+   * 在项目数据中，图形应该已经有固定ID，这里只是作为fallback
+   */
+  private generatePredictableId(): string {
+    const type = this.attrs.type || 'graphics';
+    // 使用类型和序号生成ID，确保在相同条件下生成相同ID
+    const existingCount = this.doc?.getAllGraphicsArr()?.length || 0;
+    return `${type}_${existingCount + 1}`;
   }
 }
