@@ -4,9 +4,7 @@
  */
 
 import type { GAssetForgeEditor } from '../../editor';
-import { GAssetForgeCanvas } from '../../graphics/canvas';
-import { type IPaint, PaintType } from '../../paint';
-import { GraphicsType, type IEditorPaperData } from '../../type';
+import type { IEditorPaperData } from '../../type';
 import { ProjectType } from '../ProjectTypeManager';
 import { BaseProjectHandler, type ProjectData } from './ProjectHandler';
 
@@ -22,6 +20,7 @@ export interface H5ContainerData {
   padding?: number;
   gap?: number;
   autoLayout?: boolean;
+  disableMove?: boolean; // 是否禁止移动
   childrenIds?: string[];
   children?: any[]; // 添加子元素数组
 }
@@ -63,9 +62,9 @@ export interface IH5Service {
   restoreExistingH5Container(container: any): boolean;
   getCurrentContainer(): any;
   setCurrentContainer(container: any): void;
-  addTextBlock(content?: string): any;
-  addImageBlock(src?: string, alt?: string): any;
-  addButtonBlock(text?: string): any;
+  addTextBlock(content?: string): Promise<any>;
+  addImageBlock(src?: string, alt?: string): Promise<any>;
+  addButtonBlock(text?: string): Promise<any>;
   removeContentBlock(blockId: string): boolean;
   updateContentBlock(blockId: string, attrs: any): boolean;
   getContentBlocks(): any[];
@@ -113,57 +112,21 @@ export class H5ProjectHandler extends BaseProjectHandler {
   }
 
   /**
-   * 加载H5项目数据
+   * 加载H5项目数据（简化版，和设计项目一样简单）
    */
   protected async onLoadProjectData(
     projectData: H5ProjectData,
   ): Promise<boolean> {
     try {
-      if (!this.editor || !this.h5Service) {
+      if (!this.editor) {
         throw new Error('处理器未正确初始化');
       }
 
       // 清理当前编辑器状态
       this.clearEditorState();
 
-      // 设置项目加载标记，防止H5EditorMode重新创建容器
-      (window as any).__isProjectLoading = true;
-
-      // 检查项目数据格式
-      console.log('H5项目数据格式检查:', {
-        hasData: !!projectData.data,
-        dataType: typeof projectData.data,
-        dataKeys: projectData.data ? Object.keys(projectData.data) : [],
-        hasH5Container: !!projectData.h5Container,
-        hasContentBlocks: !!projectData.contentBlocks,
-      });
-
-      // 加载项目数据到编辑器
-      if (projectData.data) {
-        console.log('加载H5项目数据到编辑器:', projectData.data);
-        this.editor.setContents(projectData.data);
-      } else {
-        console.warn('H5项目数据中缺少data字段，使用默认数据');
-        // 如果没有data，使用默认的H5数据结构
-        const defaultData = this.createDefaultH5Data();
-        this.editor.setContents(defaultData);
-      }
-
-      // 等待编辑器数据加载完成
-      await this.waitForEditorReady();
-
-      // 确保H5项目有可用的画布
-      await this.ensureH5CanvasExists();
-
-      // 恢复H5容器
-      const success = await this.restoreH5Container(projectData);
-      if (!success) {
-        console.warn('H5容器恢复失败，创建新容器');
-        this.h5Service.initializeH5Mode();
-      }
-
-      // 等待H5容器完全恢复后再恢复项目状态
-      await this.waitForH5ContainerReady();
+      // 加载项目数据到编辑器（编辑器会自动处理H5容器）
+      this.editor.setContents(projectData.data);
 
       // 项目状态通过编辑器内容自动恢复
 
@@ -173,56 +136,12 @@ export class H5ProjectHandler extends BaseProjectHandler {
       // 渲染编辑器
       this.editor.render();
 
-      // 清除项目加载标记
-      (window as any).__isProjectLoading = false;
-
       console.log('H5项目数据加载成功');
       return true;
     } catch (error) {
       console.error('H5项目数据加载失败:', error);
       return false;
     }
-  }
-
-  /**
-   * 创建默认H5数据
-   */
-  private createDefaultH5Data(): IEditorPaperData {
-    return {
-      appVersion: 'g-asset-forge-editor_1.0.0',
-      paperId: 'h5-default-paper',
-      data: [
-        // 添加默认的H5画布（不可编辑，仅作为背景容器）
-        {
-          id: 'h5-canvas-1',
-          type: GraphicsType.Canvas,
-          objectName: 'Page 1',
-          width: 0,
-          height: 0,
-          transform: [1, 0, 0, 1, 0, 0],
-          fill: [
-            { type: PaintType.Solid, attrs: { r: 255, g: 255, b: 255, a: 1 } },
-          ],
-          lock: true, // 锁定画布，不可编辑
-        },
-        // 添加默认的H5容器
-        {
-          id: 'h5-container-1',
-          type: 'H5Container' as any,
-          objectName: 'H5长图容器',
-          width: 1080, // H5长图标准宽度
-          height: 2220, // H5长图标准高度
-          transform: [1, 0, 0, 1, 0, 0],
-          fill: [
-            { type: PaintType.Solid, attrs: { r: 248, g: 249, b: 250, a: 1 } },
-          ],
-          parentIndex: {
-            guid: 'h5-canvas-1',
-            position: '0',
-          },
-        },
-      ],
-    };
   }
 
   /**
@@ -366,12 +285,7 @@ export class H5ProjectHandler extends BaseProjectHandler {
     const { H5Service } = await import('../h5_service');
 
     // 创建H5Service实例
-    const h5Service = new H5Service({
-      autoHealthCheck: true,
-      healthCheckInterval: 30000,
-      containerRecoveryTimeout: 3000, // 减少等待时间
-      enablePerformanceMonitoring: true,
-    });
+    const h5Service = new H5Service();
 
     // 初始化H5Service
     await h5Service.initialize(editor);
@@ -421,207 +335,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
       console.log('编辑器状态已清理');
     } catch (error) {
       console.warn('清理编辑器状态时出错:', error);
-    }
-  }
-
-  /**
-   * 等待编辑器准备就绪
-   */
-  private async waitForEditorReady(): Promise<void> {
-    return new Promise((resolve) => {
-      // 简单的延迟等待，实际实现中可以监听编辑器事件
-      setTimeout(resolve, 200);
-    });
-  }
-
-  /**
-   * 确保H5项目有可用的画布
-   */
-  private async ensureH5CanvasExists(): Promise<void> {
-    if (!this.editor) {
-      throw new Error('编辑器实例不存在');
-    }
-
-    try {
-      // 检查当前画布是否存在
-      let currentCanvas = this.editor.doc.getCurrentCanvas();
-
-      if (!currentCanvas) {
-        console.log('H5项目：当前画布不存在，尝试创建或设置画布');
-
-        // 检查是否有画布项目
-        const canvasItems =
-          this.editor.doc.graphicsStoreManager.getCanvasItems();
-
-        if (canvasItems.length > 0) {
-          // 如果有画布项目，设置第一个为当前画布
-          const firstCanvas = canvasItems[0];
-          if (firstCanvas && firstCanvas.attrs && firstCanvas.attrs.id) {
-            console.log(
-              'H5项目：设置现有画布为当前画布:',
-              firstCanvas.attrs.id,
-            );
-            this.editor.doc.setCurrentCanvas(firstCanvas.attrs.id);
-            currentCanvas = this.editor.doc.getCurrentCanvas();
-          }
-        } else {
-          // 如果没有画布项目，创建一个
-          console.log('H5项目：创建新的画布项目');
-          await this.createH5Canvas();
-          currentCanvas = this.editor.doc.getCurrentCanvas();
-        }
-      }
-
-      if (!currentCanvas) {
-        throw new Error('无法确保H5项目画布存在');
-      }
-
-      console.log('H5项目画布确保成功:', {
-        canvasId: currentCanvas.attrs?.id,
-        canvasName: currentCanvas.attrs?.objectName,
-        childrenCount: currentCanvas.getChildren?.()?.length || 0,
-      });
-    } catch (error) {
-      console.error('确保H5项目画布存在失败:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 创建H5画布
-   */
-  private async createH5Canvas(): Promise<void> {
-    if (!this.editor) {
-      throw new Error('编辑器实例不存在');
-    }
-
-    try {
-      // 创建无限画布图形对象（使用固定ID）
-      const canvasData = {
-        id: 'h5-canvas-1', // 固定ID，确保每次打开都一致
-        objectName: 'Page 1',
-        width: 0, // 0表示无限宽度
-        height: 0, // 0表示无限高度
-        transform: [1, 0, 0, 1, 0, 0] as [
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-        ],
-        fill: [
-          {
-            type: PaintType.Solid,
-            attrs: { r: 255, g: 255, b: 255, a: 1 },
-            visible: true,
-          } as IPaint,
-        ],
-        lock: true, // 锁定画布，不可编辑
-      };
-
-      // 创建画布图形对象
-      const canvasGraphics = new GAssetForgeCanvas(canvasData, {
-        doc: this.editor.doc,
-      });
-
-      // 添加到文档
-      this.editor.doc.addGraphics(canvasGraphics);
-
-      // 设置为当前画布
-      this.editor.doc.setCurrentCanvas(canvasData.id);
-
-      console.log('H5画布创建成功:', canvasData.id);
-    } catch (error) {
-      console.error('创建H5画布失败:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 等待H5容器准备就绪
-   */
-  private async waitForH5ContainerReady(): Promise<void> {
-    return new Promise((resolve) => {
-      const checkContainer = () => {
-        if (this.h5Service?.getCurrentContainer()) {
-          console.log('H5容器已准备就绪');
-          resolve();
-        } else {
-          setTimeout(checkContainer, 100);
-        }
-      };
-      checkContainer();
-    });
-  }
-
-  /**
-   * 恢复H5容器
-   */
-  private async restoreH5Container(
-    projectData: H5ProjectData,
-  ): Promise<boolean> {
-    if (!this.h5Service) {
-      return false;
-    }
-
-    try {
-      // 从编辑器数据中查找H5容器
-      const currentCanvas = this.editor?.doc.getCurrentCanvas();
-      const editorData = currentCanvas?.getChildren();
-
-      if (editorData && editorData.length > 0) {
-        // 查找所有H5容器
-        const h5Containers = editorData.filter(
-          (child: any) => child && child.type === 'H5Container',
-        );
-
-        console.log('找到H5容器数量:', h5Containers.length);
-
-        if (h5Containers.length > 0) {
-          // 选择最新的H5容器（通常是最后一个）
-          const latestContainer = h5Containers[h5Containers.length - 1];
-          console.log('选择最新的H5容器:', latestContainer.attrs?.id);
-
-          // 删除其他H5容器，只保留最新的
-          h5Containers.forEach((container, index) => {
-            if (index < h5Containers.length - 1) {
-              console.log('删除旧的H5容器:', container.attrs?.id);
-              currentCanvas?.removeChild(container);
-            }
-          });
-
-          const success =
-            this.h5Service.restoreExistingH5Container(latestContainer);
-          if (success) {
-            // 发射H5容器恢复事件，通知H5EditorMode
-            this.emitH5ContainerRestored(latestContainer.attrs?.id);
-            console.log('H5ProjectHandler: H5容器恢复成功，发射恢复事件');
-          }
-          return success;
-        }
-      }
-
-      // 如果项目数据中有H5容器信息，尝试恢复
-      if (projectData.h5Container) {
-        console.log('从项目数据恢复H5容器:', projectData.h5Container.id);
-        const success = this.h5Service.restoreExistingH5Container(
-          projectData.h5Container,
-        );
-        if (success) {
-          // 发射H5容器恢复事件，通知H5EditorMode
-          this.emitH5ContainerRestored(projectData.h5Container.id);
-          console.log(
-            'H5ProjectHandler: 从项目数据恢复H5容器成功，发射恢复事件',
-          );
-        }
-        return success;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('恢复H5容器失败:', error);
-      return false;
     }
   }
 

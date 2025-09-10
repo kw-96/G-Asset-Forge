@@ -2,11 +2,7 @@
 import { type IPaint, PaintType } from '../../paint';
 import { type Optional } from '../../type';
 import { GAssetForgeFrame } from '../frame';
-import {
-  GAssetForgeGraphics,
-  type GraphicsAttrs,
-  type IGraphicsOpts,
-} from '../graphics';
+import { type GraphicsAttrs, type IGraphicsOpts } from '../graphics';
 // 移除graphCtorMap导入，避免循环依赖
 // import { graphCtorMap } from '../graphics_ctor_map';
 import {
@@ -25,13 +21,13 @@ export interface H5ContainerAttrs extends GraphicsAttrs {
   padding?: number; // 内边距
   gap?: number; // 内容块之间的间距
   autoLayout?: boolean; // 是否自动布局
+  disableMove?: boolean; // 是否禁止移动
   resizeToFit: boolean; // 继承自Frame
   // 确保fill和stroke属性类型正确
   fill?: IPaint[];
   stroke?: IPaint[];
   strokeWidth?: number;
-  // 子元素数据，用于序列化/反序列化
-  children?: any[];
+  // 移除children属性，子元素由SceneGraph统一管理
 }
 
 // H5 容器类 - 轻量级实现，继承自Frame
@@ -43,6 +39,7 @@ export class H5Container extends GAssetForgeFrame {
   private padding: number;
   private gap: number;
   private autoLayout: boolean;
+  private disableMove: boolean;
 
   constructor(
     attrs: Optional<H5ContainerAttrs, 'id' | 'transform'>,
@@ -80,90 +77,19 @@ export class H5Container extends GAssetForgeFrame {
       opts,
     );
 
-    // 设置H5特有属性
-    this.mobileWidth = attrs.mobileWidth || 1080; // H5长图标准宽度
-    this.padding = attrs.padding || 16;
-    this.gap = attrs.gap || 12;
-    this.autoLayout = attrs.autoLayout !== false; // 默认开启自动布局
+    // 设置H5特有属性到attrs中，确保序列化时能保存
+    (this.attrs as any).mobileWidth = attrs.mobileWidth || 1080; // H5长图标准宽度
+    (this.attrs as any).padding = attrs.padding || 16;
+    (this.attrs as any).gap = attrs.gap || 12;
+    (this.attrs as any).autoLayout = attrs.autoLayout !== false; // 默认开启自动布局
+    (this.attrs as any).disableMove = attrs.disableMove !== false; // 默认禁止移动
 
-    // 反序列化子元素
-    if ((attrs as any).children && Array.isArray((attrs as any).children)) {
-      console.log('H5Container: 开始反序列化子元素', {
-        containerId: this.attrs.id,
-        childrenCount: (attrs as any).children.length,
-        children: (attrs as any).children.map((child: any) => ({
-          id: child.id,
-          type: child.type,
-        })),
-      });
-      this.deserializeChildren((attrs as any).children);
-    } else {
-      console.log('H5Container: 没有找到子元素数据', {
-        containerId: this.attrs.id,
-        hasChildren: !!(attrs as any).children,
-        childrenType: typeof (attrs as any).children,
-      });
-    }
-  }
-
-  // 反序列化子元素
-  private deserializeChildren(childrenData: any[]): void {
-    console.log('H5Container.deserializeChildren: 开始反序列化', {
-      containerId: this.attrs.id,
-      childrenCount: childrenData.length,
-    });
-
-    // 临时禁用更新收集，避免时序问题
-    this.cancelCollectUpdate();
-
-    try {
-      for (const childData of childrenData) {
-        try {
-          console.log('H5Container.deserializeChildren: 处理子元素', {
-            containerId: this.attrs.id,
-            childId: childData.id,
-            childType: childData.type,
-          });
-
-          let child: H5ContentBlock | GAssetForgeGraphics;
-
-          // 根据类型创建子元素
-          if (childData.type === 'H5TextBlock') {
-            child = new H5TextBlock(childData, { doc: this.doc });
-          } else if (childData.type === 'H5ImageBlock') {
-            child = new H5ImageBlock(childData, { doc: this.doc });
-          } else if (childData.type === 'H5ButtonBlock') {
-            child = new H5ButtonBlock(childData, { doc: this.doc });
-          } else {
-            // 对于其他类型的图形，暂时跳过反序列化
-            // 这些图形会在sceneGraph.load中统一处理
-            console.log(
-              'H5Container: 跳过子元素反序列化，将在sceneGraph中处理:',
-              childData.type,
-            );
-            continue;
-          }
-
-          // 添加到容器中
-          this.insertChild(child as any);
-          console.log('H5Container.deserializeChildren: 子元素添加成功', {
-            containerId: this.attrs.id,
-            childId: childData.id,
-            childType: childData.type,
-          });
-        } catch (error) {
-          console.error('H5Container: 反序列化子元素失败:', error, childData);
-        }
-      }
-
-      console.log('H5Container.deserializeChildren: 反序列化完成', {
-        containerId: this.attrs.id,
-        finalChildrenCount: this.getChildren().length,
-      });
-    } finally {
-      // 恢复更新收集设置
-      this.resumeCollectUpdate();
-    }
+    // 同时设置私有变量，保持向后兼容
+    this.mobileWidth = (this.attrs as any).mobileWidth;
+    this.padding = (this.attrs as any).padding;
+    this.gap = (this.attrs as any).gap;
+    this.autoLayout = (this.attrs as any).autoLayout;
+    this.disableMove = (this.attrs as any).disableMove;
   }
 
   // 重写updateAttrs方法，禁止移动但允许调整尺寸
@@ -212,6 +138,11 @@ export class H5Container extends GAssetForgeFrame {
   // 是否启用自动布局
   isAutoLayoutEnabled(): boolean {
     return this.autoLayout;
+  }
+
+  // 是否禁止移动
+  isMoveDisabled(): boolean {
+    return this.disableMove;
   }
 
   // 添加内容块
@@ -406,48 +337,8 @@ export class H5Container extends GAssetForgeFrame {
     }
   }
 
-  // 序列化为JSON，包含子元素
-  override toJSON(): any {
-    console.log('H5Container.toJSON: 方法被调用', {
-      containerId: this.attrs.id,
-      type: this.type,
-    });
-
-    const baseData = super.toJSON();
-    const children = this.getChildren();
-
-    console.log('H5Container.toJSON: 开始序列化', {
-      containerId: this.attrs.id,
-      childrenCount: children.length,
-      children: children.map((child) => ({
-        id: child.attrs?.id,
-        type: child.type,
-      })),
-    });
-
-    const result = {
-      ...baseData,
-      children: children.map((child) => {
-        // 如果子元素有toJSON方法，使用它；否则使用attrs
-        if (typeof child.toJSON === 'function') {
-          return child.toJSON();
-        } else {
-          return child.attrs;
-        }
-      }),
-    };
-
-    console.log('H5Container.toJSON: 序列化完成', {
-      containerId: this.attrs.id,
-      resultChildrenCount: result.children.length,
-      resultChildren: result.children.map((child) => ({
-        id: child.id,
-        type: child.type,
-      })),
-    });
-
-    return result;
-  }
+  // 移除自定义序列化方法，由 SceneGraph 统一处理
+  // 子元素会作为独立的图形对象被序列化
 
   // 销毁容器
   destroy(): void {

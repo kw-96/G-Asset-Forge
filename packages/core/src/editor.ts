@@ -44,6 +44,7 @@ interface IEditorOptions {
 
 interface Events {
   destroy(): void;
+  canvasReady(): void;
 }
 
 export class GAssetForgeEditor {
@@ -233,10 +234,111 @@ export class GAssetForgeEditor {
       this.doc.setCurrentCanvasId(canvas.attrs.id);
     }
 
+    // 自动检测H5项目并创建H5容器
+    this.autoDetectAndCreateH5Container();
+
     this.viewportManager.zoomToFit(1);
 
     // 重置加载标志位
     (this as any).isLoadingContents = false;
+
+    // 触发画布准备完成事件
+    this.emit('canvasReady');
+  }
+
+  /**
+   * 自动检测H5项目并创建H5容器
+   */
+  private autoDetectAndCreateH5Container(): void {
+    const currentCanvas = this.doc.getCurrentCanvas();
+    if (!currentCanvas) {
+      console.log('setContents: 当前画布不存在，跳过H5容器检测');
+      return;
+    }
+
+    // 检查是否已存在H5容器（兼容序列化后的Frame类型）
+    const existingH5Container = currentCanvas
+      .getChildren()
+      .find((child: any) => {
+        const type = child.type || child.attrs?.type;
+        const id = child.attrs?.id || child.id;
+        return (
+          type === 'H5Container' ||
+          (type === 'Frame' && id && id.includes('h5-container'))
+        );
+      });
+
+    if (existingH5Container) {
+      console.log('setContents: 已存在H5容器，跳过创建');
+      return;
+    }
+
+    // 检查是否包含H5元素（用于判断是否为H5项目）
+    const hasH5Elements = this.containsH5Elements();
+    if (!hasH5Elements) {
+      console.log('setContents: 非H5项目，跳过H5容器创建');
+      return;
+    }
+
+    // 创建H5容器
+    console.log('setContents: 检测到H5项目，创建H5容器');
+    this.createH5Container().catch((error) => {
+      console.error('setContents: H5容器创建失败', error);
+    });
+  }
+
+  /**
+   * 检查是否包含H5元素
+   */
+  private containsH5Elements(): boolean {
+    const currentCanvas = this.doc.getCurrentCanvas();
+    if (!currentCanvas) {
+      return false;
+    }
+
+    return currentCanvas.getChildren().some((child: any) => {
+      const type = child.type || child.attrs?.type;
+      const id = child.attrs?.id || child.id;
+
+      return (
+        type === 'H5Container' ||
+        type === 'H5TextBlock' ||
+        type === 'H5ImageBlock' ||
+        type === 'H5ButtonBlock' ||
+        // 兼容序列化后的Frame类型H5容器
+        (type === 'Frame' && id && id.includes('h5-container'))
+      );
+    });
+  }
+
+  /**
+   * 创建H5容器
+   */
+  private async createH5Container(): Promise<void> {
+    const currentCanvas = this.doc.getCurrentCanvas();
+    if (!currentCanvas) {
+      console.warn('setContents: 无法创建H5容器，当前画布不存在');
+      return;
+    }
+
+    // 动态导入H5Container
+    const { H5Container } = await import('./graphics/h5/h5_container');
+    const h5Container = new H5Container(
+      {
+        id: 'h5-container-1',
+        objectName: 'H5 Container',
+        width: 1080,
+        height: 2220,
+        resizeToFit: false,
+      },
+      {
+        doc: this.doc,
+      },
+    );
+
+    // 添加H5容器到画布
+    currentCanvas.insertChild(h5Container);
+    console.log('setContents: H5容器创建完成', h5Container.attrs.id);
   }
 
   /**
@@ -374,5 +476,8 @@ export class GAssetForgeEditor {
   }
   off<T extends keyof Events>(eventName: T, listener: Events[T]) {
     this.emitter.off(eventName, listener);
+  }
+  emit<T extends keyof Events>(eventName: T, ...args: Parameters<Events[T]>) {
+    this.emitter.emit(eventName, ...args);
   }
 }

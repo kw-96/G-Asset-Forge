@@ -187,6 +187,26 @@ export const createEditorHealthChecker = (editor: GAssetForgeEditor) => {
       // 检查当前画布
       const currentCanvas = editor.doc.getCurrentCanvas();
       if (!currentCanvas) {
+        // 在H5模式下，如果当前画布不存在，检查是否有画布项目
+        const canvasItems = editor.doc.graphicsStoreManager.getCanvasItems();
+        if (canvasItems && canvasItems.length > 0) {
+          // 如果有画布项目但getCurrentCanvas返回null，说明currentCanvasId可能有问题
+          // 尝试设置第一个画布为当前画布
+          const firstCanvas = canvasItems[0];
+          if (firstCanvas && firstCanvas.attrs && firstCanvas.attrs.id) {
+            console.log(
+              '健康检查：发现画布项目但currentCanvasId无效，尝试修复:',
+              firstCanvas.attrs.id,
+            );
+            editor.doc.setCurrentCanvasId(firstCanvas.attrs.id);
+            // 重新检查
+            const newCurrentCanvas = editor.doc.getCurrentCanvas();
+            if (newCurrentCanvas) {
+              console.log('健康检查：画布状态已修复');
+              return;
+            }
+          }
+        }
         console.warn('健康检查：当前画布不存在');
       }
     } catch (error) {
@@ -194,36 +214,13 @@ export const createEditorHealthChecker = (editor: GAssetForgeEditor) => {
     }
   };
 
-  // 每5秒检查一次
-  const intervalId = setInterval(healthCheck, 5000);
+  // 移除健康检查机制，专注于确保初始化流程的稳定性
+  // 通过更好的初始化逻辑来避免问题，而不是依赖检查来发现问题
 
-  // 注册到全局定时器列表，便于清理
-  if (typeof window !== 'undefined') {
-    if (!(window as any).__G_ASSET_FORGE_TIMERS__) {
-      (window as any).__G_ASSET_FORGE_TIMERS__ = [];
-    }
-    (window as any).__G_ASSET_FORGE_TIMERS__.push(intervalId);
-  }
-
-  // 返回清理函数
+  // 返回清理函数（不再需要清理定时器）
   return () => {
     isDestroyed = true;
-    clearInterval(intervalId);
-
-    // 从全局定时器列表中移除
-    if (
-      typeof window !== 'undefined' &&
-      (window as any).__G_ASSET_FORGE_TIMERS__
-    ) {
-      const index = (window as any).__G_ASSET_FORGE_TIMERS__.indexOf(
-        intervalId,
-      );
-      if (index > -1) {
-        (window as any).__G_ASSET_FORGE_TIMERS__.splice(index, 1);
-      }
-    }
-
-    console.log('编辑器健康检查已停止');
+    console.log('编辑器初始化完成，无需额外清理');
   };
 };
 

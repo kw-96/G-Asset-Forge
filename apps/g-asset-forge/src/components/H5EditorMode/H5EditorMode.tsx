@@ -23,7 +23,6 @@ import { H5Canvas } from './H5Canvas';
 import { H5PropertyPanel } from './H5PropertyPanel';
 
 interface H5EditorModeProps {
-  containerRef?: React.RefObject<HTMLDivElement>;
   projectType?: ProjectTypeState;
   loading?: ProjectLoadingState;
   error?: ProjectErrorState;
@@ -32,13 +31,14 @@ interface H5EditorModeProps {
 }
 
 export const H5EditorMode: FC<H5EditorModeProps> = ({
-  containerRef,
   loading,
   error,
   projectManagementService: externalProjectManagementService,
 }) => {
+  console.log('H5EditorMode: 组件开始渲染', { loading, error });
   const editor = useContext(EditorContext);
-  const { getCurrentProject, projectManagementService } = useProjectManagement(
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { projectManagementService } = useProjectManagement(
     externalProjectManagementService,
   );
   const h5ServiceRef = useRef<any>(null); // 使用any类型避免循环依赖
@@ -48,21 +48,11 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     null,
   );
 
-  // 组件挂载时重置状态，确保重新挂载时状态正确
+  // 组件挂载时只重置UI状态，不清理全局H5Service状态
   useEffect(() => {
-    console.log('H5EditorMode 组件挂载，重置状态');
-    setIsInitializing(false);
-    setInitializationError(null);
+    // 只重置UI相关状态，保持H5Service状态
     setSelectedBlockId('');
     setShowPropertyPanel(false);
-    setContentBlocks([]);
-
-    // 如果全局状态存在但本地状态为空，说明是重新挂载，需要清理全局状态
-    if ((window as any).__h5ServiceInitialized && !h5ServiceRef.current) {
-      console.log('检测到重新挂载，清理全局状态');
-      (window as any).__h5ServiceInitialized = false;
-      (window as any).__h5Service = null;
-    }
   }, []); // 空依赖数组，只在组件挂载时执行一次
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -142,35 +132,49 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     }
   }, [getBlockContent]);
 
-  // 确保编辑器有画布 - 已废弃，功能已整合到 createH5Canvas 中
-  // const ensureEditorHasCanvas = useCallback(async (editor: any) => {
-  //   // 此函数已被废弃，功能已整合到 createH5Canvas 中
-  // }, []);
-
-  // 创建H5画布 - 已废弃，画布会在EditorIntegrationManager.initializeH5Content中通过setContents创建
-  // const createH5Canvas = useCallback(async (editor: any) => {
-  //   // 此函数已被废弃，画布创建逻辑已移至EditorIntegrationManager
-  // }, []);
-
   // H5Service初始化和生命周期管理
   const initializeH5Service = useCallback(async () => {
     if (!editor?.editor || initializationRef.current) {
       return;
     }
 
-    // 检查全局状态，如果已初始化但组件状态不一致，则重置
-    if ((window as any).__h5ServiceInitialized) {
-      console.warn('H5Service已初始化，检查状态一致性...');
+    // 如果编辑器文档不存在，等待一下再重试
+    if (!editor.editor.doc) {
+      console.log('H5EditorMode: 编辑器文档不存在，等待文档初始化...');
+      setTimeout(() => {
+        if (editor?.editor?.doc) {
+          initializeH5Service();
+        }
+      }, 100);
+      return;
+    }
 
-      // 如果全局状态为true但本地状态为false，说明组件重新挂载了
-      // 需要重置全局状态，重新初始化
-      if (!h5ServiceRef.current) {
-        console.log('检测到组件重新挂载，重置全局状态并重新初始化');
-        (window as any).__h5ServiceInitialized = false;
-        (window as any).__h5Service = null;
-      } else {
-        console.log('H5Service状态一致，跳过重复初始化');
+    // 检查是否已有可复用的H5Service
+    if ((window as any).__h5Service && (window as any).__h5ServiceInitialized) {
+      console.log('发现现有H5Service，尝试复用');
+      const existingH5Service = (window as any).__h5Service;
+
+      // 检查现有H5Service是否有效
+      if (
+        existingH5Service &&
+        typeof existingH5Service.setEditor === 'function'
+      ) {
+        console.log('复用现有H5Service');
+        h5ServiceRef.current = existingH5Service;
+
+        // 确保编辑器实例是最新的
+        if (editor?.editor) {
+          existingH5Service.setEditor(editor.editor);
+        }
+
+        // 更新内容块列表
+        updateContentBlocksList();
+        console.log('H5Service复用完成，内容块数量:', contentBlocks.length);
         return;
+      } else {
+        console.log('现有H5Service无效，将创建新的');
+        (window as any).__h5Service = null;
+        (window as any).__h5ServiceInitialized = false;
       }
     }
 
@@ -186,44 +190,30 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       const { H5Service } = await import('@g-asset-forge/core');
       console.log('H5Service导入成功:', H5Service);
 
-      // 创建H5Service实例，配置优化选项
+      // 创建H5Service实例（简化版，不需要复杂配置）
       console.log('正在创建H5Service实例...');
-      const h5Service = new H5Service({
-        autoHealthCheck: true,
-        healthCheckInterval: 30000,
-        containerRecoveryTimeout: 3000, // 减少等待时间
-        enablePerformanceMonitoring: true,
-      });
+      const h5Service = new H5Service();
       console.log('H5Service实例创建成功:', h5Service);
 
-      // 将H5Service存储到全局状态，以便在项目切换时能够清理
+      // 将H5Service存储到全局状态
       (window as any).__h5Service = h5Service;
 
-      // 初始化H5Service
-      console.log('正在调用h5Service.initialize...');
+      // 简化初始化：只设置编辑器，让H5Service通过事件监听自动初始化
+      console.log('正在设置编辑器到H5Service...');
+      h5Service.setEditor(editor.editor);
+      console.log('H5Service编辑器设置成功');
 
-      // 对于新建的H5项目，不传递项目数据，让H5Service创建新的容器
-      // 这样可以避免加载之前被删除文件的H5容器
-      const currentProjectData = await getCurrentProject();
-      const isNewProject = !currentProjectData?.h5Container;
-
-      // 注意：不需要在这里确保画布存在，因为H5项目数据会通过setContents加载画布
-      // 画布会在EditorIntegrationManager.initializeH5Content中通过setContents创建
-
-      await h5Service.initialize(
-        editor.editor,
-        isNewProject ? undefined : currentProjectData,
-      );
-      console.log('h5Service.initialize调用成功');
+      // 确保H5Service成功初始化后才设置ref
+      h5ServiceRef.current = h5Service;
 
       // 设置事件监听器（防重复注册）
       if (!(h5Service as any).__eventsRegistered) {
-        h5Service.on('contentBlocksChanged', (blocks) => {
+        h5Service.on('contentBlocksChanged', (blocks: any[]) => {
           console.log('内容块变化:', blocks);
           updateContentBlocksList();
         });
 
-        h5Service.on('selectionChanged', (selectedBlocks) => {
+        h5Service.on('selectionChanged', (selectedBlocks: string[]) => {
           console.log('选择变化:', selectedBlocks);
           if (selectedBlocks.length > 0) {
             setSelectedBlockId(selectedBlocks[0]);
@@ -232,12 +222,12 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
           }
         });
 
-        h5Service.on('error', (error) => {
+        h5Service.on('error', (error: Error) => {
           console.error('H5Service错误:', error);
           setInitializationError(error.message);
         });
 
-        h5Service.on('healthCheck', (isHealthy, issues) => {
+        h5Service.on('healthCheck', (isHealthy: boolean, issues?: string[]) => {
           setH5ServiceHealth({ isHealthy, issues, timestamp: Date.now() });
           if (!isHealthy) {
             console.warn('H5Service健康检查失败:', issues);
@@ -251,9 +241,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         console.warn('H5Service事件监听器已存在，跳过重复注册');
       }
 
-      console.log('正在设置h5ServiceRef.current...');
-      h5ServiceRef.current = h5Service;
-      console.log('h5ServiceRef.current设置成功');
+      // h5ServiceRef.current 已在上面设置，无需重复设置
 
       // 立即设置editor实例
       if (h5ServiceRef.current && editor?.editor) {
@@ -271,7 +259,10 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       // 初始化内容块列表
       console.log('正在初始化内容块列表...');
       updateContentBlocksList();
-      console.log('内容块列表初始化完成');
+      console.log(
+        '内容块列表初始化完成，当前内容块数量:',
+        contentBlocks.length,
+      );
 
       // 设置初始化完成标记
       (window as any).__h5ServiceInitialized = true;
@@ -281,10 +272,15 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         error instanceof Error ? error.message : 'H5Service初始化失败';
       console.error('H5Service初始化失败:', error);
       setInitializationError(errorMessage);
+
+      // 即使初始化失败，也要确保h5ServiceRef被设置，避免一直显示加载状态
+      if (!h5ServiceRef.current) {
+        h5ServiceRef.current = (window as any).__h5Service;
+      }
     } finally {
       setIsInitializing(false);
     }
-  }, [editor.editor, updateContentBlocksList, getCurrentProject]);
+  }, [editor.editor, updateContentBlocksList, contentBlocks.length]);
 
   // 清理H5Service
   const cleanupH5Service = useCallback(async () => {
@@ -328,15 +324,42 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   }, []);
 
   useEffect(() => {
-    console.log('H5EditorMode useEffect 触发', {
+    console.log('H5EditorMode useEffect触发', {
       hasEditor: !!editor?.editor,
-      hasContainerRef: !!containerRef?.current,
+      hasDoc: !!editor?.editor?.doc,
+      hasContainer: !!containerRef?.current,
+      editorReady: !!(
+        editor?.editor &&
+        editor.editor.doc &&
+        containerRef?.current
+      ),
     });
 
-    // 修改条件：只要editor和containerRef存在就初始化H5Service
-    // 不依赖projectType.currentType，因为H5EditorMode组件只在H5模式下才会被渲染
-    if (editor?.editor && containerRef?.current) {
-      console.log('H5EditorMode: 条件满足，开始初始化H5Service');
+    // 如果编辑器或容器不存在，等待初始化
+    if (!editor?.editor || !containerRef?.current) {
+      console.log('H5EditorMode: 编辑器或容器不存在，等待初始化...');
+      return;
+    }
+
+    // 如果编辑器文档不存在，监听文档初始化完成事件
+    if (!editor.editor.doc) {
+      console.log('H5EditorMode: 编辑器文档不存在，等待文档初始化完成...');
+
+      const handleDocReady = () => {
+        console.log('H5EditorMode: 编辑器文档初始化完成，开始初始化H5Service');
+        initializeH5Service();
+      };
+
+      // 监听编辑器文档准备完成事件
+      editor.editor.on('canvasReady', handleDocReady);
+
+      return () => {
+        editor.editor?.off('canvasReady', handleDocReady);
+      };
+    }
+
+    // 编辑器完全准备好，开始初始化H5Service
+    if (editor.editor && editor.editor.doc && containerRef.current) {
       try {
         initializeH5Service();
 
@@ -415,38 +438,22 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         if (h5ServiceRef.current) {
           // 检查是否是已有的H5项目
           const isExistingH5Project = (window as any).__isH5Project;
-          console.log('H5EditorMode: 检查项目类型标记:', {
-            isExistingH5Project,
-            windowFlag: (window as any).__isH5Project,
-          });
 
           if (isExistingH5Project) {
-            console.log(
-              'H5EditorMode: 检测到现有H5项目，等待ProjectManagementService完成数据加载',
-            );
-
             // 使用事件驱动方式等待H5容器恢复
-            console.log('H5EditorMode: 等待H5容器恢复事件...');
 
             // 监听H5容器恢复事件
             const handleH5ContainerRestored = (event: {
               containerId: string;
             }) => {
-              console.log(
-                'H5EditorMode: 收到H5容器恢复事件:',
-                event.containerId,
-              );
-
               // 检查项目是否仍然打开
               if (!(window as any).__isH5Project) {
-                console.log('H5EditorMode: 项目已关闭，忽略H5容器恢复事件');
                 return;
               }
 
               // 同步H5Service状态，但不重新创建容器
               if (h5ServiceRef.current) {
                 h5ServiceRef.current.syncH5Container?.();
-                console.log('H5EditorMode: H5Service状态同步完成');
               }
 
               // 清除项目类型标记
@@ -462,31 +469,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
               }
             };
 
-            // 设置超时处理
-            const timeoutId = setTimeout(() => {
-              console.warn(
-                'H5EditorMode: 等待H5容器恢复事件超时，初始化新的H5模式',
-              );
-
-              // 移除事件监听器
-              if (projectManagementService) {
-                projectManagementService.off(
-                  'h5ContainerRestored',
-                  handleH5ContainerRestored,
-                );
-              }
-
-              if (h5ServiceRef.current) {
-                h5ServiceRef.current.initializeH5Mode();
-              } else {
-                console.error(
-                  'H5EditorMode: H5Service为null，无法初始化H5模式',
-                );
-              }
-              delete (window as any).__isH5Project;
-              delete (window as any).__projectType;
-            }, 5000); // 5秒超时
-
             // 监听H5容器恢复事件
             if (projectManagementService) {
               projectManagementService.on(
@@ -494,13 +476,12 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
                 handleH5ContainerRestored,
               );
 
-              // 在组件卸载时清理事件监听器和超时
+              // 在组件卸载时清理事件监听器
               const cleanup = () => {
                 projectManagementService.off(
                   'h5ContainerRestored',
                   handleH5ContainerRestored,
                 );
-                clearTimeout(timeoutId);
               };
 
               // 将清理函数存储到ref中，在组件卸载时调用
@@ -508,17 +489,18 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
                 cleanupRef.current = cleanup;
               }
             } else {
-              console.error(
-                'H5EditorMode: ProjectManagementService不可用，无法监听H5容器恢复事件',
+              console.warn(
+                'H5EditorMode: ProjectManagementService不可用，使用降级方案',
               );
-              clearTimeout(timeoutId);
+
+              // 降级方案：直接初始化H5模式，不等待容器恢复事件
+              if (h5ServiceRef.current) {
+                h5ServiceRef.current.initializeH5Mode().catch(console.error);
+              }
             }
           } else {
-            console.log('H5EditorMode: 新建H5项目，直接初始化H5模式');
-            h5ServiceRef.current.initializeH5Mode();
+            h5ServiceRef.current.initializeH5Mode().catch(console.error);
           }
-
-          console.log('H5 编辑模式已激活');
 
           // 等待一帧后更新内容块列表，确保容器已完全初始化
           requestAnimationFrame(() => {
@@ -603,10 +585,11 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       }
     }
   }, [
-    editor,
-    updateContentBlocksList,
+    editor?.editor,
+    editor?.editor?.doc,
     containerRef,
     initializeH5Service,
+    updateContentBlocksList,
     projectManagementService,
   ]);
 
@@ -721,56 +704,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     }
   };
 
-  // 工具栏事件处理（暂时注释，未来可能使用）
-  // const handleAddTextBlock = () => handleBlockAdd('text');
-  // const handleAddImageBlock = () => handleBlockAdd('image');
-  // const handleAddButtonBlock = () => handleBlockAdd('button');
-
-  // const handleDeleteSelected = () => {
-  //   if (selectedBlockId) {
-  //     handleBlockDelete(selectedBlockId);
-  //   }
-  // };
-
-  // const handleTogglePreview = () => {
-  //   setIsPreviewMode(!isPreviewMode);
-  // };
-
-  // const handleExport = async () => {
-  //   if (!h5ServiceRef.current) return;
-
-  //   try {
-  //     const resolutions = [
-  //       { width: 375, height: 667, name: '1x' },
-  //       { width: 750, height: 1334, name: '2x' },
-  //       { width: 1125, height: 2001, name: '3x' },
-  //     ];
-
-  //     const images = await h5ServiceRef.current.exportToImages(resolutions);
-
-  //     // 下载图片
-  //     Object.entries(images).forEach(([name, blob]) => {
-  //       const url = URL.createObjectURL(blob);
-  //       const a = document.createElement('a');
-  //       a.href = url;
-  //       a.download = `h5-long-image-${name}.png`;
-  //       document.body.appendChild(a);
-  //       a.click();
-  //       document.body.removeChild(a);
-  //       URL.revokeObjectURL(url);
-  //     });
-
-  //     console.log('H5长图导出成功');
-  //   } catch (error) {
-  //     console.error('导出失败:', error);
-  //   }
-  // };
-
-  // const handleSettings = () => {
-  //   // TODO: 实现H5设置功能
-  //   console.log('打开H5设置');
-  // };
-
   // 属性面板事件处理
   const handleUpdateBlock = (blockId: string, updates: any) => {
     if (!h5ServiceRef.current) return;
@@ -807,7 +740,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
             ? container.childrenIds
             : [];
           setAllElements(Array.isArray(children) ? children : []);
-          console.log('H5EditorMode: 更新所有元素列表，数量:', children.length);
         } else {
           // 如果容器不存在，尝试从编辑器直接获取
           if (editor?.editor) {
@@ -938,12 +870,17 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
               selectedBlockId={selectedBlockId}
               onBlockSelect={handleBlockSelect}
               h5Service={h5ServiceRef.current}
+              containerRef={containerRef}
             />
           ) : (
             <div className="h5-canvas-loading">
               <div className="loading-content">
                 <div className="loading-spinner" />
-                <div className="loading-text">正在初始化H5编辑器...</div>
+                <div className="loading-text">
+                  {isInitializing
+                    ? '正在初始化H5编辑器...'
+                    : '等待H5编辑器准备...'}
+                </div>
               </div>
             </div>
           )}

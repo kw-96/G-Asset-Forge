@@ -66,6 +66,10 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
     this.currentCanvasId = canvasId;
   }
 
+  getCurrentCanvasId(): string {
+    return this.currentCanvasId;
+  }
+
   getGraphicsArrByIds(ids: Set<string>) {
     const graphicsArr: GAssetForgeGraphics[] = [];
     for (const id of ids) {

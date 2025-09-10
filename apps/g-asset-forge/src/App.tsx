@@ -373,7 +373,7 @@ function App() {
         if (currentProjectId && projectManagementService) {
           return (
             <Editor
-              key={`${currentProjectId}-${selectedMode}`} // 使用项目ID和模式作为key，确保模式切换时重新创建编辑器
+              key={currentProjectId} // 只使用项目ID作为key，避免模式切换时重新创建编辑器
               initialMode={selectedMode}
               onBackToHome={handleBackToHome}
               onOpenAssetLibrary={handleOpenAssetLibrary}

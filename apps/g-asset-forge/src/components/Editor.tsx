@@ -93,6 +93,14 @@ const Editor: FC<EditorProps> = ({
   const [editor, setEditor] = useState<GAssetForgeEditor | null>(null);
   const [editorMode, setEditorMode] = useState<'design' | 'h5'>(initialMode);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 监听 initialMode 变化，同步更新 editorMode
+  useEffect(() => {
+    if (initialMode !== editorMode) {
+      console.log('Editor模式同步更新:', { from: editorMode, to: initialMode });
+      setEditorMode(initialMode);
+    }
+  }, [initialMode, editorMode]);
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
   // 防重复初始化标志位
@@ -215,12 +223,24 @@ const Editor: FC<EditorProps> = ({
   }, [projectManagementService, setProjectEditor]);
 
   useLayoutEffect(() => {
+    console.log('Editor useLayoutEffect触发', {
+      isEditorInitialized: isEditorInitializedRef.current,
+      isInitializing: (window as any).__editorInitializing,
+      hasEditor: !!editor,
+      hasContainer: !!containerRef.current,
+    });
+
     // 更严格的防重复初始化检查
     if (
       isEditorInitializedRef.current ||
       (window as any).__editorInitializing ||
       editor // 如果编辑器已经存在，跳过初始化
     ) {
+      console.log('Editor: 跳过初始化，原因:', {
+        isEditorInitialized: isEditorInitializedRef.current,
+        isInitializing: (window as any).__editorInitializing,
+        hasEditor: !!editor,
+      });
       return;
     }
 
@@ -310,6 +330,11 @@ const Editor: FC<EditorProps> = ({
         );
 
         (window as any).editor = editor;
+
+        console.log('Editor: 编辑器初始化完成，设置到状态', {
+          editor: !!editor,
+          doc: !!editor.doc,
+        });
 
         // 创建 AutoSaveGraphics 实例并保存引用
         const autoSaveGraphics = new AutoSaveGraphics(editor);
@@ -404,6 +429,7 @@ const Editor: FC<EditorProps> = ({
           }
         }
 
+        console.log('Editor: 调用setEditor设置编辑器状态');
         setEditor(editor);
 
         return () => {
@@ -667,14 +693,29 @@ const Editor: FC<EditorProps> = ({
         {/* 主体内容区域 */}
         <div className={`body mode-${editorMode}`}>
           {editorMode === 'h5' ? (
-            <H5EditorMode
-              containerRef={containerRef}
-              projectType={projectType}
-              loading={loading}
-              error={error}
-              projectData={null} // 暂时传递 null，后续通过 getCurrentProject 获取
-              projectManagementService={projectManagementService}
-            />
+            <>
+              {/* H5模式：隐藏的编辑器容器，用于初始化编辑器 */}
+              <div
+                ref={containerRef}
+                className="editor-canvas-container"
+                style={{
+                  position: 'absolute',
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              />
+              {console.log('Editor: 渲染H5EditorMode组件', {
+                editorMode,
+                projectType,
+              })}
+              <H5EditorMode
+                projectType={projectType}
+                loading={loading}
+                error={error}
+                projectData={null} // 暂时传递 null，后续通过 getCurrentProject 获取
+                projectManagementService={projectManagementService}
+              />
+            </>
           ) : (
             <>
               <div className="g-asset-forge-editor-left-area">

@@ -57,12 +57,13 @@ export class GAssetForgeCanvas extends GAssetForgeGraphics<GAssetForgeCanvasAttr
       super.insertChild(graphics, sortIdx);
 
       // 添加H5容器后立即重新识别，确保后续图形能正确添加到H5容器
-      setTimeout(() => {
+      // 使用requestAnimationFrame确保DOM更新完成
+      requestAnimationFrame(() => {
         const h5Container = this.findH5Container();
         if (h5Container) {
           console.log('H5容器添加后重新识别成功:', h5Container.attrs.id);
         }
-      }, 50);
+      });
       return;
     }
 

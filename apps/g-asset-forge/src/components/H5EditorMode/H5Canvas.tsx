@@ -19,6 +19,7 @@ interface H5CanvasProps {
   selectedBlockId: string;
   onBlockSelect: (blockId: string) => void;
   h5Service?: H5Service | null; // 添加H5Service引用
+  containerRef?: React.RefObject<HTMLDivElement>; // 添加容器引用
 }
 
 export const H5Canvas: FC<H5CanvasProps> = ({
@@ -26,18 +27,33 @@ export const H5Canvas: FC<H5CanvasProps> = ({
   selectedBlockId: _selectedBlockId,
   onBlockSelect,
   h5Service,
+  containerRef,
 }) => {
   const editor = useContext(EditorContext);
   // 移除canvasRef，不再需要DOM引用
 
   // 确保编辑器正确显示H5容器
   useEffect(() => {
-    console.log('H5Canvas useEffect 触发', {
-      hasEditor: !!editor?.editor,
-      hasH5Service: !!h5Service,
-    });
+    if (editor?.editor && h5Service && containerRef?.current) {
+      // 重新挂载编辑器画布到正确的容器
+      const canvasElement = editor.editor.canvasElement;
+      const currentContainer = editor.editor.containerElement;
+      const targetContainer = containerRef.current;
 
-    if (editor?.editor && h5Service) {
+      // 如果画布不在目标容器中，则移动它
+      if (canvasElement && currentContainer !== targetContainer) {
+        // 从当前容器移除画布
+        if (currentContainer && currentContainer.contains(canvasElement)) {
+          currentContainer.removeChild(canvasElement);
+        }
+
+        // 将画布添加到目标容器
+        targetContainer.appendChild(canvasElement);
+
+        // 更新编辑器的容器引用
+        editor.editor.containerElement = targetContainer;
+      }
+
       // 直接操作编辑器实例
       editor.editor.render();
 
@@ -61,40 +77,17 @@ export const H5Canvas: FC<H5CanvasProps> = ({
             );
           });
 
-          if (h5Container) {
-            console.log('H5容器属性:', {
-              id: h5Container.attrs.id,
-              width: h5Container.attrs.width,
-              height: h5Container.attrs.height,
-              visible: h5Container.attrs.visible,
-            });
-          }
-
           // 检查H5Service是否仍然有效（避免项目关闭后的警告）
           if (
             h5Service &&
             typeof h5Service.getCurrentContainer === 'function'
           ) {
             const container = h5Service.getCurrentContainer();
-            if (container) {
-              console.log('H5Canvas: 通过H5Service找到H5容器', container);
-            } else {
-              console.log(
-                'H5Canvas: H5Service中没有找到容器（可能正在初始化或已清理）',
-              );
-            }
-          } else {
-            console.log('H5Canvas: H5Service不可用（可能已清理）');
           }
         } catch (error) {
           console.warn('H5Canvas: 调试失败', error);
         }
       }, 500);
-    } else {
-      console.log('H5Canvas: 条件不满足', {
-        editor: !!editor?.editor,
-        h5Service: !!h5Service,
-      });
     }
   }, [editor, h5Service]);
 
@@ -108,6 +101,16 @@ export const H5Canvas: FC<H5CanvasProps> = ({
     <div
       className="h5-canvas-wrapper h5-canvas-overlay"
       onClick={handleCanvasClick}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none', // 允许事件穿透到编辑器
+        zIndex: 1, // 确保在编辑器画布之上，但不阻止交互
+        backgroundColor: 'transparent', // 确保背景透明
+      }}
     >
       {/* 编辑器已经在父容器中正确挂载，这里提供交互层 */}
     </div>

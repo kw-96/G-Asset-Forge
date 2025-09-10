@@ -547,6 +547,6 @@ export const useProjectManagement = (
     cleanup,
 
     // 服务实例
-    projectManagementService: serviceRef.current!,
+    projectManagementService: serviceRef.current || projectManagementService,
   };
 };
