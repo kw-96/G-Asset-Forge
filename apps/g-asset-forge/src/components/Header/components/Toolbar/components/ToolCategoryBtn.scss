@@ -1,0 +1,191 @@
+.tool-category-btn {
+  position: relative;
+  display: inline-block;
+
+  // 工具分组容器 - 严格按照Figma风格
+  .tool-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    position: relative;
+
+    &:not(:last-child)::after {
+      content: '';
+      width: 1px;
+      height: 20px;
+      background: #e5e7eb;
+      margin: 0 2px;
+    }
+  }
+
+  // 带下拉的工具按钮组合
+  .tool-button-with-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  // 主工具按钮 - 严格按照Figma风格
+  .main-tool-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+
+    &:hover {
+      background: #f3f4f6;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
+    &.active {
+      background: #3b82f6;
+      color: white;
+
+      &:hover {
+        background: #2563eb;
+      }
+    }
+
+    // 图标样式处理 - 严格按照Figma风格
+    img {
+      filter: brightness(0) saturate(100%) invert(27%) sepia(51%)
+        saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
+    }
+
+    &.active img {
+      filter: brightness(0) saturate(100%) invert(100%);
+    }
+  }
+
+  // 下拉按钮 - 严格按照Figma风格
+  .dropdown-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    &:active {
+      transform: scale(0.95);
+      color: #374151;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
+    .dropdown-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 12px;
+      height: 12px;
+
+      svg {
+        width: 10px;
+        height: 10px;
+        fill: currentColor;
+      }
+    }
+  }
+
+  // 下拉菜单 - 严格按照Figma风格
+  .dropdown-menu {
+    position: absolute;
+    left: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    padding: 4px;
+
+    /* 向上显示 */
+    bottom: 100%;
+    margin-bottom: 4px;
+    transform: translateY(0);
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: #374151;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 12px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background: #f3f4f6;
+      }
+
+      &.active {
+        background: #f3f4f6;
+      }
+
+      &.unimplemented {
+        opacity: 0.6;
+        cursor: not-allowed;
+
+        &:hover {
+          background: #f9f9f9;
+        }
+      }
+
+      .tool-icon {
+        width: 12px;
+        height: 12px;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .tool-name {
+        flex: 1;
+        text-align: left;
+      }
+
+      .tool-hotkey {
+        color: #9ca3af;
+        font-size: 12px;
+        margin-left: 8px;
+      }
+    }
+  }
+}

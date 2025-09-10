@@ -688,6 +688,25 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     updateAllElements();
   }, [updateAllElements, contentBlocks]);
 
+  // 监听编辑器渲染事件，确保图层添加后立即更新
+  useEffect(() => {
+    if (editor?.editor) {
+      const handleEditorRender = () => {
+        updateAllElements();
+      };
+
+      // 监听编辑器渲染事件
+      editor.editor.sceneGraph.on('render', handleEditorRender);
+
+      // 清理函数
+      return () => {
+        if (editor?.editor) {
+          editor.editor.sceneGraph.off('render', handleEditorRender);
+        }
+      };
+    }
+  }, [editor, updateAllElements]);
+
   // 事件监听器已在H5Service初始化时注册，无需重复注册
 
   return (
