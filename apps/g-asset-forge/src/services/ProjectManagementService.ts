@@ -75,7 +75,6 @@ export class ProjectManagementService extends EventEmitter<ExtendedProjectManage
    */
   private setupEditorReadyListener(): void {
     appEventEmitter.on('editorReady' as any, () => {
-      console.log('ProjectManagementService: 收到编辑器就绪事件');
       this.handleEditorReady();
     });
   }
@@ -218,11 +217,8 @@ export class ProjectManagementService extends EventEmitter<ExtendedProjectManage
         }
       }
 
-      console.log('开始加载项目数据到编辑器:', projectData.name);
       await this.loadProjectDataToEditor(projectData, projectId);
-      console.log('项目数据加载到编辑器完成:', projectData.name);
 
-      console.log('openProject 即将返回 true:', projectId);
       return true;
     } catch (error) {
       console.error('openProject 发生异常:', error);
@@ -232,7 +228,6 @@ export class ProjectManagementService extends EventEmitter<ExtendedProjectManage
         { projectId },
       );
       this.emit('error', new Error(projectError.userMessage));
-      console.log('openProject 返回 false 由于异常:', projectId);
       return false;
     } finally {
       this.isOpeningProject = false;
@@ -531,22 +526,17 @@ export class ProjectManagementService extends EventEmitter<ExtendedProjectManage
 
     try {
       // 加载数据到编辑器
-      console.log('EditorIntegrationManager.loadProjectData 开始');
       await this.editorManager.loadProjectData(projectData);
-      console.log('EditorIntegrationManager.loadProjectData 完成');
 
       // 设置项目处理器
-      console.log('设置项目处理器开始:', projectData.type);
       const projectType =
         projectData.type === 'h5' ? ProjectType.H5 : ProjectType.DESIGN;
       await this.setupProjectHandler(projectType);
-      console.log('设置项目处理器完成');
 
       // 设置自动保存
       const editor = this.editorManager.getEditor();
       if (editor) {
         this.autoSaveExportManager.setupAutoSave(editor, projectId);
-        console.log('自动保存设置完成');
       }
     } catch (error) {
       console.error('loadProjectDataToEditor 失败:', error);
@@ -741,8 +731,6 @@ export class ProjectManagementService extends EventEmitter<ExtendedProjectManage
       // 重置状态
       this.currentProjectId = null;
       this.projectTypeManager.resetCurrentProject();
-
-      console.log('ProjectManagementService 已销毁');
     } catch (error) {
       console.error('销毁服务时发生错误:', error);
     }

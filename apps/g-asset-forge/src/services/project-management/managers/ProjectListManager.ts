@@ -102,7 +102,6 @@ export class ProjectListManager extends EventEmitter<{
       try {
         const updatedProjects = await this.getProjectsList();
         this.emit('projectsListLoaded', updatedProjects);
-        console.log('项目列表已更新，当前项目数量:', updatedProjects.length);
       } catch (error) {
         console.error('重新加载项目列表失败:', error);
       }
@@ -130,7 +129,6 @@ export class ProjectListManager extends EventEmitter<{
    */
   async deleteProject(projectId: string): Promise<ProjectOperationResult> {
     try {
-      console.log('删除项目:', projectId);
 
       // 检查项目是否存在
       const project = await this.storageService.loadProject(projectId);
@@ -149,14 +147,12 @@ export class ProjectListManager extends EventEmitter<{
       // 删除项目
       await this.storageService.deleteProject(projectId);
 
-      console.log('项目删除成功:', projectId);
       this.emit('projectDeleted', projectId);
 
       // 重新加载项目列表并发出更新事件
       try {
         const updatedProjects = await this.getProjectsList();
         this.emit('projectsListLoaded', updatedProjects);
-        console.log('项目列表已更新，当前项目数量:', updatedProjects.length);
       } catch (error) {
         console.error('重新加载项目列表失败:', error);
       }
@@ -186,8 +182,6 @@ export class ProjectListManager extends EventEmitter<{
     newName: string,
   ): Promise<ProjectOperationResult> {
     try {
-      console.log('重命名项目:', { projectId, newName });
-
       // 检查项目是否存在
       const project = await this.storageService.loadProject(projectId);
       if (!project) {
@@ -205,14 +199,12 @@ export class ProjectListManager extends EventEmitter<{
       // 重命名项目
       await this.storageService.updateProject(projectId, { name: newName });
 
-      console.log('项目重命名成功:', { projectId, newName });
       this.emit('projectRenamed', projectId, newName);
 
       // 重新加载项目列表并发出更新事件
       try {
         const updatedProjects = await this.getProjectsList();
         this.emit('projectsListLoaded', updatedProjects);
-        console.log('项目列表已更新，当前项目数量:', updatedProjects.length);
       } catch (error) {
         console.error('重新加载项目列表失败:', error);
       }
@@ -239,7 +231,6 @@ export class ProjectListManager extends EventEmitter<{
    */
   async searchProjects(query: string): Promise<ProjectMetadata[]> {
     try {
-      console.log('搜索项目:', query);
 
       const allProjects = await this.getProjectsList();
       const filteredProjects = allProjects.filter(
@@ -247,12 +238,6 @@ export class ProjectListManager extends EventEmitter<{
           project.name.toLowerCase().includes(query.toLowerCase()) ||
           project.description?.toLowerCase().includes(query.toLowerCase()),
       );
-
-      console.log('项目搜索完成:', {
-        query,
-        total: allProjects.length,
-        filtered: filteredProjects.length,
-      });
 
       this.emit('projectsSearched', query, filteredProjects);
 
@@ -278,7 +263,6 @@ export class ProjectListManager extends EventEmitter<{
     recentProjects: ProjectMetadata[];
   }> {
     try {
-      console.log('获取项目统计信息');
 
       const projects = await this.getProjectsList();
       const h5Projects = projects.filter((p) => p.type === 'h5');
@@ -299,7 +283,6 @@ export class ProjectListManager extends EventEmitter<{
         recentProjects,
       };
 
-      console.log('项目统计信息获取成功:', stats);
       this.emit('projectStatsLoaded', stats);
 
       return stats;

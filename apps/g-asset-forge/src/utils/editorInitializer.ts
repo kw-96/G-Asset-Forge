@@ -28,8 +28,6 @@ export const initializeEditorSafely = async (
   config: EditorInitializationConfig,
 ): Promise<EditorInitializationResult> => {
   try {
-    console.log('开始安全的编辑器初始化');
-
     // 验证配置参数
     if (!config.containerElement) {
       throw new Error('容器元素不存在');
@@ -59,7 +57,6 @@ export const initializeEditorSafely = async (
       throw new Error(`编辑器初始化验证失败: ${validationResult.error}`);
     }
 
-    console.log('编辑器初始化成功');
     return {
       editor,
       success: true,
@@ -116,14 +113,10 @@ const validateEditorInitialization = async (
 
     // 检查画布状态
     const canvasItems = editor.doc.graphicsStoreManager.getCanvasItems();
-    if (!canvasItems || canvasItems.length === 0) {
-      console.log('没有画布项目，这是正常的初始状态');
-    } else {
+    if (canvasItems && canvasItems.length > 0) {
       // 如果有画布项目，验证当前画布
       const currentCanvas = editor.doc.getCurrentCanvas();
       if (!currentCanvas) {
-        console.warn('有画布项目但无当前画布，尝试设置第一个画布');
-
         const firstCanvas = canvasItems[0];
         if (firstCanvas && firstCanvas.attrs && firstCanvas.attrs.id) {
           editor.doc.setCurrentCanvas(firstCanvas.attrs.id);
@@ -161,68 +154,6 @@ const validateEditorInitialization = async (
   }
 };
 
-/**
- * 编辑器健康检查
- * 定期检查编辑器状态，发现问题时尝试修复
- */
-export const createEditorHealthChecker = (editor: GAssetForgeEditor) => {
-  let isDestroyed = false;
-  let checkCount = 0;
-  const maxChecks = 100; // 最多检查100次，避免无限循环
-
-  const healthCheck = async () => {
-    if (isDestroyed || checkCount >= maxChecks) {
-      return;
-    }
-
-    checkCount++;
-
-    try {
-      // 简单的编辑器状态检查
-      if (!editor || !editor.containerElement) {
-        console.warn('健康检查：编辑器或容器元素不存在');
-        return;
-      }
-
-      // 检查当前画布
-      const currentCanvas = editor.doc.getCurrentCanvas();
-      if (!currentCanvas) {
-        // 在H5模式下，如果当前画布不存在，检查是否有画布项目
-        const canvasItems = editor.doc.graphicsStoreManager.getCanvasItems();
-        if (canvasItems && canvasItems.length > 0) {
-          // 如果有画布项目但getCurrentCanvas返回null，说明currentCanvasId可能有问题
-          // 尝试设置第一个画布为当前画布
-          const firstCanvas = canvasItems[0];
-          if (firstCanvas && firstCanvas.attrs && firstCanvas.attrs.id) {
-            console.log(
-              '健康检查：发现画布项目但currentCanvasId无效，尝试修复:',
-              firstCanvas.attrs.id,
-            );
-            editor.doc.setCurrentCanvasId(firstCanvas.attrs.id);
-            // 重新检查
-            const newCurrentCanvas = editor.doc.getCurrentCanvas();
-            if (newCurrentCanvas) {
-              console.log('健康检查：画布状态已修复');
-              return;
-            }
-          }
-        }
-        console.warn('健康检查：当前画布不存在');
-      }
-    } catch (error) {
-      console.error('健康检查失败:', error);
-    }
-  };
-
-  // 移除健康检查机制，专注于确保初始化流程的稳定性
-  // 通过更好的初始化逻辑来避免问题，而不是依赖检查来发现问题
-
-  // 返回清理函数（不再需要清理定时器）
-  return () => {
-    isDestroyed = true;
-    console.log('编辑器初始化完成，无需额外清理');
-  };
-};
 
 /**
  * 编辑器状态诊断工具

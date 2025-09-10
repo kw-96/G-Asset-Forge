@@ -314,155 +314,6 @@
         }
       }
     }
-
-    // 内容块列表优化
-    .content-blocks-list {
-      .content-block-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px;
-        margin: 2px 0;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 1px solid transparent;
-
-        &:hover {
-          background: #f8f9fa;
-        }
-
-        &.selected {
-          background: #e3f2fd;
-          border-color: #2196f3;
-        }
-
-        &.locked {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        &.hidden {
-          opacity: 0.4;
-        }
-
-        &.dragging {
-          opacity: 0.5;
-          transform: rotate(2deg);
-        }
-
-        .block-main {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex: 1;
-
-          .block-icon {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-
-            .unknown-icon {
-              width: 16px;
-              height: 16px;
-              background: #ddd;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 10px;
-              color: #999;
-            }
-          }
-
-          .block-details {
-            flex: 1;
-
-            .block-name {
-              font-size: 12px;
-              font-weight: 500;
-              color: #333;
-              display: flex;
-              align-items: center;
-              gap: 4px;
-
-              .block-status {
-                font-size: 10px;
-                color: #999;
-                font-weight: normal;
-              }
-            }
-
-            .block-type-label {
-              font-size: 10px;
-              color: #666;
-              text-transform: uppercase;
-            }
-          }
-        }
-
-        .block-controls {
-          display: flex;
-          gap: 4px;
-          opacity: 0;
-          transition: opacity 0.2s;
-
-          .control-btn {
-            width: 20px;
-            height: 20px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            border-radius: 3px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            transition: all 0.2s;
-
-            &:hover {
-              background: rgba(0, 0, 0, 0.1);
-            }
-
-            &.visibility-btn {
-              color: #666;
-
-              &:hover {
-                color: #007bff;
-              }
-            }
-
-            &.lock-btn {
-              color: #666;
-
-              &:hover {
-                color: #ffa502;
-              }
-            }
-
-            &.delete-btn {
-              color: #666;
-
-              &:hover {
-                color: #ff4757;
-              }
-
-              &:disabled {
-                opacity: 0.3;
-                cursor: not-allowed;
-              }
-            }
-          }
-        }
-
-        &:hover .block-controls {
-          opacity: 1;
-        }
-      }
-    }
   }
 
   // 图层列表样式
@@ -593,5 +444,125 @@
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+// 设计模式图层样式 - 与LayerItem.scss保持一致
+.g-asset-forge {
+  .sk-layer-item {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    padding-right: 4px;
+    height: 32px;
+    font-size: 12px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+
+    &.sk-hidden {
+      color: rgba(0, 0, 0, 0.3);
+    }
+
+    &.sk-layer-highlight {
+      border-color: #0f8fff;
+      color: #333;
+    }
+
+    &:hover:not(.sk-editing) {
+      border-color: #0f8fff;
+      color: #333;
+
+      .sk-layer-item-actions {
+        display: flex;
+      }
+      span.sk-action-btn {
+        visibility: visible;
+      }
+    }
+
+    &.sk-editing {
+      .sk-layer-item-actions {
+        display: none;
+      }
+    }
+
+    &.sk-active {
+      background-color: #e1f2ff;
+      border-color: transparent;
+      .sk-layer-icon {
+        color: #000000e6;
+      }
+    }
+
+    .sk-group-collapse-btn {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 20px;
+      width: 20px;
+      color: #ccc;
+      flex-shrink: 0;
+    }
+
+    .sk-layer-icon {
+      width: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+      color: #0000004d;
+    }
+
+    .sk-layout-name {
+      padding: 0 4px;
+      border: 1px solid transparent;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 1;
+      flex-grow: 1;
+      height: 32px;
+      line-height: 32px;
+      font-family: Arial, sans-serif;
+    }
+
+    input {
+      box-sizing: border-box;
+      padding: 0 4px;
+      width: 100%;
+      height: 22px;
+      font-size: 12px;
+      line-height: 12px;
+      font-family: Arial, sans-serif;
+      color: #333;
+      border: 1px solid #0d99ff;
+      outline: 1px solid #0d99ff;
+      cursor: default;
+    }
+
+    .sk-layer-item-actions {
+      margin-left: auto;
+      padding-right: 4px;
+      align-items: center;
+      height: 20px;
+      display: none;
+
+      &.sk-action-visible {
+        display: flex;
+      }
+
+      .sk-action-btn {
+        visibility: hidden;
+        margin-right: 4px;
+        width: 16px;
+        height: 16px;
+        font-size: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
   }
 }

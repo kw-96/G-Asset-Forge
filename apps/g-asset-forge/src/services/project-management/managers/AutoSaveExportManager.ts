@@ -63,8 +63,6 @@ export class AutoSaveExportManager extends EventEmitter<{
    */
   setupAutoSave(editor: GAssetForgeEditor, projectId: string): void {
     try {
-      console.log('设置自动保存服务:', { projectId });
-
       // 清理现有服务
       if (this.autoSaveService) {
         this.autoSaveService.destroy();
@@ -81,12 +79,6 @@ export class AutoSaveExportManager extends EventEmitter<{
       } else {
         this.autoSaveService.disableAutoSave();
       }
-
-      console.log('自动保存服务设置成功:', {
-        projectId,
-        enabled: this.autoSaveConfig.enabled,
-        interval: this.autoSaveConfig.interval,
-      });
 
       this.emit('autoSaveSetup', projectId);
     } catch (error) {
@@ -105,12 +97,9 @@ export class AutoSaveExportManager extends EventEmitter<{
    */
   async manualSave(projectData: ProjectData): Promise<ProjectOperationResult> {
     try {
-      console.log('手动保存项目:', projectData.name);
-
       // 保存项目数据
       await this.storageService.saveProject(projectData);
 
-      console.log('项目手动保存成功:', projectData.name);
       this.emit('projectManuallySaved', projectData);
 
       return {
@@ -139,24 +128,16 @@ export class AutoSaveExportManager extends EventEmitter<{
   ): Promise<ProjectOperationResult> {
     try {
       if (!this.autoExportEnabled || !this.autoExportConfig.enabled) {
-        console.log('自动导出已禁用，跳过导出:', projectData.name);
         return {
           success: true,
           data: { skipped: true, reason: 'Auto export disabled' },
         };
       }
 
-      console.log('触发自动导出:', projectData.name);
-
       // 执行自动导出
       const exportResult = await this.autoExportService.autoExportProject(
         projectData,
       );
-
-      console.log('自动导出成功:', {
-        projectName: projectData.name,
-        result: exportResult,
-      });
 
       this.emit('projectAutoExported', projectData);
       this.emit('projectAutoExported', projectData);
@@ -197,7 +178,6 @@ export class AutoSaveExportManager extends EventEmitter<{
 
     // 保存到本地存储
     this.saveSettings();
-    console.log('自动保存配置已更新:', this.autoSaveConfig);
   }
 
   /**
@@ -208,7 +188,6 @@ export class AutoSaveExportManager extends EventEmitter<{
 
     // 保存到本地存储
     this.saveSettings();
-    console.log('自动导出配置已更新:', this.autoExportConfig);
   }
 
   /**
@@ -220,7 +199,6 @@ export class AutoSaveExportManager extends EventEmitter<{
 
     // 保存到本地存储
     this.saveSettings();
-    console.log('自动导出状态已更新:', enabled);
   }
 
   /**
@@ -274,11 +252,6 @@ export class AutoSaveExportManager extends EventEmitter<{
         this.autoExportConfig = { ...this.autoExportConfig, ...settings };
         this.autoExportEnabled = settings.enabled !== false;
       }
-
-      console.log('设置加载完成:', {
-        autoSave: this.autoSaveConfig,
-        autoExport: this.autoExportConfig,
-      });
     } catch (error) {
       console.warn('加载设置失败，使用默认配置:', error);
     }
@@ -311,7 +284,6 @@ export class AutoSaveExportManager extends EventEmitter<{
   enableAutoExport(): void {
     this.autoExportEnabled = true;
     this.saveSettings();
-    console.log('自动导出已启用');
   }
 
   /**
@@ -320,7 +292,6 @@ export class AutoSaveExportManager extends EventEmitter<{
   disableAutoExport(): void {
     this.autoExportEnabled = false;
     this.saveSettings();
-    console.log('自动导出已禁用');
   }
 
   /**
@@ -359,6 +330,5 @@ export class AutoSaveExportManager extends EventEmitter<{
       this.autoSaveService.destroy();
       this.autoSaveService = null;
     }
-    console.log('AutoSaveExportManager 已销毁');
   }
 }

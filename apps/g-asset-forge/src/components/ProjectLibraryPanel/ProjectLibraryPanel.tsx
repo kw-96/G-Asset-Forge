@@ -90,7 +90,6 @@ export const ProjectLibraryPanel: React.FC<IProjectLibraryPanelProps> = ({
     );
 
     setProjects(formattedProjects);
-    console.log('项目库列表已更新:', formattedProjects.length, '个项目');
   }, []);
 
   // 监听项目列表更新事件
@@ -245,9 +244,7 @@ export const ProjectLibraryPanel: React.FC<IProjectLibraryPanelProps> = ({
   }, [onProjectImport]);
 
   // 处理刷新 - 现在通过事件自动更新，无需手动刷新
-  const handleRefresh = useCallback(() => {
-    console.log('项目列表将通过事件自动更新');
-  }, []);
+  const handleRefresh = useCallback(() => {}, []);
 
   // 处理模态框确认
   const handleModalConfirm = useCallback(

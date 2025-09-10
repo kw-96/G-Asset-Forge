@@ -26,7 +26,6 @@ export class FileSystemAccessService {
         // 保存权限信息到本地存储
         this.savePermissionInfo(this.directoryHandle);
 
-        console.log('文件系统访问权限获取成功，用户选择的目录已保存');
         return true;
       } catch (error: any) {
         if (error.name === 'AbortError') {
@@ -39,7 +38,6 @@ export class FileSystemAccessService {
     }
 
     // 不支持的浏览器直接返回false，使用降级方案
-    console.info('浏览器不支持File System Access API，使用下载模式');
     return false;
   }
 
@@ -79,7 +77,6 @@ export class FileSystemAccessService {
           create: true,
         },
       );
-      console.log('G-Asset Forge 目录已准备就绪');
       return gafDirectory;
     } catch (error) {
       console.warn('无法创建 G-Asset Forge 子目录，将使用主目录:', error);
@@ -128,8 +125,6 @@ export class FileSystemAccessService {
       if (!result.success) {
         throw new Error(result.error || '文件保存失败');
       }
-
-      console.log(`Electron 文件保存成功: ${result.filePath}`);
     } else {
       throw new Error('Electron API 不可用');
     }
@@ -241,7 +236,6 @@ export class FileSystemAccessService {
         this.PERMISSION_STORAGE_KEY,
         JSON.stringify(permissionInfo),
       );
-      console.log('文件系统权限信息已保存到本地存储');
     } catch (error) {
       console.warn('保存权限信息失败:', error);
     }
@@ -264,14 +258,12 @@ export class FileSystemAccessService {
       const now = Date.now();
       const maxAge = 24 * 60 * 60 * 1000; // 24小时
       if (now - permissionInfo.timestamp > maxAge) {
-        console.log('文件系统权限信息已过期，需要重新授权');
         this.clearPermissionInfo();
         return false;
       }
 
       // 尝试恢复权限
       if (permissionInfo.hasPermission && this.isSupported()) {
-        console.log('尝试恢复文件系统权限...');
         // 注意：File System Access API 不允许直接恢复权限句柄
         // 需要用户重新选择目录，但我们可以提供更好的用户体验
         return false; // 需要用户重新授权
@@ -291,7 +283,6 @@ export class FileSystemAccessService {
   private clearPermissionInfo(): void {
     try {
       localStorage.removeItem(this.PERMISSION_STORAGE_KEY);
-      console.log('文件系统权限信息已清除');
     } catch (error) {
       console.warn('清除权限信息失败:', error);
     }
@@ -387,8 +378,6 @@ export class FileSystemAccessService {
     if (!result.success) {
       throw new Error(result.error || '文件保存失败');
     }
-
-    console.log(`文件保存成功: ${result.filePath}`);
   }
 
   /**
@@ -477,10 +466,8 @@ export class FileSystemAccessService {
       const file = await fileHandle.getFile();
       return await file.text();
     } catch (error) {
-      // 如果是文件不存在的错误，记录为调试信息而不是错误
-      if (error instanceof Error && error.name === 'NotFoundError') {
-        console.debug('文件不存在，将使用fallback机制:', filename);
-      } else {
+      // 如果是文件不存在的错误，静默处理；其他错误记录日志
+      if (!(error instanceof Error && error.name === 'NotFoundError')) {
         console.error('从目录读取文件失败:', error);
       }
       return null;

@@ -107,7 +107,6 @@ export class ToolManager {
     let hotkeyObj: IKey;
 
     if (!hotkey) {
-      console.log(`${type} has no hotkey`);
       return;
     }
 
@@ -125,7 +124,7 @@ export class ToolManager {
     }
 
     if (this.hotkeySet.has(keyCode)) {
-      console.log(`register same hotkey: "${keyCode}"`);
+      // 热键已存在，跳过注册
     }
     this.hotkeySet.add(keyCode);
     const token = this.editor.keybindingManager.register({

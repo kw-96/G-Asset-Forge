@@ -138,7 +138,6 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
 
   setCurrentCanvas(canvasId: string) {
     if (canvasId === this.currentCanvasId) {
-      console.log('Same canvas, switch canvas failed');
       return;
     }
 
@@ -151,16 +150,10 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
         // 保存选择状态
         const currentSelectedIds = this.editor.selectedElements.getIdSet();
         prevCanvas.lastSelectedIds = new Set(currentSelectedIds);
-        console.log('画布切换：保存选择状态', Array.from(currentSelectedIds));
 
         // 保存视口矩阵
         const currentViewMatrix = this.editor.viewportManager.getViewMatrix();
         prevCanvas.lastMatrix = currentViewMatrix.clone();
-        console.log('画布切换：保存视口状态', {
-          x: currentViewMatrix.tx,
-          y: currentViewMatrix.ty,
-          zoom: currentViewMatrix.a,
-        });
       } catch (error) {
         console.warn('画布切换：保存状态时出错', error);
       }
@@ -168,7 +161,6 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
 
     // 切换到新画布
     this.currentCanvasId = canvasId;
-    console.log('画布切换：已切换到画布', canvasId);
 
     // 恢复新画布的选择状态和视口矩阵
     const currentCanvas = this.getCurrentCanvas();
@@ -194,30 +186,21 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
 
           if (validSelectedIds.size > 0) {
             this.editor.selectedElements.setItemsById(validSelectedIds);
-            console.log('画布切换：恢复选择状态', Array.from(validSelectedIds));
           } else {
             // 如果没有有效的选择状态，清空选择
             this.editor.selectedElements.clear();
-            console.log('画布切换：清空选择状态（无有效选择）');
           }
         } else {
           // 清空选择状态
           this.editor.selectedElements.clear();
-          console.log('画布切换：清空选择状态（无保存状态）');
         }
 
         // 恢复视口矩阵
         if (currentCanvas.lastMatrix) {
           this.editor.viewportManager.setViewMatrix(currentCanvas.lastMatrix);
-          console.log('画布切换：恢复视口状态', {
-            x: currentCanvas.lastMatrix.tx,
-            y: currentCanvas.lastMatrix.ty,
-            zoom: currentCanvas.lastMatrix.a,
-          });
         } else {
           // 第一次切换到画布时，重置视口并聚焦到画布内容
           this.editor.viewportManager.resetViewport();
-          console.log('画布切换：重置视口状态（首次切换）');
 
           // 尝试聚焦到画布内容
           this.focusCanvasContent(currentCanvas);
@@ -234,7 +217,6 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
         try {
           this.editor.selectedElements.clear();
           this.editor.viewportManager.resetViewport();
-          console.log('画布切换：使用回退状态（清空选择，重置视口）');
         } catch (fallbackError) {
           console.error('画布切换：回退处理也失败', fallbackError);
         }
@@ -262,7 +244,6 @@ export class GAssetForgeDocument extends GAssetForgeGraphics<GAssetForgeCanvasAt
           // 使用视口管理器聚焦到内容
           if (this.editor.viewportManager.zoomToFit) {
             this.editor.viewportManager.zoomToFit(1);
-            console.log('画布切换：已聚焦到画布内容');
           }
         }
       }

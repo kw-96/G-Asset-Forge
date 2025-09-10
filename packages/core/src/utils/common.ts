@@ -4,11 +4,6 @@ export const getNoConflictObjectName = (
   parent: GAssetForgeGraphics,
   objectType: string,
 ) => {
-  console.log('getNoConflictObjectName 被调用:', {
-    objectType,
-    parentType: parent.constructor.name,
-  });
-
   // 对于画布类型，应该检查所有画布而不是父元素的子元素
   if (objectType === 'Page') {
     // 首先尝试从 graphicsStoreManager 获取画布列表
@@ -30,25 +25,18 @@ export const getNoConflictObjectName = (
       }
     }
 
-    console.log(
-      '找到画布列表:',
-      canvasItems.map((c: any) => c.attrs.objectName),
-    );
-
     let maxNum = 0;
     const regexp = new RegExp(`^${objectType}\\s+(\\d+)`);
     for (const canvas of canvasItems) {
       const match = canvas.attrs.objectName.match(regexp);
       if (match) {
         const num = parseInt(match[1]);
-        console.log('匹配到画布名称:', canvas.attrs.objectName, '数字:', num);
         if (num > maxNum) {
           maxNum = num;
         }
       }
     }
     const result = `${objectType} ${maxNum + 1}`;
-    console.log('生成的新名称:', result);
     return result;
   }
 

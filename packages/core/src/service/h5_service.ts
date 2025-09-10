@@ -45,7 +45,6 @@ export class H5Service
     _projectData?: any,
   ): Promise<void> {
     this.editor = editor;
-    console.log('H5Service初始化完成');
   }
 
   /**
@@ -53,7 +52,6 @@ export class H5Service
    */
   setEditor(editor: GAssetForgeEditor): void {
     this.editor = editor;
-    console.log('H5Service: 编辑器实例已设置');
 
     // 监听编辑器事件，自动初始化H5模式
     this.setupEditorEventListeners();
@@ -72,7 +70,6 @@ export class H5Service
 
     // 监听画布准备完成事件
     this.editor.on('canvasReady', () => {
-      console.log('H5Service: 检测到画布准备完成事件，自动初始化H5模式');
       this.autoInitializeH5Mode().catch(console.error);
     });
   }
@@ -87,7 +84,6 @@ export class H5Service
 
     const currentCanvas = this.editor.doc.getCurrentCanvas();
     if (!currentCanvas) {
-      console.log('H5Service: 画布不存在，等待画布创建');
       return;
     }
 
@@ -104,14 +100,11 @@ export class H5Service
       });
 
     if (existingH5Container) {
-      console.log('H5Service: 发现现有H5容器，同步状态');
       this.currentContainer = existingH5Container;
       this.syncH5Container();
     } else {
-      console.log('H5Service: 未发现H5容器，创建新容器');
       try {
         await this.initializeH5Mode();
-        console.log('H5Service: 新H5容器创建完成');
       } catch (error) {
         console.error('H5Service: 创建H5容器失败:', error);
       }
@@ -145,7 +138,6 @@ export class H5Service
 
     if (h5Container) {
       this.currentContainer = h5Container;
-      console.log('H5Service: 同步H5容器状态', h5Container.attrs?.id);
     } else {
       console.warn('H5Service: 未找到H5容器');
     }
@@ -177,7 +169,6 @@ export class H5Service
     });
 
     if (existingContainer) {
-      console.log('H5Service: H5容器已存在，跳过添加');
       this.currentContainer = existingContainer;
       return;
     }
@@ -191,7 +182,6 @@ export class H5Service
     } else {
       currentCanvas.insertChild(this.currentContainer);
     }
-    console.log('H5Service: H5容器已添加到画布');
   }
 
   /**
@@ -213,7 +203,6 @@ export class H5Service
     // 同步状态
     this.syncH5Container();
 
-    console.log('H5Service: H5模式初始化完成');
     return container;
   }
 
@@ -251,7 +240,6 @@ export class H5Service
     }
 
     this.contentBlocks.set(block.id, block);
-    console.log('H5Service: 内容块已添加', block.id);
   }
 
   /**
@@ -282,7 +270,6 @@ export class H5Service
     this.editor = null;
     this.currentContainer = null;
     this.contentBlocks.clear();
-    console.log('H5Service: 资源已清理');
   }
 
   // 实现IH5Service接口的其他方法（简化版）

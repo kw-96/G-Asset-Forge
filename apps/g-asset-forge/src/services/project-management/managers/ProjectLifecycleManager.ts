@@ -38,9 +38,7 @@ export class ProjectLifecycleManager extends EventEmitter<{
    * 设置生命周期状态
    */
   private setState(newState: ProjectLifecycleState): void {
-    const oldState = this.lifecycleState;
     this.lifecycleState = newState;
-    console.log(`项目生命周期状态变更: ${oldState} -> ${newState}`);
   }
 
   /**
@@ -52,12 +50,10 @@ export class ProjectLifecycleManager extends EventEmitter<{
   ): Promise<ProjectOperationResult> {
     try {
       this.setState(ProjectLifecycleState.LOADING);
-      console.log('开始创建项目:', projectData.name);
 
       // 执行创建逻辑
       await onSuccess(projectData);
 
-      console.log('项目创建成功:', projectData.name);
       this.setState(ProjectLifecycleState.IDLE);
 
       return {
@@ -95,7 +91,6 @@ export class ProjectLifecycleManager extends EventEmitter<{
   ): Promise<ProjectOperationResult> {
     try {
       this.setState(ProjectLifecycleState.LOADING);
-      console.log('开始打开项目:', projectId);
 
       // 步骤1: 加载项目数据
       const projectData = await onLoad(projectId);
@@ -130,12 +125,6 @@ export class ProjectLifecycleManager extends EventEmitter<{
       // 步骤3: 初始化项目
       await onInitialize(projectData, projectType);
 
-      console.log('项目打开成功:', {
-        projectId,
-        projectName: projectData.name,
-        projectType,
-      });
-
       this.setState(ProjectLifecycleState.IDLE);
       this.emit('projectOpened', projectData);
 
@@ -169,11 +158,9 @@ export class ProjectLifecycleManager extends EventEmitter<{
   ): Promise<ProjectOperationResult> {
     try {
       this.setState(ProjectLifecycleState.SAVING);
-      console.log('开始保存项目:', projectData.name);
 
       await onSave(projectData);
 
-      console.log('项目保存成功:', projectData.name);
       this.setState(ProjectLifecycleState.IDLE);
       this.emit('projectSaved', projectData);
 
@@ -207,11 +194,9 @@ export class ProjectLifecycleManager extends EventEmitter<{
   ): Promise<ProjectOperationResult> {
     try {
       this.setState(ProjectLifecycleState.DELETING);
-      console.log('开始删除项目:', projectId);
 
       await onDelete(projectId);
 
-      console.log('项目删除成功:', projectId);
       this.setState(ProjectLifecycleState.IDLE);
       this.emit('projectDeleted', projectId);
 
@@ -245,11 +230,9 @@ export class ProjectLifecycleManager extends EventEmitter<{
   ): Promise<ProjectOperationResult> {
     try {
       this.setState(ProjectLifecycleState.RENAMING);
-      console.log('开始重命名项目:', { projectId, newName });
 
       await onRename(projectId, newName);
 
-      console.log('项目重命名成功:', { projectId, newName });
       this.setState(ProjectLifecycleState.IDLE);
       this.emit('projectRenamed', projectId, newName);
 
@@ -277,7 +260,6 @@ export class ProjectLifecycleManager extends EventEmitter<{
    * 关闭项目
    */
   closeProject(projectId: string): void {
-    console.log('关闭项目:', projectId);
     this.setState(ProjectLifecycleState.IDLE);
     this.emit('projectClosed', projectId);
   }

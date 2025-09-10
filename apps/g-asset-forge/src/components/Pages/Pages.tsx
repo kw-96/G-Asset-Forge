@@ -42,7 +42,6 @@ export const Pages: FC = () => {
     const updatePageItems = () => {
       // 防止重复更新
       if (isUpdatingRef.current) {
-        console.log('Pages: 正在更新中，跳过重复更新');
         return;
       }
 
@@ -58,19 +57,16 @@ export const Pages: FC = () => {
             try {
               // 从编辑器获取当前项目的画布列表
               pages = editor.doc.graphicsStoreManager.getCanvasItemsData();
-              console.log('Pages: 从编辑器获取到页面数据:', pages);
             } catch (error) {
               console.warn('Pages: 从编辑器获取数据失败:', error);
             }
 
-            console.log('Pages: 最终获取到页面数据:', pages);
             setPageItems(pages || []);
 
             // 设置当前页面ID
             const currentCanvas = editor.doc.getCurrentCanvas();
             if (currentCanvas) {
               const newCurrentPageId = currentCanvas.attrs.id || '';
-              console.log('Pages: 设置当前页面ID:', newCurrentPageId);
               setCurrPageId(newCurrentPageId);
             } else {
               console.warn('无法获取当前画布，设置空的页面ID');
@@ -101,7 +97,6 @@ export const Pages: FC = () => {
           if (pageItems.length === 0 && editor?.doc?.graphicsStoreManager) {
             const pages = editor.doc.graphicsStoreManager.getCanvasItemsData();
             if (pages && pages.length > 0) {
-              console.log('Pages: 状态恢复成功，找到页面:', pages.length);
               setPageItems(pages);
 
               // 尝试设置当前页面ID
@@ -122,7 +117,6 @@ export const Pages: FC = () => {
 
     // 监听编辑器状态变化
     const editorStateHandler = () => {
-      console.log('Pages: 编辑器状态变化，触发更新');
       setTimeout(() => {
         updatePageItems();
       }, 100);
@@ -136,12 +130,10 @@ export const Pages: FC = () => {
           // 使用类型安全的事件监听
           try {
             editor.on('destroy', editorStateHandler);
-            console.log('Pages: 已监听编辑器销毁事件');
           } catch (error) {
             console.warn('Pages: 监听编辑器事件失败:', error);
           }
         }
-        console.log('Pages: 已监听编辑器状态变化');
       }
     } catch (error) {
       console.warn('Pages: 监听编辑器事件失败:', error);
@@ -159,10 +151,6 @@ export const Pages: FC = () => {
           if (currentCanvas && currentCanvas.attrs) {
             const newCurrentPageId = currentCanvas.attrs.id;
             if (newCurrentPageId !== currPageId) {
-              console.log('Pages: 定期检查发现当前页面ID变化:', {
-                old: currPageId,
-                new: newCurrentPageId,
-              });
               setCurrPageId(newCurrentPageId);
             }
           }
@@ -219,8 +207,6 @@ export const Pages: FC = () => {
     }
 
     try {
-      console.log('Pages: 尝试切换页面到:', canvasId);
-
       // 先验证画布是否存在
       const canvas = editor.doc.getGraphicsById(canvasId);
       if (!canvas) {
@@ -235,23 +221,17 @@ export const Pages: FC = () => {
         currentCanvas.attrs &&
         currentCanvas.attrs.id === canvasId
       ) {
-        console.log('Pages: 画布已经是当前画布，无需切换:', canvasId);
         return;
       }
 
       // 执行切换
-      console.log('Pages: 执行画布切换...');
       switchCanvasRecord(editor, canvasId);
 
       // 更新当前页面ID
       setCurrPageId(canvasId);
-      console.log('Pages: 当前页面ID已更新:', canvasId);
 
       // 触发渲染
       editor.render();
-      console.log('Pages: 编辑器渲染已触发');
-
-      console.log('Pages: 页面切换成功:', canvasId);
     } catch (error) {
       console.error('切换页面时出错:', error);
     }
@@ -263,7 +243,6 @@ export const Pages: FC = () => {
     try {
       addAndSwitchCanvasRecord(editor, undefined);
       editor.render();
-      console.log('新页面创建成功');
     } catch (error) {
       console.error('创建新页面时出错:', error);
     }

@@ -41,13 +41,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
     this.editor = editor;
     this.storageService = storageService || new ProjectStorageService();
 
-    console.log('ProjectAutoSave 初始化:', {
-      hasEditor: !!this.editor,
-      hasDoc: !!this.editor?.doc,
-      hasCommandManager: !!this.editor?.commandManager,
-      autoSaveInterval: this.autoSaveInterval,
-    });
-
     // 简洁方案：直接检查并设置事件监听器
     this.setupEventListenersIfReady();
   }
@@ -56,31 +49,18 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
    * 设置当前项目ID
    */
   setCurrentProject(projectId: string | null): void {
-    console.log('设置当前项目:', {
-      oldProjectId: this.currentProjectId,
-      newProjectId: projectId,
-      isDirty: this.isDirty,
-    });
-
     if (this.currentProjectId === projectId) {
-      console.log('项目ID相同，跳过设置');
       return;
     }
 
     // 保存当前项目（如果有未保存的更改）
     // 注意：只有在编辑器数据完全清理干净后才保存，避免数据污染
     if (this.currentProjectId && this.isDirty && this.editor) {
-      console.log('保存当前项目的未保存更改');
       // 增加延迟时间，确保编辑器数据完全清理干净
       setTimeout(() => {
         // 再次检查编辑器状态，确保数据清理完成
         if (this.editor && this.editor.sceneGraph) {
           const dataCount = this.editor.doc.getAllGraphicsArr().length;
-          console.log('延迟保存检查:', {
-            dataCount,
-            projectId: this.currentProjectId,
-            isDirty: this.isDirty,
-          });
 
           // 只有在数据量合理时才保存
           if (dataCount < 100) {
@@ -112,13 +92,10 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
    */
   manualSave(): Promise<boolean> {
     if (this.currentProjectId && this.isDirty) {
-      console.log('手动保存项目:', this.currentProjectId);
       return this.saveProject(this.currentProjectId);
     } else if (this.currentProjectId) {
-      console.log('项目没有未保存的更改，跳过手动保存:', this.currentProjectId);
       return Promise.resolve(true);
     } else {
-      console.log('没有当前项目，跳过手动保存');
       return Promise.resolve(false);
     }
   }
@@ -127,16 +104,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
    * 手动测试自动保存功能
    */
   testAutoSave(): void {
-    console.log('手动测试自动保存功能:', {
-      currentProjectId: this.currentProjectId,
-      isDirty: this.isDirty,
-      isAutoSaving: this.isAutoSaving,
-      hasTimer: !!this.autoSaveTimer,
-      hasEditor: !!this.editor,
-      hasDoc: !!this.editor?.doc,
-      hasCommandManager: !!this.editor?.commandManager,
-    });
-
     // 手动标记为脏状态并触发保存
     if (this.currentProjectId) {
       this.markDirty();
@@ -173,12 +140,10 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
 
     this.isAutoSaving = true;
     this.emit('autoSaveStart', projectId);
-    console.log('开始自动保存项目:', projectId);
 
     try {
       // 获取当前编辑器内容
       const editorData = this.getEditorData();
-      console.log('获取编辑器数据:', editorData);
 
       // 更新项目数据
       const success = await this.storageService.updateProject(projectId, {
@@ -188,7 +153,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
       if (success) {
         this.isDirty = false;
         this.emit('autoSaveSuccess', projectId);
-        console.log('自动保存成功:', projectId);
         return true;
       } else {
         throw new Error('更新项目数据失败');
@@ -207,7 +171,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
    */
   markDirty(): void {
     if (!this.isDirty && this.currentProjectId) {
-      console.log('项目内容发生变化，标记为脏状态:', this.currentProjectId);
       this.isDirty = true;
       this.emit('projectDataChanged', this.currentProjectId);
     }
@@ -220,7 +183,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
     // 设置新的防抖定时器，在用户停止编辑1秒后自动保存
     this.debounceTimer = setTimeout(() => {
       if (this.isDirty && this.currentProjectId) {
-        console.log('用户停止编辑，触发防抖保存:', this.currentProjectId);
         this.saveProject(this.currentProjectId);
       }
     }, this.debounceDelay);
@@ -280,7 +242,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
     if (this.isEditorFullyReady()) {
       this.setupEventListeners();
     } else {
-      console.log('编辑器未就绪，等待编辑器就绪事件');
       // 监听编辑器就绪事件，而不是重试
       this.waitForEditorReady();
     }
@@ -294,7 +255,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
     import('../../../../apps/g-asset-forge/src/events').then(
       ({ appEventEmitter }) => {
         appEventEmitter.on('editorReady', () => {
-          console.log('收到编辑器就绪事件，开始设置事件监听器');
           this.setupEventListeners();
         });
       },
@@ -320,19 +280,14 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
   private setupEventListeners(): void {
     // 监听编辑器的内容变化
     this.handleContentChange = () => {
-      console.log('检测到内容变化事件');
       this.markDirty();
     };
 
     // 只监听文档的场景变化事件，避免与AutoSaveGraphics重复
     // AutoSaveGraphics已经监听了commandManager.on('change')
     this.editor!.doc!.on('sceneChange', this.handleContentChange);
-    console.log('已设置 sceneChange 事件监听器');
 
     // 注意：不监听commandManager.on('change')，因为AutoSaveGraphics已经在处理
-    console.log(
-      'ProjectAutoSave 只监听 sceneChange 事件，避免与 AutoSaveGraphics 重复',
-    );
   }
 
   /**
@@ -341,33 +296,18 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
   private restartAutoSaveTimer(): void {
     // 防止重复启动定时器
     if (this.autoSaveTimer) {
-      console.log('自动保存定时器已存在，跳过重复启动');
       return;
     }
 
     this.disableAutoSave();
 
     if (this.currentProjectId) {
-      console.log('启动自动保存定时器:', {
-        projectId: this.currentProjectId,
-        interval: this.autoSaveInterval,
-        isDirty: this.isDirty,
-      });
-
       this.autoSaveTimer = setInterval(() => {
-        console.log('自动保存定时器触发:', {
-          isDirty: this.isDirty,
-          currentProjectId: this.currentProjectId,
-        });
-
         // 每3秒检查一次，如果有脏数据就保存
         if (this.isDirty && this.currentProjectId) {
-          console.log('定时器触发自动保存:', this.currentProjectId);
           this.saveProject(this.currentProjectId);
         }
       }, this.autoSaveInterval);
-    } else {
-      console.log('没有当前项目，不启动自动保存定时器');
     }
   }
 
@@ -386,10 +326,6 @@ export class ProjectAutoSave extends EventEmitter<ProjectAutoSaveEvents> {
     }
 
     const editorData = JSON.parse(this.editor.sceneGraph.toJSON());
-    console.log('获取编辑器数据:', {
-      dataCount: editorData.data?.length || 0,
-      projectId: this.currentProjectId,
-    });
 
     return editorData;
   }

@@ -34,7 +34,6 @@ export class ProjectDataManager {
    */
   async loadProjectData(projectId: string): Promise<ProjectData | null> {
     try {
-      console.log('加载项目数据:', projectId);
       const projectData = await this.storageService.loadProject(projectId);
 
       if (!projectData) {
@@ -52,12 +51,6 @@ export class ProjectDataManager {
         );
         throw new Error(error.userMessage);
       }
-
-      console.log('项目数据加载成功:', {
-        projectId,
-        projectName: projectData.name,
-        version: projectData.version,
-      });
 
       return projectData;
     } catch (error) {
@@ -79,11 +72,6 @@ export class ProjectDataManager {
     projectId: string,
   ): Promise<ProjectTypeIdentificationResult | null> {
     try {
-      console.log('识别项目类型:', {
-        projectId,
-        projectName: projectData.name,
-      });
-
       const result = await this.projectTypeManager.identifyProjectType(
         projectData,
       );
@@ -92,12 +80,6 @@ export class ProjectDataManager {
         console.warn('无法识别项目类型:', projectId);
         return null;
       }
-
-      console.log('项目类型识别成功:', {
-        projectId,
-        projectType: result.type,
-        confidence: result.confidence,
-      });
 
       return result;
     } catch (error) {
@@ -119,12 +101,10 @@ export class ProjectDataManager {
     projectType: ProjectType,
   ): Promise<void> {
     try {
-      console.log('设置项目状态:', { projectId, projectType });
 
       // 设置项目类型管理器状态
       this.projectTypeManager.setCurrentProjectType(projectId, projectType);
 
-      console.log('项目状态设置成功:', { projectId, projectType });
     } catch (error) {
       const projectError = this.errorHandler.handleError(
         error as Error,
@@ -141,10 +121,8 @@ export class ProjectDataManager {
    */
   async getProjectsList(): Promise<ProjectMetadata[]> {
     try {
-      console.log('获取项目列表');
       const projects = await this.storageService.getProjectsList();
 
-      console.log('项目列表获取成功:', { count: projects.length });
       return projects;
     } catch (error) {
       const projectError = this.errorHandler.handleError(
@@ -175,7 +153,6 @@ export class ProjectDataManager {
         return false;
       }
 
-      console.log('项目状态验证成功:', { projectType: currentType });
       return true;
     } catch (error) {
       const projectError = this.errorHandler.handleError(
@@ -195,8 +172,6 @@ export class ProjectDataManager {
     projectData: ProjectData,
   ): Promise<ProjectOperationResult> {
     try {
-      console.log('保存项目数据:', projectData.name);
-
       // 验证数据
       const isValid = await this.dataValidator.validateProjectData(projectData);
       if (!isValid) {
@@ -214,7 +189,6 @@ export class ProjectDataManager {
       // 保存数据
       await this.storageService.saveProject(projectData);
 
-      console.log('项目数据保存成功:', projectData.name);
       return {
         success: true,
         data: projectData,
@@ -238,11 +212,6 @@ export class ProjectDataManager {
    */
   async deleteProjectData(projectId: string): Promise<ProjectOperationResult> {
     try {
-      console.log('删除项目数据:', projectId);
-
-      // 只删除项目数据，不删除存储（由ProjectManagementService统一处理）
-      // await this.storageService.deleteProject(projectId);
-
       // 项目数据删除成功（实际删除由ProjectListManager处理）
       return {
         success: true,

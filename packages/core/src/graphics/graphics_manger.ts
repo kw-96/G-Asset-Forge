@@ -18,7 +18,6 @@ export class GraphicsStoreManager {
 
     // 如果图形对象已存在，以新数据为主，替换现有对象
     if (graphicsStore.has(id)) {
-      console.log(`图形对象 ${id} 已存在，以项目数据为主，替换现有对象`);
       this.remove(id);
     }
 

@@ -29,7 +29,6 @@ import { appEventEmitter } from '../events';
 import { useProjectManagement } from '../hooks/useProjectManagement';
 import { AutoSaveGraphics } from '../store/auto-save-graphs';
 import {
-  createEditorHealthChecker,
   diagnoseEditorState,
   initializeEditorSafely,
 } from '../utils/editorInitializer';
@@ -97,7 +96,6 @@ const Editor: FC<EditorProps> = ({
   // 监听 initialMode 变化，同步更新 editorMode
   useEffect(() => {
     if (initialMode !== editorMode) {
-      console.log('Editor模式同步更新:', { from: editorMode, to: initialMode });
       setEditorMode(initialMode);
     }
   }, [initialMode, editorMode]);
@@ -223,24 +221,12 @@ const Editor: FC<EditorProps> = ({
   }, [projectManagementService, setProjectEditor]);
 
   useLayoutEffect(() => {
-    console.log('Editor useLayoutEffect触发', {
-      isEditorInitialized: isEditorInitializedRef.current,
-      isInitializing: (window as any).__editorInitializing,
-      hasEditor: !!editor,
-      hasContainer: !!containerRef.current,
-    });
-
     // 更严格的防重复初始化检查
     if (
       isEditorInitializedRef.current ||
       (window as any).__editorInitializing ||
       editor // 如果编辑器已经存在，跳过初始化
     ) {
-      console.log('Editor: 跳过初始化，原因:', {
-        isEditorInitialized: isEditorInitializedRef.current,
-        isInitializing: (window as any).__editorInitializing,
-        hasEditor: !!editor,
-      });
       return;
     }
 
@@ -252,7 +238,6 @@ const Editor: FC<EditorProps> = ({
     // 使用requestAnimationFrame确保DOM完全渲染后再检查
     const rafId = requestAnimationFrame(async () => {
       if (!containerRef.current) {
-        console.debug('容器元素尚未就绪，延迟初始化');
         return;
       }
 
@@ -331,11 +316,6 @@ const Editor: FC<EditorProps> = ({
 
         (window as any).editor = editor;
 
-        console.log('Editor: 编辑器初始化完成，设置到状态', {
-          editor: !!editor,
-          doc: !!editor.doc,
-        });
-
         // 创建 AutoSaveGraphics 实例并保存引用
         const autoSaveGraphics = new AutoSaveGraphics(editor);
         (window as any).autoSaveGraphics = autoSaveGraphics;
@@ -356,13 +336,11 @@ const Editor: FC<EditorProps> = ({
         if (projectManagementServiceRef.current) {
           (window as any).__PROJECT_MANAGEMENT_SERVICE__ =
             projectManagementServiceRef.current;
-          console.log('项目管理服务已设置为全局可用');
         }
 
         // 同步设置编辑器实例到项目管理服务（在发出事件之前）
         if (projectManagementServiceRef.current) {
           projectManagementServiceRef.current.setEditor(editor);
-          console.log('编辑器实例已同步设置到项目管理服务');
         }
 
         // 设置项目管理的编辑器实例（React state，异步）
@@ -415,8 +393,6 @@ const Editor: FC<EditorProps> = ({
         // 使用 passive: true 来避免滚轮事件冲突
         window.addEventListener('resize', changeViewport, { passive: true });
 
-        // 启动编辑器健康检查
-        const stopHealthCheck = createEditorHealthChecker(editor);
 
         // 输出诊断信息（仅在开发环境）
         if (import.meta.env?.DEV) {
@@ -429,19 +405,13 @@ const Editor: FC<EditorProps> = ({
           }
         }
 
-        console.log('Editor: 调用setEditor设置编辑器状态');
         setEditor(editor);
 
         return () => {
           try {
-            console.log('开始清理编辑器资源...');
-
-            // 停止健康检查
-            stopHealthCheck();
 
             // 安全检查编辑器是否存在且未被销毁
             if (editor && editor.containerElement) {
-              console.log('销毁编辑器实例...');
               editor.destroy();
             }
 
@@ -453,8 +423,6 @@ const Editor: FC<EditorProps> = ({
             isEditorInitializedRef.current = false;
             (window as any).__editorInitializing = false;
             (window as any).__editorDiagnosed = false;
-
-            console.log('编辑器资源清理完成');
           } catch (error) {
             console.warn('Editor组件清理过程中出现警告:', error);
           }
@@ -667,26 +635,10 @@ const Editor: FC<EditorProps> = ({
         {/* 错误提示 */}
         {(error.error || error.typeError || transitionError) && (
           <div className="error-banner">
-            <div className="error-content">
-              <span className="error-message">
-                {transitionError || error.typeError || error.error}
-              </span>
-              <button
-                className="error-recovery-btn"
-                onClick={handleErrorRecovery}
-              >
-                重试
-              </button>
-              <button
-                className="error-dismiss-btn"
-                onClick={() => {
-                  clearError();
-                  setTransitionError(null);
-                }}
-              >
-                忽略
-              </button>
-            </div>
+            <span className="error-message">
+              {transitionError || error.typeError || error.error}
+            </span>
+            <button onClick={handleErrorRecovery}>重试</button>
           </div>
         )}
 
@@ -704,10 +656,6 @@ const Editor: FC<EditorProps> = ({
                   pointerEvents: 'none',
                 }}
               />
-              {console.log('Editor: 渲染H5EditorMode组件', {
-                editorMode,
-                projectType,
-              })}
               <H5EditorMode
                 projectType={projectType}
                 loading={loading}

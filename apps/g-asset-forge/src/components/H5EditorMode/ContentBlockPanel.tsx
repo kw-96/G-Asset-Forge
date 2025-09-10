@@ -11,7 +11,7 @@ import {
   TextFilled,
   UnlockFilled,
 } from '@g-asset-forge/icons';
-import { type FC, useCallback, useMemo, useState } from 'react';
+import { type FC, useCallback, useMemo, useRef, useState } from 'react';
 
 import type {
   ProjectErrorState,
@@ -37,6 +37,8 @@ interface ContentBlockPanelProps {
   onBlockReorder: (dragIndex: number, hoverIndex: number) => void;
   onBlockVisibilityToggle?: (blockId: string, isVisible: boolean) => void;
   onBlockLockToggle?: (blockId: string, isLocked: boolean) => void;
+  onBlockNameChange?: (blockId: string, newName: string) => void;
+  onBlockZoomToFit?: (blockId: string) => void;
   allElements?: any[];
   loading?: ProjectLoadingState;
   error?: ProjectErrorState;
@@ -45,12 +47,13 @@ interface ContentBlockPanelProps {
 export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
   onBlockAdd,
   selectedBlockId,
-  contentBlocks,
   onBlockSelect,
   onBlockDelete,
   onBlockReorder,
   onBlockVisibilityToggle,
   onBlockLockToggle,
+  onBlockNameChange,
+  onBlockZoomToFit,
   allElements = [],
   loading,
   error,
@@ -58,6 +61,9 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
   const [activeTab, setActiveTab] = useState<'blocks' | 'layers'>('blocks');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [hoveredId, setHoveredId] = useState<string>('');
+  const [editingId, setEditingId] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 优化的内容块类型定义
   const blockTypes = useMemo(
@@ -83,23 +89,6 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
     ],
     [],
   );
-
-  // 优化的内容块数据处理
-  const sortedContentBlocks = useMemo(() => {
-    return [...contentBlocks].sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [contentBlocks]);
-
-  // 图层数据处理（包含所有元素）
-  const layerElements = useMemo(() => {
-    return allElements.map((element, index) => ({
-      id: element.attrs?.id || `element_${index}`,
-      name: element.attrs?.name || element.type || '未命名图层',
-      type: element.type,
-      isVisible: element.attrs?.visible !== false,
-      isLocked: element.attrs?.locked === true,
-      order: index,
-    }));
-  }, [allElements]);
 
   // 优化的拖拽处理逻辑
   const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
@@ -146,72 +135,53 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
     }
   }, []);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent, index: number) => {
-      e.preventDefault();
-      const dragIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-
-      if (dragIndex !== index) {
-        onBlockReorder(dragIndex, index);
-      }
-
-      setDraggedIndex(null);
-      setIsDragging(false);
+  // 编辑相关处理函数
+  const handleDoubleClick = useCallback(
+    (elementId: string, elementName: string) => {
+      setEditingId(elementId);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.value = elementName;
+          inputRef.current.select();
+          inputRef.current.focus();
+        }
+      }, 0);
     },
-    [onBlockReorder],
+    [],
   );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+        e.currentTarget.blur();
+      }
+    },
+    [],
+  );
+
+  const handleBlur = useCallback(() => {
+    const inputVal = inputRef.current?.value;
+    if (inputVal && onBlockNameChange && editingId) {
+      onBlockNameChange(editingId, inputVal);
+    }
+    setEditingId('');
+  }, [editingId, onBlockNameChange]);
 
   // 可见性切换处理
   const handleVisibilityToggle = useCallback(
-    (blockId: string, currentVisibility: boolean) => {
-      onBlockVisibilityToggle?.(blockId, !currentVisibility);
+    (elementId: string, currentVisible: boolean) => {
+      onBlockVisibilityToggle?.(elementId, !currentVisible);
     },
     [onBlockVisibilityToggle],
   );
 
   // 锁定切换处理
   const handleLockToggle = useCallback(
-    (blockId: string, currentLocked: boolean) => {
-      onBlockLockToggle?.(blockId, !currentLocked);
+    (elementId: string, currentLocked: boolean) => {
+      onBlockLockToggle?.(elementId, !currentLocked);
     },
     [onBlockLockToggle],
   );
-
-  // 获取块图标
-  const getBlockIcon = useCallback((type: string) => {
-    switch (type) {
-      case 'text':
-        return <TextFilled />;
-      case 'image':
-        return <ImageOutlined />;
-      case 'button':
-        return <AddOutlined />;
-      default:
-        return <div className="unknown-icon">?</div>;
-    }
-  }, []);
-
-  // 获取块名称
-  const getBlockName = useCallback((block: ContentBlock) => {
-    switch (block.type) {
-      case 'text':
-        return block.content?.text?.substring(0, 20) || '标题文本';
-      case 'image':
-        return block.content?.alt || '图片';
-      case 'button':
-        return block.content?.text || '按钮';
-      default:
-        return '未知块';
-    }
-  }, []);
-
-  // 获取块状态描述
-  const getBlockStatusText = useCallback((block: ContentBlock) => {
-    const status = [];
-    if (block.isLocked) status.push('已锁定');
-    if (block.isVisible === false) status.push('已隐藏');
-    return status.length > 0 ? `(${status.join(', ')})` : '';
-  }, []);
 
   return (
     <div className="content-block-panel">
@@ -238,22 +208,21 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
             className={`tab-button ${activeTab === 'blocks' ? 'active' : ''}`}
             onClick={() => setActiveTab('blocks')}
           >
-            内容块 ({sortedContentBlocks.length})
+            组件库
           </button>
           <button
             type="button"
             className={`tab-button ${activeTab === 'layers' ? 'active' : ''}`}
             onClick={() => setActiveTab('layers')}
           >
-            图层 ({layerElements.length})
+            图层
           </button>
         </div>
       </div>
 
-      {/* 内容块选择区 */}
+      {/* 组件库选择区 */}
       {activeTab === 'blocks' && (
         <div className="blocks-section">
-          <div className="section-title">组件库</div>
           <div className="block-types">
             {blockTypes.map((blockType) => (
               <div
@@ -272,149 +241,12 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
               </div>
             ))}
           </div>
-
-          {/* 内容块列表 */}
-          <div className="section-title">
-            内容块列表
-            {sortedContentBlocks.length === 0 && (
-              <span className="empty-hint">暂无内容块</span>
-            )}
-          </div>
-          <div className="content-blocks-list">
-            {sortedContentBlocks.map((block, index) => (
-              <div
-                key={block.id}
-                className={`content-block-item ${
-                  selectedBlockId === block.id ? 'selected' : ''
-                } ${block.isLocked ? 'locked' : ''} ${
-                  block.isVisible === false ? 'hidden' : ''
-                }`}
-                draggable={!block.isLocked}
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-                onDrop={(e) => handleDrop(e, index)}
-                onClick={() => !block.isLocked && onBlockSelect(block.id)}
-              >
-                <div className="block-main">
-                  <div className="block-icon">{getBlockIcon(block.type)}</div>
-                  <div className="block-details">
-                    <div className="block-name">
-                      {getBlockName(block)}
-                      <span className="block-status">
-                        {getBlockStatusText(block)}
-                      </span>
-                    </div>
-                    <div className="block-type-label">{block.type}</div>
-                  </div>
-                </div>
-
-                <div className="block-controls">
-                  {/* 可见性切换 */}
-                  <button
-                    type="button"
-                    className="control-btn visibility-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleVisibilityToggle(
-                        block.id,
-                        block.isVisible !== false,
-                      );
-                    }}
-                    title={block.isVisible === false ? '显示' : '隐藏'}
-                  >
-                    {block.isVisible === false ? (
-                      <HideOutlined />
-                    ) : (
-                      <ShowOutlined />
-                    )}
-                  </button>
-
-                  {/* 锁定切换 */}
-                  <button
-                    type="button"
-                    className="control-btn lock-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLockToggle(block.id, block.isLocked === true);
-                    }}
-                    title={block.isLocked ? '解锁' : '锁定'}
-                  >
-                    {block.isLocked ? <LockFilled /> : <UnlockFilled />}
-                  </button>
-
-                  {/* 删除按钮 */}
-                  <button
-                    type="button"
-                    className="control-btn delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onBlockDelete(block.id);
-                    }}
-                    disabled={block.isLocked}
-                    title="删除"
-                  >
-                    <RemoveOutlined />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 图层列表区 */}
-      {activeTab === 'layers' && (
-        <div className="layers-section">
-          <div className="section-title">
-            图层列表
-            {layerElements.length === 0 && (
-              <span className="empty-hint">暂无图层</span>
-            )}
-          </div>
-          <div className="layers-list">
-            {layerElements.map((layer) => (
-              <div
-                key={layer.id}
-                className={`layer-item ${
-                  selectedBlockId === layer.id ? 'selected' : ''
-                } ${layer.isLocked ? 'locked' : ''} ${
-                  !layer.isVisible ? 'hidden' : ''
-                }`}
-                onClick={() => !layer.isLocked && onBlockSelect(layer.id)}
-              >
-                <div className="layer-main">
-                  <div className="layer-icon">{getBlockIcon(layer.type)}</div>
-                  <div className="layer-details">
-                    <div className="layer-name">{layer.name}</div>
-                    <div className="layer-type">{layer.type}</div>
-                  </div>
-                </div>
-
-                <div className="layer-controls">
-                  <button
-                    type="button"
-                    className="control-btn visibility-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // 这里需要通过allElements来处理图层可见性
-                    }}
-                    title={layer.isVisible ? '隐藏' : '显示'}
-                  >
-                    {layer.isVisible ? <ShowOutlined /> : <HideOutlined />}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
       {/* 图层管理区 */}
       {activeTab === 'layers' && (
         <div className="layers-section">
-          <div className="section-title">图层 ({allElements.length})</div>
-
           {allElements.length === 0 ? (
             <div className="empty-layers">
               <div className="empty-text">暂无图层</div>
@@ -423,31 +255,52 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
               </div>
             </div>
           ) : (
-            <div className="layer-list">
-              {allElements.map((element, index) => {
-                const isSelected = selectedBlockId === element.attrs?.id;
+            <div className="g-asset-forge-layer-tree">
+              {[...allElements].reverse().map((element, index) => {
+                const elementId = element.attrs?.id || `element_${index}`;
+                const isSelected = selectedBlockId === elementId;
+                const isHovered = hoveredId === elementId;
+                const isEditing = editingId === elementId;
                 const elementType =
                   element.type || element.attrs?.type || 'unknown';
                 const elementName =
-                  element.attrs?.objectName ||
-                  element.attrs?.id ||
-                  `图层 ${index + 1}`;
+                  element.attrs?.objectName || `图层 ${index + 1}`;
+                const isVisible = element.attrs?.visible !== false;
+                const isLocked = element.attrs?.locked === true;
 
                 return (
                   <div
-                    key={element.attrs?.id || index}
-                    className={`layer-item ${isSelected ? 'selected' : ''} ${
+                    key={elementId}
+                    className={`sk-layer-item ${
+                      isSelected ? 'sk-active' : ''
+                    } ${isHovered ? 'sk-layer-highlight' : ''} ${
+                      isEditing ? 'sk-editing' : ''
+                    } ${!isVisible ? 'sk-hidden' : ''} ${
                       draggedIndex === index ? 'dragging' : ''
                     }`}
-                    onClick={() => onBlockSelect(element.attrs?.id || '')}
+                    onMouseDown={(e) => {
+                      if (e.ctrlKey || e.metaKey) {
+                        // 多选逻辑
+                        onBlockSelect(elementId);
+                      } else {
+                        onBlockSelect(elementId);
+                      }
+                    }}
+                    onMouseEnter={() => setHoveredId(elementId)}
+                    onMouseLeave={() => setHoveredId('')}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
                   >
-                    <div className="layer-drag-handle">⋮⋮</div>
-
-                    <div className="layer-icon">
+                    <div style={{ width: 0, minWidth: 0 }} />
+                    <div className="sk-group-collapse-btn" />
+                    <div
+                      className="sk-layer-icon"
+                      onDoubleClick={() => {
+                        onBlockZoomToFit?.(elementId);
+                      }}
+                    >
                       {elementType === 'H5Container' ? (
                         '📱'
                       ) : elementType === 'H5TextBlock' ? (
@@ -464,24 +317,63 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
                         '🔷'
                       )}
                     </div>
-
-                    <div className="layer-info">
-                      <div className="layer-name">{elementName}</div>
-                      <div className="layer-type">{elementType}</div>
-                    </div>
-
-                    <div className="layer-actions">
-                      <button
-                        type="button"
-                        className="delete-button"
-                        title="删除图层"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBlockDelete(element.attrs?.id || '');
+                    {!isEditing && (
+                      <span
+                        className="sk-layout-name"
+                        onDoubleClick={() =>
+                          handleDoubleClick(elementId, elementName)
+                        }
+                      >
+                        {elementName}
+                      </span>
+                    )}
+                    {isEditing && (
+                      <input
+                        ref={inputRef}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={handleKeyDown}
+                        onBlur={handleBlur}
+                        defaultValue={elementName}
+                      />
+                    )}
+                    <div
+                      className={`sk-layer-item-actions ${
+                        isLocked || !isVisible ? 'sk-action-visible' : ''
+                      }`}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                    >
+                      <span
+                        className="sk-action-btn"
+                        style={{
+                          visibility: isLocked ? 'visible' : undefined,
                         }}
+                        onMouseDown={() =>
+                          handleLockToggle(elementId, isLocked)
+                        }
+                        title={isLocked ? '解锁' : '锁定'}
+                      >
+                        {isLocked ? <LockFilled /> : <UnlockFilled />}
+                      </span>
+                      <span
+                        className="sk-action-btn"
+                        style={{
+                          visibility: !isVisible ? 'visible' : undefined,
+                        }}
+                        onMouseDown={() =>
+                          handleVisibilityToggle(elementId, isVisible)
+                        }
+                        title={isVisible ? '隐藏' : '显示'}
+                      >
+                        {isVisible ? <ShowOutlined /> : <HideOutlined />}
+                      </span>
+                      <span
+                        className="sk-action-btn"
+                        onMouseDown={() => onBlockDelete(elementId)}
+                        title="删除图层"
                       >
                         <RemoveOutlined />
-                      </button>
+                      </span>
                     </div>
                   </div>
                 );

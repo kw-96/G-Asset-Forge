@@ -35,7 +35,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   error,
   projectManagementService: externalProjectManagementService,
 }) => {
-  console.log('H5EditorMode: 组件开始渲染', { loading, error });
   const editor = useContext(EditorContext);
   const containerRef = useRef<HTMLDivElement>(null);
   const { projectManagementService } = useProjectManagement(
@@ -63,7 +62,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   const [initializationError, setInitializationError] = useState<string | null>(
     null,
   );
-  const [h5ServiceHealth, setH5ServiceHealth] = useState<any>(null);
 
   // 获取块内容
   const getBlockContent = useCallback((block: any) => {
@@ -138,17 +136,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       return;
     }
 
-    // 如果编辑器文档不存在，等待一下再重试
-    if (!editor.editor.doc) {
-      console.log('H5EditorMode: 编辑器文档不存在，等待文档初始化...');
-      setTimeout(() => {
-        if (editor?.editor?.doc) {
-          initializeH5Service();
-        }
-      }, 100);
-      return;
-    }
-
     // 检查是否已有可复用的H5Service
     if ((window as any).__h5Service && (window as any).__h5ServiceInitialized) {
       console.log('发现现有H5Service，尝试复用');
@@ -159,7 +146,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         existingH5Service &&
         typeof existingH5Service.setEditor === 'function'
       ) {
-        console.log('复用现有H5Service');
         h5ServiceRef.current = existingH5Service;
 
         // 确保编辑器实例是最新的
@@ -169,7 +155,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
         // 更新内容块列表
         updateContentBlocksList();
-        console.log('H5Service复用完成，内容块数量:', contentBlocks.length);
         return;
       } else {
         console.log('现有H5Service无效，将创建新的');
@@ -183,25 +168,17 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     initializationRef.current = true;
 
     try {
-      console.log('开始初始化H5Service - 重构版本');
-
       // 动态导入H5Service，使用新的实现
-      console.log('正在动态导入H5Service...');
       const { H5Service } = await import('@g-asset-forge/core');
-      console.log('H5Service导入成功:', H5Service);
 
       // 创建H5Service实例（简化版，不需要复杂配置）
-      console.log('正在创建H5Service实例...');
       const h5Service = new H5Service();
-      console.log('H5Service实例创建成功:', h5Service);
 
       // 将H5Service存储到全局状态
       (window as any).__h5Service = h5Service;
 
       // 简化初始化：只设置编辑器，让H5Service通过事件监听自动初始化
-      console.log('正在设置编辑器到H5Service...');
       h5Service.setEditor(editor.editor);
-      console.log('H5Service编辑器设置成功');
 
       // 确保H5Service成功初始化后才设置ref
       h5ServiceRef.current = h5Service;
@@ -209,12 +186,10 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       // 设置事件监听器（防重复注册）
       if (!(h5Service as any).__eventsRegistered) {
         h5Service.on('contentBlocksChanged', (blocks: any[]) => {
-          console.log('内容块变化:', blocks);
           updateContentBlocksList();
         });
 
         h5Service.on('selectionChanged', (selectedBlocks: string[]) => {
-          console.log('选择变化:', selectedBlocks);
           if (selectedBlocks.length > 0) {
             setSelectedBlockId(selectedBlocks[0]);
           } else {
@@ -228,7 +203,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         });
 
         h5Service.on('healthCheck', (isHealthy: boolean, issues?: string[]) => {
-          setH5ServiceHealth({ isHealthy, issues, timestamp: Date.now() });
           if (!isHealthy) {
             console.warn('H5Service健康检查失败:', issues);
           }
@@ -236,37 +210,23 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
         // 标记已注册
         (h5Service as any).__eventsRegistered = true;
-        console.log('H5Service事件监听器已注册');
-      } else {
-        console.warn('H5Service事件监听器已存在，跳过重复注册');
       }
-
-      // h5ServiceRef.current 已在上面设置，无需重复设置
 
       // 立即设置editor实例
       if (h5ServiceRef.current && editor?.editor) {
         h5ServiceRef.current.setEditor(editor.editor);
-        console.log('H5Service editor实例已设置');
       }
 
       // 初始化自动保存机制
-      console.log('正在初始化自动保存机制...');
       if (!autoSaveRef.current) {
         autoSaveRef.current = new AutoSaveGraphics(editor.editor);
-        console.log('H5 模式自动保存已启用');
       }
 
       // 初始化内容块列表
-      console.log('正在初始化内容块列表...');
       updateContentBlocksList();
-      console.log(
-        '内容块列表初始化完成，当前内容块数量:',
-        contentBlocks.length,
-      );
 
       // 设置初始化完成标记
       (window as any).__h5ServiceInitialized = true;
-      console.log('H5Service初始化完成');
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'H5Service初始化失败';
@@ -286,12 +246,9 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   const cleanupH5Service = useCallback(async () => {
     if (h5ServiceRef.current) {
       try {
-        console.log('开始清理H5Service');
-
         // 执行健康检查
         if (typeof h5ServiceRef.current.performHealthCheck === 'function') {
-          const healthResult = await h5ServiceRef.current.performHealthCheck();
-          console.log('清理前健康检查:', healthResult);
+          await h5ServiceRef.current.performHealthCheck();
         }
 
         // 清理资源
@@ -305,7 +262,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         h5ServiceRef.current = null;
         // 清理全局H5Service状态
         (window as any).__h5Service = null;
-        console.log('H5Service清理完成');
       } catch (error) {
         console.error('H5Service清理失败:', error);
       }
@@ -324,29 +280,14 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   }, []);
 
   useEffect(() => {
-    console.log('H5EditorMode useEffect触发', {
-      hasEditor: !!editor?.editor,
-      hasDoc: !!editor?.editor?.doc,
-      hasContainer: !!containerRef?.current,
-      editorReady: !!(
-        editor?.editor &&
-        editor.editor.doc &&
-        containerRef?.current
-      ),
-    });
-
     // 如果编辑器或容器不存在，等待初始化
     if (!editor?.editor || !containerRef?.current) {
-      console.log('H5EditorMode: 编辑器或容器不存在，等待初始化...');
       return;
     }
 
     // 如果编辑器文档不存在，监听文档初始化完成事件
     if (!editor.editor.doc) {
-      console.log('H5EditorMode: 编辑器文档不存在，等待文档初始化完成...');
-
       const handleDocReady = () => {
-        console.log('H5EditorMode: 编辑器文档初始化完成，开始初始化H5Service');
         initializeH5Service();
       };
 
@@ -365,8 +306,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
         // 监听编辑器变化事件，确保H5模式下添加的图形能被保存
         const handleEditorChange = () => {
-          console.log('H5模式检测到编辑器变化');
-
           // 检查是否需要重新添加H5容器
           if (h5ServiceRef.current) {
             const currentCanvas = editor?.editor?.doc?.getCurrentCanvas();
@@ -387,21 +326,17 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
                   );
                 });
 
-              console.log('当前画布中的H5容器数量:', h5Containers.length);
-
               // 如果H5容器数量为0，且不是在项目加载过程中，且H5容器未被恢复，才重新添加
               if (
                 h5Containers.length === 0 &&
                 !(window as any).__isProjectLoading &&
                 !(window as any).__h5ContainerRestored
               ) {
-                console.log('检测到H5容器丢失，重新添加');
                 h5ServiceRef.current.addH5ContainerToCanvas?.();
                 // 设置H5容器恢复标记
                 (window as any).__h5ContainerRestored = true;
               } else if (h5Containers.length > 0) {
                 // 如果H5容器存在，同步H5Service状态
-                console.log('H5容器已存在，同步H5Service状态');
                 if (h5ServiceRef.current) {
                   h5ServiceRef.current.syncH5Container?.();
                 }
@@ -410,7 +345,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
                 // 保留第一个，删除多余的
                 for (let i = 1; i < h5Containers.length; i++) {
                   const extraContainer = h5Containers[i];
-                  console.log('删除多余的H5容器:', extraContainer.attrs.id);
                   extraContainer.removeFromParent();
                 }
               }
@@ -422,17 +356,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         if (editor.editor?.commandManager) {
           editor.editor.commandManager.on('change', handleEditorChange);
         }
-
-        // 设置H5数据定期保存到编辑器数据
-        // 注意：H5Service暂时没有saveToEditorData方法，暂时注释掉
-        // saveH5DataIntervalRef.current = setInterval(() => {
-        //   if (h5ServiceRef.current) {
-        //     const success = h5ServiceRef.current.saveToEditorData();
-        //     if (success) {
-        //       console.log('H5数据已定期保存到编辑器数据');
-        //     }
-        //   }
-        // }, 5000); // 每5秒保存一次H5数据
 
         // 初始化 H5 编辑模式
         if (h5ServiceRef.current) {
@@ -554,7 +477,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
               if (autoSaveRef.current) {
                 autoSaveRef.current.stopAutoSave();
                 autoSaveRef.current = null;
-                console.log('H5 模式自动保存已停止');
               }
 
               // 清理H5数据保存定时器
@@ -562,7 +484,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
               if (saveH5DataInterval) {
                 clearInterval(saveH5DataInterval);
                 saveH5DataIntervalRef.current = null;
-                console.log('H5数据保存定时器已清理');
               }
 
               // 销毁H5服务
@@ -602,8 +523,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
   // 错误恢复处理
   const handleErrorRecovery = useCallback(async () => {
-    console.log('尝试H5Service错误恢复...');
-
     try {
       setInitializationError(null);
 
@@ -612,8 +531,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
       // 重新初始化
       await initializeH5Service();
-
-      console.log('H5Service错误恢复完成');
     } catch (error) {
       console.error('H5Service错误恢复失败:', error);
       setInitializationError('错误恢复失败');
@@ -753,10 +670,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
                   ? h5Container.getChildren()
                   : [];
                 setAllElements(Array.isArray(children) ? children : []);
-                console.log(
-                  'H5EditorMode: 从编辑器直接获取元素列表，数量:',
-                  children.length,
-                );
                 return;
               }
             }
@@ -779,16 +692,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
   return (
     <div className="h5-editor-mode g-asset-forge-h5-mode">
-      {/* H5Service初始化状态指示器 */}
-      {(isInitializing || loading?.isInitializing) && (
-        <div className="h5-initialization-overlay">
-          <div className="initialization-indicator">
-            <div className="spinner" />
-            <span>正在初始化H5编辑器...</span>
-          </div>
-        </div>
-      )}
-
       {/* 错误提示 */}
       {(initializationError || error?.error) && (
         <div className="h5-error-banner">
@@ -803,21 +706,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
               重新初始化
             </button>
           </div>
-        </div>
-      )}
-
-      {/* H5Service健康状态指示器 */}
-      {h5ServiceHealth && !h5ServiceHealth.isHealthy && (
-        <div className="h5-health-warning">
-          <span>⚠️ H5服务状态异常</span>
-          <details>
-            <summary>查看详情</summary>
-            <ul>
-              {h5ServiceHealth.issues?.map((issue: string, index: number) => (
-                <li key={index}>{issue}</li>
-              ))}
-            </ul>
-          </details>
         </div>
       )}
 

@@ -53,16 +53,12 @@ export class GAssetForgeCanvas extends GAssetForgeGraphics<GAssetForgeCanvasAttr
   override insertChild(graphics: GAssetForgeGraphics, sortIdx?: string) {
     // 如果正在添加H5容器本身，直接添加到画布，避免循环依赖
     if ((graphics as any).type === 'H5Container') {
-      console.log('添加H5容器到画布:', graphics.attrs.id);
       super.insertChild(graphics, sortIdx);
 
       // 添加H5容器后立即重新识别，确保后续图形能正确添加到H5容器
       // 使用requestAnimationFrame确保DOM更新完成
       requestAnimationFrame(() => {
-        const h5Container = this.findH5Container();
-        if (h5Container) {
-          console.log('H5容器添加后重新识别成功:', h5Container.attrs.id);
-        }
+        this.findH5Container();
       });
       return;
     }
@@ -72,7 +68,6 @@ export class GAssetForgeCanvas extends GAssetForgeGraphics<GAssetForgeCanvasAttr
 
     if (!isH5Project) {
       // 非H5模式：直接使用父类的insertChild方法
-      console.log('设计模式：将图形添加到画布', graphics.attrs.id);
       super.insertChild(graphics, sortIdx);
       return;
     }
@@ -82,17 +77,14 @@ export class GAssetForgeCanvas extends GAssetForgeGraphics<GAssetForgeCanvasAttr
 
     if (h5Container) {
       // H5模式：将图形添加到H5容器内
-      console.log('H5模式：将图形添加到H5容器内', {
-        graphicsId: graphics.attrs.id,
-        graphicsType: graphics.type,
-        h5ContainerId: h5Container.attrs.id,
-      });
       h5Container.insertChild(graphics, sortIdx);
-      console.log('图形已添加到H5容器:', graphics.attrs.id);
     } else {
-      // H5模式但没有找到H5容器：使用父类的insertChild方法
-      console.log('H5模式但未找到H5容器：将图形添加到画布', graphics.attrs.id);
-      super.insertChild(graphics, sortIdx);
+      // H5模式但没有找到H5容器：这是配置错误
+      console.error(
+        'H5模式配置错误：未找到H5容器，无法添加图形',
+        graphics.attrs.id,
+      );
+      throw new Error('H5模式配置错误：未找到H5容器，请确保H5容器已正确初始化');
     }
   }
 
@@ -119,24 +111,11 @@ export class GAssetForgeCanvas extends GAssetForgeGraphics<GAssetForgeCanvasAttr
     });
 
     if (h5Container) {
-      console.log(
-        '找到H5容器:',
-        h5Container.attrs.id,
-        '类型:',
-        h5Container.type,
-      );
       return h5Container;
     }
 
     console.log('未找到H5容器，当前画布子元素数量:', children.length);
-    console.log(
-      '子元素详情:',
-      children.map((child: any) => ({
-        type: child.type,
-        id: child.attrs?.id,
-        constructor: child.constructor?.name,
-      })),
-    );
+
     return null;
   }
 }

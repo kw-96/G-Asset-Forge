@@ -87,7 +87,6 @@ export class ProjectHandlerFactory {
       const handler = this.activeHandlers.get(cacheKey)!;
       // 检查处理器是否已被销毁，如果是则重新创建
       if (handler.getState() === 'destroyed') {
-        console.log(`处理器已销毁，重新创建: ${type} (${cacheKey})`);
         this.activeHandlers.delete(cacheKey);
       } else {
         this.updateHandlerUsage(type);
@@ -113,7 +112,6 @@ export class ProjectHandlerFactory {
       await this.enforceMaxCacheSize();
     }
 
-    console.log(`项目处理器已创建: ${type} (${cacheKey})`);
     return handler;
   }
 

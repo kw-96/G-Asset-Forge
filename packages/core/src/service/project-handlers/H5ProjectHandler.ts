@@ -107,8 +107,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
 
     // 配置编辑器为H5模式
     this.configureH5Mode();
-
-    console.log('H5项目处理器初始化完成');
   }
 
   /**
@@ -136,7 +134,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
       // 渲染编辑器
       this.editor.render();
 
-      console.log('H5项目数据加载成功');
       return true;
     } catch (error) {
       console.error('H5项目数据加载失败:', error);
@@ -178,7 +175,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
     // 更新当前项目数据引用
     this.currentProjectData = projectData;
 
-    console.log('H5项目数据保存完成');
     return projectData;
   }
 
@@ -300,7 +296,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
     // 启用H5特定功能
     // 这里可以配置编辑器的H5模式设置
 
-    console.log('编辑器已配置为H5模式');
   }
 
   /**
@@ -332,7 +327,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
         this.editor.viewportManager.setZoom(1, { x: 0, y: 0 });
       }
 
-      console.log('编辑器状态已清理');
     } catch (error) {
       console.warn('清理编辑器状态时出错:', error);
     }

@@ -107,10 +107,7 @@ export class H5Container extends GAssetForgeFrame {
     const validation =
       H5ContainerAttrsController.validateAttrsUpdate(partialAttrs);
     if (!validation.isValid) {
-      console.warn(
-        'H5容器属性更新被阻止，包含禁止的属性:',
-        validation.forbiddenKeys,
-      );
+      return;
     }
     if (validation.warnings.length > 0) {
       console.warn('H5容器属性更新警告:', validation.warnings);
@@ -337,9 +334,6 @@ export class H5Container extends GAssetForgeFrame {
     }
   }
 
-  // 移除自定义序列化方法，由 SceneGraph 统一处理
-  // 子元素会作为独立的图形对象被序列化
-
   // 销毁容器
   destroy(): void {
     // 清理所有子元素
@@ -347,7 +341,5 @@ export class H5Container extends GAssetForgeFrame {
     children.forEach((child) => {
       this.removeChild(child);
     });
-
-    // Frame类没有destroy方法，不需要调用super.destroy()
   }
 }

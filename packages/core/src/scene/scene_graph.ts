@@ -390,15 +390,6 @@ export class SceneGraph {
   }
 
   load(info: GraphicsAttrs[], isApplyChanges?: boolean) {
-    console.log(
-      'sceneGraph.load: 图形对象类型:',
-      info.map((item) => ({
-        type: item.type,
-        id: item.id,
-        name: item.objectName,
-      })),
-    );
-
     // 只有在不是应用变更时才清空文档
     if (!isApplyChanges) {
       // H5模式下不清空文档，避免H5容器丢失
@@ -435,14 +426,6 @@ export class SceneGraph {
 
     // 创建图形数组（包括画布）
     const graphicsArr = this.createGraphicsArr(info);
-    console.log(
-      'sceneGraph.load: 创建的图形详情:',
-      graphicsArr.map((graphics) => ({
-        type: graphics.attrs.type,
-        id: graphics.attrs.id,
-        name: graphics.attrs.objectName,
-      })),
-    );
 
     // 添加新的图形项目
     this.addItems(graphicsArr);

@@ -116,7 +116,6 @@ function App() {
       // 返回首页
       setCurrentView('home');
 
-      console.log('项目已关闭，返回首页');
     } catch (error) {
       console.error('关闭项目时发生错误:', error);
       // 即使保存失败，也要返回首页
@@ -155,7 +154,6 @@ function App() {
     const service = projectManagementService;
 
     const handleProjectModeChanged = (mode: string) => {
-      console.log('项目模式变化:', mode);
       if (mode === 'h5') {
         setSelectedMode('h5');
       } else {
@@ -340,7 +338,6 @@ function App() {
       // 删除项目
       const success = await service.deleteProject(projectId);
       if (success) {
-        console.log('删除项目成功:', projectId);
         // 项目列表将通过事件自动更新
       } else {
         console.error('删除项目失败:', projectId);
@@ -385,7 +382,6 @@ function App() {
           );
         } else {
           // 如果没有项目，返回首页
-          console.log('没有当前项目，返回首页');
           return (
             <HomePage
               onCreateNewProject={handleCreateNewProject}

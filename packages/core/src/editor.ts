@@ -185,12 +185,6 @@ export class GAssetForgeEditor {
 
     (this as any).isLoadingContents = true;
 
-    console.log(
-      'setContents: 开始加载数据，数据包含',
-      data.data.length,
-      '个对象',
-    );
-
     // 在单项目模式下，直接加载项目数据
     // 不需要清空现有画布，因为编辑器初始化时没有创建默认画布
     this.sceneGraph.load(data.data);
@@ -203,17 +197,11 @@ export class GAssetForgeEditor {
     if (availableCanvases && availableCanvases.length > 0) {
       // 使用项目中的第一个画布
       const firstCanvas = availableCanvases[0];
-      console.log(
-        'setContents: 使用项目画布:',
-        firstCanvas.attrs.id,
-        firstCanvas.attrs.objectName,
-      );
 
       // 直接设置currentCanvasId，避免触发无效ID检查
       this.doc.setCurrentCanvasId(firstCanvas.attrs.id);
     } else {
       // 如果项目数据中没有画布，创建一个新的
-      console.log('setContents: 项目数据中没有画布，创建新画布');
       const canvasName = getNoConflictObjectName(this.doc, 'Page');
       const canvas = new GAssetForgeCanvas(
         {
@@ -229,7 +217,6 @@ export class GAssetForgeEditor {
       this.sceneGraph.addItems([canvas]);
       this.doc.insertChild(canvas);
 
-      console.log('setContents: 创建新画布完成:', canvas.attrs.id);
       // 直接设置currentCanvasId，避免触发无效ID检查
       this.doc.setCurrentCanvasId(canvas.attrs.id);
     }
@@ -252,7 +239,6 @@ export class GAssetForgeEditor {
   private autoDetectAndCreateH5Container(): void {
     const currentCanvas = this.doc.getCurrentCanvas();
     if (!currentCanvas) {
-      console.log('setContents: 当前画布不存在，跳过H5容器检测');
       return;
     }
 
@@ -269,19 +255,16 @@ export class GAssetForgeEditor {
       });
 
     if (existingH5Container) {
-      console.log('setContents: 已存在H5容器，跳过创建');
       return;
     }
 
     // 检查是否包含H5元素（用于判断是否为H5项目）
     const hasH5Elements = this.containsH5Elements();
     if (!hasH5Elements) {
-      console.log('setContents: 非H5项目，跳过H5容器创建');
       return;
     }
 
     // 创建H5容器
-    console.log('setContents: 检测到H5项目，创建H5容器');
     this.createH5Container().catch((error) => {
       console.error('setContents: H5容器创建失败', error);
     });
@@ -338,7 +321,6 @@ export class GAssetForgeEditor {
 
     // 添加H5容器到画布
     currentCanvas.insertChild(h5Container);
-    console.log('setContents: H5容器创建完成', h5Container.attrs.id);
   }
 
   /**
