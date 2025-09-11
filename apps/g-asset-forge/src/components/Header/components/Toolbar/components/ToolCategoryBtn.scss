@@ -19,15 +19,27 @@
     &.position-first {
       border-radius: 12px 0 0 12px;
       overflow: hidden;
+
+      .main-tool-button {
+        padding: 6px 8px 6px 12px;
+      }
     }
 
     &.position-middle {
       border-radius: 0;
+
+      .main-tool-button {
+        padding: 6px 8px;
+      }
     }
 
     &.position-last {
       border-radius: 0 12px 12px 0;
       overflow: hidden;
+
+      .main-tool-button {
+        padding: 6px 12px 6px 8px;
+      }
     }
   }
 
@@ -49,7 +61,6 @@
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
-    padding: 6px 8px;
 
     &:hover {
       background: #f3f4f6;
@@ -114,26 +125,29 @@
     justify-content: center;
     height: 100%;
     width: 24px;
-    padding: 4px 0; // 明确重置padding，避免继承的样式影响
+    padding: 6px 0; // 明确重置padding，避免继承的样式影响
     border: none;
     border-radius: 0; // 移除单独圆角，让组容器处理圆角
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
 
+    // 下拉按钮悬浮时，颜色变为深色
     &:hover {
-      background: #f3f4f6;
-      color: #374151;
+      background: #f3f4f6; // 悬浮时，颜色变为深色
+      color: #374151; // 悬浮时，颜色变为深色
     }
 
+    // 下拉按钮点击时，颜色变为深色
     &:active {
-      transform: scale(0.95);
-      color: #374151;
+      transform: scale(0.95); // 点击时，颜色变为深色
+      color: #374151; // 点击时，颜色变为深色
     }
 
+    // 下拉按钮聚焦时，颜色变为深色
     &:focus-visible {
-      outline: 2px solid #3b82f6;
-      outline-offset: 2px;
+      outline: 2px solid #3b82f6; // 聚焦时，颜色变为深色
+      outline-offset: 2px; // 聚焦时，颜色变为深色
     }
 
     .dropdown-icon {
