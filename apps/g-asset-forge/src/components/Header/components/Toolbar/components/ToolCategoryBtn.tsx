@@ -25,6 +25,7 @@ interface ToolCategoryBtnProps {
   currentTool: string;
   enableTools: string[];
   onToolSelect: (toolId: string) => void;
+  position: 'first' | 'middle' | 'last';
 }
 
 export const ToolCategoryBtn: React.FC<ToolCategoryBtnProps> = ({
@@ -32,6 +33,7 @@ export const ToolCategoryBtn: React.FC<ToolCategoryBtnProps> = ({
   currentTool,
   enableTools,
   onToolSelect,
+  position,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -45,7 +47,13 @@ export const ToolCategoryBtn: React.FC<ToolCategoryBtnProps> = ({
   );
   const activeTool = currentToolInfo || defaultTool;
 
-  // 过滤出可用的工具
+  // 检查当前激活的工具是否已实现
+  const isActiveToolImplemented = activeTool
+    ? enableTools.includes(activeTool.id)
+    : false;
+
+  // 显示所有工具，包括未实现的工具
+  const allTools = category.tools;
   const availableTools = category.tools.filter((tool) =>
     enableTools.includes(tool.id),
   );
@@ -85,15 +93,15 @@ export const ToolCategoryBtn: React.FC<ToolCategoryBtnProps> = ({
 
   return (
     <div className="tool-category-btn" ref={dropdownRef}>
-      <div className="tool-group">
-        {availableTools.length > 1 ? (
+      <div className={classNames('tool-group', `position-${position}`)}>
+        {allTools.length > 1 ? (
           <div className="tool-button-with-dropdown">
             <button
               className={classNames('main-tool-button', {
                 active: isActive,
               })}
               onMouseDown={() => {
-                if (activeTool) {
+                if (activeTool && isActiveToolImplemented) {
                   handleToolSelect(activeTool.id);
                 }
               }}
@@ -117,7 +125,7 @@ export const ToolCategoryBtn: React.FC<ToolCategoryBtnProps> = ({
               <div className="dropdown-icon">
                 <SvgIcon
                   name="icon.24.chevron.down"
-                  size={10}
+                  size={TOOLBAR_CONFIG.DROPDOWN_ARROW_SIZE}
                   className={classNames('dropdown-arrow', { open: isOpen })}
                 />
               </div>
@@ -129,7 +137,7 @@ export const ToolCategoryBtn: React.FC<ToolCategoryBtnProps> = ({
               active: isActive,
             })}
             onMouseDown={() => {
-              if (activeTool) {
+              if (activeTool && isActiveToolImplemented) {
                 handleToolSelect(activeTool.id);
               }
             }}
@@ -142,9 +150,9 @@ export const ToolCategoryBtn: React.FC<ToolCategoryBtnProps> = ({
         )}
       </div>
 
-      {isOpen && availableTools.length > 1 && (
+      {isOpen && allTools.length > 1 && (
         <div className="dropdown-menu">
-          {availableTools.map((tool) => {
+          {allTools.map((tool) => {
             const isUnimplemented = unimplementedTools.includes(tool.id);
             return (
               <button

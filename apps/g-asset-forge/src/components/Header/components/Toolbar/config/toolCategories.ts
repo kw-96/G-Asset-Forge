@@ -2,8 +2,8 @@ import { isWindows } from '@g-asset-forge/common';
 
 // 工具栏配置
 export const TOOLBAR_CONFIG = {
-  ICON_SIZE: 28, // 工具图标大小
-  DROPDOWN_ARROW_SIZE: 28, // 下拉箭头大小
+  ICON_SIZE: 30, // 工具图标大小
+  DROPDOWN_ARROW_SIZE: 30, // 下拉箭头大小
 } as const;
 
 // 工具分类配置

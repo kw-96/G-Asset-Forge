@@ -53,15 +53,22 @@ export const ToolBar = () => {
 
   return (
     <div className="g-asset-forge-tool-bar">
-      {TOOL_CATEGORIES.map((category) => (
-        <ToolCategoryBtn
-          key={category.id}
-          category={category}
-          currentTool={currTool}
-          enableTools={enableTools}
-          onToolSelect={handleToolSelect}
-        />
-      ))}
+      {TOOL_CATEGORIES.map((category, index) => {
+        let position: 'first' | 'middle' | 'last' = 'middle';
+        if (index === 0) position = 'first';
+        else if (index === TOOL_CATEGORIES.length - 1) position = 'last';
+
+        return (
+          <ToolCategoryBtn
+            key={category.id}
+            category={category}
+            currentTool={currTool}
+            enableTools={enableTools}
+            onToolSelect={handleToolSelect}
+            position={position}
+          />
+        );
+      })}
 
       {isPathEditorActive && (
         <Button

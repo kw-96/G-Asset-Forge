@@ -98,6 +98,12 @@ export abstract class H5ContentBlock<
       paddingRight: this.attrs.paddingRight || 0,
     };
   }
+
+  // 获取图层图标路径 - 与设计模式统一
+  override getLayerIconPath(): string {
+    // 基于icon.24.plugin.svg，缩放到12x12尺寸
+    return 'M6 1.5A1.25 1.25 0 0 1 7.07 2.896c-.028.046-.045.079-.057.104H8.5a.5.5 0 0 1 .5.5v.94a.5.5 0 0 1-.667.472.625.625 0 1 0-.208 1.214c.07 0 .139-.013.208-.037a.5.5 0 0 1 .667.471V8a.5.5 0 0 1-.5.5H7.013c.012.025.029.058.057.104A1.25 1.25 0 1 1 4.987 8.896c.028-.046.045-.079.057-.104H3.5a.5.5 0 0 1-.5-.5v-.941l.004-.06a.5.5 0 0 1 .664-.411c.069.025.139.037.208.037l.064-.004a.625.625 0 0 0 .558-.558L4.5 6a.625.625 0 0 0-.561-.622l-.064-.004c-.071 0-.14.013-.208.037A.5.5 0 0 1 3 5.94V4a.5.5 0 0 1 .5-.5h1.487a.946.946 0 0 0-.057-.104A1.25 1.25 0 0 1 6 1.5Zm0 .5a.75.75 0 0 0-.642 1.137c.074.122.142.253.142.395V4H3.5v.94a1.125 1.125 0 1 1 .375 2.185c-.132 0-.258-.025-.375-.066V8h2v.47c0 .142-.069.273-.142.394a.75.75 0 1 0 1.284 0c-.074-.121-.142-.252-.142-.394V8h2v-.941a1.122 1.122 0 0 1-.375.066A1.125 1.125 0 1 1 8.5 4.94V4h-2v-.469c0-.142.069-.273.142-.395A.75.75 0 0 0 6 2Z';
+  }
 }
 
 // H5 文本块实现
@@ -119,9 +125,11 @@ export class H5TextBlock extends H5ContentBlock<H5TextBlockAttrs> {
     );
   }
 
+  // 使用基类的plugin图标
+
   render(
     ctx: CanvasRenderingContext2D,
-    _renderingState: { scaleX: number; scaleY: number },
+    _: { scaleX: number; scaleY: number },
   ): void {
     const { x, y } = this.getBlockPosition();
     const style = this.getBlockStyle();
@@ -200,6 +208,8 @@ export class H5ImageBlock extends H5ContentBlock<H5ImageBlockAttrs> {
     this.loadImage();
   }
 
+  // 使用基类的plugin图标
+
   private async loadImage(): Promise<void> {
     if (!this.attrs.src) return;
 
@@ -220,7 +230,7 @@ export class H5ImageBlock extends H5ContentBlock<H5ImageBlockAttrs> {
 
   render(
     ctx: CanvasRenderingContext2D,
-    _renderingState: { scaleX: number; scaleY: number },
+    _: { scaleX: number; scaleY: number },
   ): void {
     const { x, y } = this.getBlockPosition();
     const style = this.getBlockStyle();
@@ -402,9 +412,11 @@ export class H5ButtonBlock extends H5ContentBlock<H5ButtonBlockAttrs> {
     );
   }
 
+  // 使用基类的plugin图标
+
   render(
     ctx: CanvasRenderingContext2D,
-    _renderingState: { scaleX: number; scaleY: number },
+    _: { scaleX: number; scaleY: number },
   ): void {
     const { x, y } = this.getBlockPosition();
     const style = this.getBlockStyle();

@@ -6,8 +6,6 @@
   .tool-group {
     display: flex;
     align-items: center;
-    gap: 2px;
-    position: relative;
 
     &:not(:last-child)::after {
       content: '';
@@ -16,13 +14,27 @@
       background: #e5e7eb;
       margin: 0 2px;
     }
+
+    // 位置相关的圆角样式
+    &.position-first {
+      border-radius: 12px 0 0 12px;
+      overflow: hidden;
+    }
+
+    &.position-middle {
+      border-radius: 0;
+    }
+
+    &.position-last {
+      border-radius: 0 12px 12px 0;
+      overflow: hidden;
+    }
   }
 
   // 带下拉的工具按钮组合
   .tool-button-with-dropdown {
     display: flex;
     align-items: center;
-    gap: 1px;
   }
 
   // 主工具按钮 - 严格按照Figma风格
@@ -30,18 +42,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    height: 100%;
     border: none;
-    border-radius: 12px;
-    background: transparent;
-    color: #374151;
+    border-radius: 0; // 移除单独圆角，让组容器处理圆角
+    color: #6b7280; // 与下拉按钮统一颜色
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
+    padding: 6px 8px;
 
     &:hover {
       background: #f3f4f6;
+      color: #374151; // 悬浮时变为深色，与下拉按钮保持一致
     }
 
     &:active {
@@ -62,14 +74,36 @@
       }
     }
 
-    // 图标样式处理 - 严格按照Figma风格
+    // 图标样式处理 - 由于SvgIcon使用img标签，需要CSS filter控制颜色
     img {
-      filter: brightness(0) saturate(100%) invert(27%) sepia(51%)
-        saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
+      // 将图标转换为 #6b7280 颜色（未选中状态）
+      filter: brightness(0) // 将图像变为纯黑色 (0 = 完全黑色)
+        saturate(100%) // 保持饱和度不变 (100% = 原始饱和度)
+        invert(22%) // 反色22%，将黑色变为深灰色 (#374151)
+        sepia(8%) // 添加8%的棕褐色调，微调颜色
+        saturate(1090%) // 大幅增加饱和度，使颜色更鲜艳
+        hue-rotate(169deg) // 色相旋转169度，调整到目标颜色
+        brightness(95%) // 稍微降低亮度到95%，微调最终颜色
+        contrast(86%); // 降低对比度到86%，使颜色更柔和
+    }
+
+    &:hover img {
+      // 悬浮时转换为 #374151 颜色
+      filter: brightness(0) // 将图像变为纯黑色 (0 = 完全黑色)
+        saturate(100%) // 保持饱和度不变 (100% = 原始饱和度)
+        invert(22%) // 反色22%，将黑色变为深灰色 (#374151)
+        sepia(8%) // 添加8%的棕褐色调，微调颜色
+        saturate(1090%) // 大幅增加饱和度，使颜色更鲜艳
+        hue-rotate(169deg) // 色相旋转169度，调整到目标颜色
+        brightness(95%) // 稍微降低亮度到95%，微调最终颜色
+        contrast(86%); // 降低对比度到86%，使颜色更柔和
     }
 
     &.active img {
-      filter: brightness(0) saturate(100%) invert(100%);
+      // 选中时转换为白色
+      filter: brightness(0) // 将图像变为纯黑色 (0 = 完全黑色)
+        saturate(100%) // 保持饱和度不变 (100% = 原始饱和度)
+        invert(100%); // 完全反色，将黑色变为白色
     }
   }
 
@@ -78,16 +112,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 32px;
+    height: 100%;
+    width: 24px;
+    padding: 4px 0; // 明确重置padding，避免继承的样式影响
     border: none;
-    border-radius: 4px;
+    border-radius: 0; // 移除单独圆角，让组容器处理圆角
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-      background: #e5e7eb;
+      background: #f3f4f6;
       color: #374151;
     }
 
@@ -105,14 +140,30 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 12px;
-      height: 12px;
 
-      svg {
-        width: 10px;
-        height: 10px;
-        fill: currentColor;
+      img {
+        // 下拉图标也使用CSS filter控制颜色，与主工具按钮保持一致
+        filter: brightness(0) // 将图像变为纯黑色 (0 = 完全黑色)
+          saturate(100%) // 保持饱和度不变 (100% = 原始饱和度)
+          invert(22%) // 反色22%，将黑色变为深灰色 (#374151)
+          sepia(8%) // 添加8%的棕褐色调，微调颜色
+          saturate(1090%) // 大幅增加饱和度，使颜色更鲜艳
+          hue-rotate(169deg) // 色相旋转169度，调整到目标颜色
+          brightness(95%) // 稍微降低亮度到95%，微调最终颜色
+          contrast(86%); // 降低对比度到86%，使颜色更柔和
       }
+    }
+
+    &:hover .dropdown-icon img {
+      // 悬浮时转换为 #374151 颜色
+      filter: brightness(0) // 将图像变为纯黑色 (0 = 完全黑色)
+        saturate(100%) // 保持饱和度不变 (100% = 原始饱和度)
+        invert(22%) // 反色22%，将黑色变为深灰色 (#374151)
+        sepia(8%) // 添加8%的棕褐色调，微调颜色
+        saturate(1090%) // 大幅增加饱和度，使颜色更鲜艳
+        hue-rotate(169deg) // 色相旋转169度，调整到目标颜色
+        brightness(95%) // 稍微降低亮度到95%，微调最终颜色
+        contrast(86%); // 降低对比度到86%，使颜色更柔和
     }
   }
 

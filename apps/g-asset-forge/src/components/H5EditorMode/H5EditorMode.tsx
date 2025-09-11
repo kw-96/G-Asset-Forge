@@ -644,7 +644,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   // 获取H5容器的所有子元素
   const [allElements, setAllElements] = useState<any[]>([]);
 
-  // 更新所有元素列表
+  // 更新所有元素列表 - 包含H5容器及其子元素
   const updateAllElements = useCallback(() => {
     if (h5ServiceRef.current) {
       try {
@@ -656,7 +656,13 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
             : container.childrenIds
             ? container.childrenIds
             : [];
-          setAllElements(Array.isArray(children) ? children : []);
+
+          // 构建包含容器和子元素的层级结构
+          const allElements = [
+            container,
+            ...(Array.isArray(children) ? children : []),
+          ];
+          setAllElements(allElements);
         } else {
           // 如果容器不存在，尝试从编辑器直接获取
           if (editor?.editor) {
@@ -669,7 +675,13 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
                 const children = h5Container.getChildren
                   ? h5Container.getChildren()
                   : [];
-                setAllElements(Array.isArray(children) ? children : []);
+
+                // 构建包含容器和子元素的层级结构
+                const allElements = [
+                  h5Container,
+                  ...(Array.isArray(children) ? children : []),
+                ];
+                setAllElements(allElements);
                 return;
               }
             }

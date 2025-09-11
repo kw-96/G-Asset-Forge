@@ -1,37 +1,19 @@
-// 内容块面板 - 重构版本
+// 组件和图层面板
 import './ContentBlockPanel.scss';
 
-import {
-  AddOutlined,
-  HideOutlined,
-  ImageOutlined,
-  LockFilled,
-  RemoveOutlined,
-  ShowOutlined,
-  TextFilled,
-  UnlockFilled,
-} from '@g-asset-forge/icons';
-import { type FC, useCallback, useMemo, useRef, useState } from 'react';
+import { AddOutlined, ImageOutlined, TextFilled } from '@g-asset-forge/icons';
+import { type FC, useCallback, useMemo, useState } from 'react';
 
 import type {
   ProjectErrorState,
   ProjectLoadingState,
 } from '../../hooks/useProjectManagement';
-
-interface ContentBlock {
-  id: string;
-  type: 'text' | 'image' | 'button';
-  content: any;
-  style: any;
-  order?: number;
-  isVisible?: boolean;
-  isLocked?: boolean;
-}
+import { H5LayerItem } from './H5LayerItem';
 
 interface ContentBlockPanelProps {
   onBlockAdd: (blockType: string) => void;
   selectedBlockId: string;
-  contentBlocks: ContentBlock[];
+  contentBlocks: any[];
   onBlockSelect: (blockId: string) => void;
   onBlockDelete: (blockId: string) => void;
   onBlockReorder: (dragIndex: number, hoverIndex: number) => void;
@@ -46,10 +28,8 @@ interface ContentBlockPanelProps {
 
 export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
   onBlockAdd,
-  selectedBlockId,
   onBlockSelect,
   onBlockDelete,
-  onBlockReorder,
   onBlockVisibilityToggle,
   onBlockLockToggle,
   onBlockNameChange,
@@ -59,11 +39,8 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
   error,
 }) => {
   const [activeTab, setActiveTab] = useState<'blocks' | 'layers'>('blocks');
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [hoveredId, setHoveredId] = useState<string>('');
-  const [editingId, setEditingId] = useState<string>('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [activeIds, setActiveIds] = useState<string[]>([]);
 
   // 优化的内容块类型定义
   const blockTypes = useMemo(
@@ -90,97 +67,95 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
     [],
   );
 
-  // 优化的拖拽处理逻辑
-  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    setIsDragging(true);
+  // 构建层级结构数据 - 与设计模式保持一致
+  const buildLayerStructure = useCallback(() => {
+    if (allElements.length === 0) return [];
 
-    // 设置拖拽数据
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
+    // 找到H5容器（第一个元素应该是容器）
+    const container = allElements[0];
+    if (!container || container.type !== 'H5Container') return allElements;
 
-    // 添加拖拽样式
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.classList.add('dragging');
-    }
+    // 获取子元素
+    const children = allElements.slice(1);
+
+    // 构建层级结构，与设计模式的IObject结构保持一致
+    return [
+      {
+        id: container.attrs?.id || container.id,
+        type: container.type,
+        name: container.attrs?.objectName || container.name || 'H5长图容器',
+        visible: container.attrs?.visible !== false,
+        lock: container.attrs?.locked === true,
+        children: children.map((child, index) => ({
+          id: child.attrs?.id || child.id || `child_${index}`,
+          type: child.type,
+          name: child.attrs?.objectName || child.name || `图层 ${index + 1}`,
+          visible: child.attrs?.visible !== false,
+          lock: child.attrs?.locked === true,
+          children: [], // H5内容块没有子元素
+        })),
+      },
+    ];
+  }, [allElements]);
+
+  // 事件处理函数
+  const handleLayerSelect = useCallback(
+    (id: string, event: React.MouseEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        setActiveIds((prev) =>
+          prev.includes(id)
+            ? prev.filter((activeId) => activeId !== id)
+            : [...prev, id],
+        );
+      } else {
+        setActiveIds([id]);
+      }
+      onBlockSelect(id);
+    },
+    [onBlockSelect],
+  );
+
+  const handleLayerHover = useCallback((id: string) => {
+    setHoveredId(id);
   }, []);
 
-  const handleDragOver = useCallback(
-    (e: React.DragEvent, index: number) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-
-      // 防抖处理，避免频繁触发
-      if (draggedIndex !== null && draggedIndex !== index && !isDragging) {
-        setIsDragging(true);
-
-        // 延迟执行重排序，提高稳定性
-        setTimeout(() => {
-          onBlockReorder(draggedIndex, index);
-          setDraggedIndex(index);
-          setIsDragging(false);
-        }, 50);
-      }
-    },
-    [draggedIndex, isDragging, onBlockReorder],
-  );
-
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    setDraggedIndex(null);
-    setIsDragging(false);
-
-    // 移除拖拽样式
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.classList.remove('dragging');
-    }
+  const handleLayerHoverLeave = useCallback(() => {
+    setHoveredId('');
   }, []);
 
-  // 编辑相关处理函数
-  const handleDoubleClick = useCallback(
-    (elementId: string, elementName: string) => {
-      setEditingId(elementId);
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.value = elementName;
-          inputRef.current.select();
-          inputRef.current.focus();
-        }
-      }, 0);
+  const handleLayerNameChange = useCallback(
+    (id: string, newName: string) => {
+      onBlockNameChange?.(id, newName);
     },
-    [],
+    [onBlockNameChange],
   );
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-        e.currentTarget.blur();
-      }
-    },
-    [],
-  );
-
-  const handleBlur = useCallback(() => {
-    const inputVal = inputRef.current?.value;
-    if (inputVal && onBlockNameChange && editingId) {
-      onBlockNameChange(editingId, inputVal);
-    }
-    setEditingId('');
-  }, [editingId, onBlockNameChange]);
-
-  // 可见性切换处理
-  const handleVisibilityToggle = useCallback(
-    (elementId: string, currentVisible: boolean) => {
-      onBlockVisibilityToggle?.(elementId, !currentVisible);
+  const handleLayerVisibilityToggle = useCallback(
+    (id: string, isVisible: boolean) => {
+      onBlockVisibilityToggle?.(id, isVisible);
     },
     [onBlockVisibilityToggle],
   );
 
-  // 锁定切换处理
-  const handleLockToggle = useCallback(
-    (elementId: string, currentLocked: boolean) => {
-      onBlockLockToggle?.(elementId, !currentLocked);
+  const handleLayerLockToggle = useCallback(
+    (id: string, isLocked: boolean) => {
+      onBlockLockToggle?.(id, isLocked);
     },
     [onBlockLockToggle],
+  );
+
+  const handleLayerDelete = useCallback(
+    (id: string) => {
+      onBlockDelete(id);
+    },
+    [onBlockDelete],
+  );
+
+  const handleLayerZoomToFit = useCallback(
+    (id: string) => {
+      onBlockZoomToFit?.(id);
+    },
+    [onBlockZoomToFit],
   );
 
   return (
@@ -193,22 +168,22 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
         </div>
       )}
 
-      {/* 错误提示 */}
+      {/* 错误状态指示器 */}
       {error?.error && (
         <div className="panel-error">
-          <span>⚠️ {error.error}</span>
+          <span>加载失败: {error.error}</span>
         </div>
       )}
 
-      {/* 面板头部 */}
-      <div className="panel-header">
-        <div className="panel-tabs">
+      {/* 标签页切换 */}
+      <div className="panel-tabs">
+        <div className="tab-buttons">
           <button
             type="button"
             className={`tab-button ${activeTab === 'blocks' ? 'active' : ''}`}
             onClick={() => setActiveTab('blocks')}
           >
-            组件库
+            组件
           </button>
           <button
             type="button"
@@ -256,128 +231,30 @@ export const ContentBlockPanel: FC<ContentBlockPanelProps> = ({
             </div>
           ) : (
             <div className="g-asset-forge-layer-tree">
-              {[...allElements].reverse().map((element, index) => {
-                const elementId = element.attrs?.id || `element_${index}`;
-                const isSelected = selectedBlockId === elementId;
-                const isHovered = hoveredId === elementId;
-                const isEditing = editingId === elementId;
-                const elementType =
-                  element.type || element.attrs?.type || 'unknown';
-                const elementName =
-                  element.attrs?.objectName || `图层 ${index + 1}`;
-                const isVisible = element.attrs?.visible !== false;
-                const isLocked = element.attrs?.locked === true;
-
-                return (
-                  <div
-                    key={elementId}
-                    className={`sk-layer-item ${
-                      isSelected ? 'sk-active' : ''
-                    } ${isHovered ? 'sk-layer-highlight' : ''} ${
-                      isEditing ? 'sk-editing' : ''
-                    } ${!isVisible ? 'sk-hidden' : ''} ${
-                      draggedIndex === index ? 'dragging' : ''
-                    }`}
-                    onMouseDown={(e) => {
-                      if (e.ctrlKey || e.metaKey) {
-                        // 多选逻辑
-                        onBlockSelect(elementId);
-                      } else {
-                        onBlockSelect(elementId);
-                      }
-                    }}
-                    onMouseEnter={() => setHoveredId(elementId)}
-                    onMouseLeave={() => setHoveredId('')}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div style={{ width: 0, minWidth: 0 }} />
-                    <div className="sk-group-collapse-btn" />
-                    <div
-                      className="sk-layer-icon"
-                      onDoubleClick={() => {
-                        onBlockZoomToFit?.(elementId);
-                      }}
-                    >
-                      {elementType === 'H5Container' ? (
-                        '📱'
-                      ) : elementType === 'H5TextBlock' ? (
-                        <TextFilled />
-                      ) : elementType === 'H5ImageBlock' ? (
-                        <ImageOutlined />
-                      ) : elementType === 'H5ButtonBlock' ? (
-                        <AddOutlined />
-                      ) : elementType === 'Rect' ? (
-                        '⬜'
-                      ) : elementType === 'Ellipse' ? (
-                        '⭕'
-                      ) : (
-                        '🔷'
-                      )}
-                    </div>
-                    {!isEditing && (
-                      <span
-                        className="sk-layout-name"
-                        onDoubleClick={() =>
-                          handleDoubleClick(elementId, elementName)
-                        }
-                      >
-                        {elementName}
-                      </span>
-                    )}
-                    {isEditing && (
-                      <input
-                        ref={inputRef}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onKeyDown={handleKeyDown}
-                        onBlur={handleBlur}
-                        defaultValue={elementName}
-                      />
-                    )}
-                    <div
-                      className={`sk-layer-item-actions ${
-                        isLocked || !isVisible ? 'sk-action-visible' : ''
-                      }`}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onDoubleClick={(e) => e.stopPropagation()}
-                    >
-                      <span
-                        className="sk-action-btn"
-                        style={{
-                          visibility: isLocked ? 'visible' : undefined,
-                        }}
-                        onMouseDown={() =>
-                          handleLockToggle(elementId, isLocked)
-                        }
-                        title={isLocked ? '解锁' : '锁定'}
-                      >
-                        {isLocked ? <LockFilled /> : <UnlockFilled />}
-                      </span>
-                      <span
-                        className="sk-action-btn"
-                        style={{
-                          visibility: !isVisible ? 'visible' : undefined,
-                        }}
-                        onMouseDown={() =>
-                          handleVisibilityToggle(elementId, isVisible)
-                        }
-                        title={isVisible ? '隐藏' : '显示'}
-                      >
-                        {isVisible ? <ShowOutlined /> : <HideOutlined />}
-                      </span>
-                      <span
-                        className="sk-action-btn"
-                        onMouseDown={() => onBlockDelete(elementId)}
-                        title="删除图层"
-                      >
-                        <RemoveOutlined />
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+              {buildLayerStructure().map((item) => (
+                <H5LayerItem
+                  key={item.id}
+                  id={item.id}
+                  type={item.type}
+                  name={item.name}
+                  active={activeIds.includes(item.id)}
+                  activeSecond={activeIds.includes(item.id)}
+                  level={0}
+                  children={item.children}
+                  activeIds={activeIds}
+                  hlId={hoveredId}
+                  visible={item.visible}
+                  lock={item.lock}
+                  onSelect={handleLayerSelect}
+                  onHover={handleLayerHover}
+                  onHoverLeave={handleLayerHoverLeave}
+                  onNameChange={handleLayerNameChange}
+                  onVisibilityToggle={handleLayerVisibilityToggle}
+                  onLockToggle={handleLayerLockToggle}
+                  onDelete={handleLayerDelete}
+                  onZoomToFit={handleLayerZoomToFit}
+                />
+              ))}
             </div>
           )}
         </div>
