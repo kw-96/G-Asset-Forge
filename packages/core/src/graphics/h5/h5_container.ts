@@ -94,8 +94,8 @@ export class H5Container extends GAssetForgeFrame {
 
   // 重写图层图标路径 - H5容器使用sticky图标
   override getLayerIconPath() {
-    // 基于icon.24.sticky.svg，缩放到12x12尺寸
-    return 'M9.25 2A1.25 1.25 0 0 1 10.5 3.25v6.726a1.667 1.667 0 0 1-.488 1.178l-3.691 3.691a1.667 1.667 0 0 1-1.178.488H2.25A1.25 1.25 0 0 1 1 10.75v-10.5A1.25 1.25 0 0 1 2.25 2h7Zm-7 .5a.5.5 0 0 0-.5.5v10.5a.5.5 0 0 0 .5.5H6.5v-4.583a.5.5 0 0 1 .5-.5H9.5V3.25a.5.5 0 0 0-.5-.5h-7Zm7.083 7.5v4.084a.833.833 0 0 0 .232-.162l3.691-3.691a.833.833 0 0 0 .162-.232H9.333Z' as any;
+    // 返回图标名称，让LayerIcon组件处理图标导入
+    return 'icon.24.sticky' as any;
   }
 
   // 重写updateAttrs方法，禁止移动但允许调整尺寸

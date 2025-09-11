@@ -18,9 +18,10 @@ import {
   useProjectManagement,
 } from '../../hooks/useProjectManagement';
 import { AutoSaveGraphics } from '../../store/auto-save-graphs';
+import { ContextMenu } from '../ContextMenu/ContextMenu';
+import { InfoPanel } from '../InfoPanel/InfoPanel';
 import { ContentBlockPanel } from './ContentBlockPanel';
 import { H5Canvas } from './H5Canvas';
-import { H5PropertyPanel } from './H5PropertyPanel';
 
 interface H5EditorModeProps {
   projectType?: ProjectTypeState;
@@ -50,14 +51,11 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   // 组件挂载时只重置UI状态，不清理全局H5Service状态
   useEffect(() => {
     // 只重置UI相关状态，保持H5Service状态
-    setSelectedBlockId('');
-    setShowPropertyPanel(false);
   }, []); // 空依赖数组，只在组件挂载时执行一次
   const cleanupRef = useRef<(() => void) | null>(null);
 
   const [selectedBlockId, setSelectedBlockId] = useState<string>('');
   const [contentBlocks, setContentBlocks] = useState<any[]>([]);
-  const [showPropertyPanel, setShowPropertyPanel] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [initializationError, setInitializationError] = useState<string | null>(
     null,
@@ -190,11 +188,8 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         });
 
         h5Service.on('selectionChanged', (selectedBlocks: string[]) => {
-          if (selectedBlocks.length > 0) {
-            setSelectedBlockId(selectedBlocks[0]);
-          } else {
-            setSelectedBlockId('');
-          }
+          // 保留选择变化监听，但不用于UI状态管理
+          console.log('H5选择变化:', selectedBlocks);
         });
 
         h5Service.on('error', (error: Error) => {
@@ -240,7 +235,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     } finally {
       setIsInitializing(false);
     }
-  }, [editor.editor, updateContentBlocksList, contentBlocks.length]);
+  }, [editor.editor, updateContentBlocksList]);
 
   // 清理H5Service
   const cleanupH5Service = useCallback(async () => {
@@ -433,26 +428,10 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
             editor?.editor?.render();
           });
 
-          // 监听编辑器选择变化
+          // 监听编辑器选择变化 - 简化逻辑，直接使用InfoPanel
           const handleSelectionChange = () => {
-            const selectedElements =
-              editor?.editor?.selectedElements?.getItems();
-            if (selectedElements && selectedElements.length === 1) {
-              const selectedElement = selectedElements[0];
-              if (
-                selectedElement.attrs.id &&
-                (selectedElement.attrs as any).blockType
-              ) {
-                setSelectedBlockId(selectedElement.attrs.id);
-                setShowPropertyPanel(true);
-              } else {
-                setSelectedBlockId('');
-                setShowPropertyPanel(false);
-              }
-            } else {
-              setSelectedBlockId('');
-              setShowPropertyPanel(false);
-            }
+            // LayerPanel会自动处理选择变化，这里不需要额外处理
+            console.log('编辑器选择变化');
           };
 
           editor?.editor?.selectedElements.on(
@@ -493,9 +472,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
               }
 
               // 清理状态
-              setSelectedBlockId('');
-              setShowPropertyPanel(false);
-              setContentBlocks([]);
             } catch (error) {
               console.warn('H5EditorMode清理过程中出现警告:', error);
             }
@@ -547,12 +523,10 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         } else if (h5ServiceRef.current.selectContentBlock) {
           h5ServiceRef.current.selectContentBlock(blockId);
         }
-        setShowPropertyPanel(true);
       } else {
         if (h5ServiceRef.current.clearSelection) {
           h5ServiceRef.current.clearSelection();
         }
-        setShowPropertyPanel(false);
       }
     }
   };
@@ -595,7 +569,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       updateContentBlocksList();
       if (selectedBlockId === blockId) {
         setSelectedBlockId('');
-        setShowPropertyPanel(false);
       }
     }
   };
@@ -620,26 +593,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
       console.error('重排序内容块失败:', error);
     }
   };
-
-  // 属性面板事件处理
-  const handleUpdateBlock = (blockId: string, updates: any) => {
-    if (!h5ServiceRef.current) return;
-
-    h5ServiceRef.current.updateContentBlock(blockId, updates);
-    updateContentBlocksList();
-  };
-
-  const handleClosePropertyPanel = () => {
-    setShowPropertyPanel(false);
-    setSelectedBlockId('');
-    if (h5ServiceRef.current) {
-      h5ServiceRef.current.clearSelection();
-    }
-  };
-
-  // 获取选中的内容块
-  const selectedBlock =
-    contentBlocks.find((block) => block.id === selectedBlockId) || null;
 
   // 获取H5容器的所有子元素
   const [allElements, setAllElements] = useState<any[]>([]);
@@ -785,9 +738,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
           {/* 编辑器画布将在这里渲染 */}
           {h5ServiceRef.current ? (
             <H5Canvas
-              contentBlocks={contentBlocks}
-              selectedBlockId={selectedBlockId}
-              onBlockSelect={handleBlockSelect}
               h5Service={h5ServiceRef.current}
               containerRef={containerRef}
             />
@@ -806,23 +756,13 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         </div>
       </div>
 
-      {/* 右侧属性面板 */}
+      {/* 右侧属性面板 - 直接使用InfoPanel，与设计模式保持一致 */}
       <div className="h5-right-panel">
-        {showPropertyPanel && selectedBlock ? (
-          <H5PropertyPanel
-            selectedBlock={selectedBlock}
-            onUpdateBlock={handleUpdateBlock}
-            onClose={handleClosePropertyPanel}
-          />
-        ) : (
-          <div className="h5-property-panel-placeholder">
-            <div className="placeholder-content">
-              <div className="placeholder-title">属性面板</div>
-              <div className="placeholder-text">选择一个内容块来编辑其属性</div>
-            </div>
-          </div>
-        )}
+        <InfoPanel />
       </div>
+
+      {/* 右键菜单 - 与设计模式保持一致 */}
+      <ContextMenu />
     </div>
   );
 };

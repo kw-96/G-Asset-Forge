@@ -6,29 +6,12 @@ import { type FC, useContext, useEffect, useRef } from 'react';
 
 import { EditorContext } from '../../context';
 
-interface ContentBlock {
-  id: string;
-  type: 'text' | 'image' | 'button';
-  content: any;
-  style: any;
-  order: number;
-}
-
 interface H5CanvasProps {
-  contentBlocks: ContentBlock[];
-  selectedBlockId: string;
-  onBlockSelect: (blockId: string) => void;
   h5Service?: H5Service | null; // 添加H5Service引用
   containerRef?: React.RefObject<HTMLDivElement>; // 添加容器引用
 }
 
-export const H5Canvas: FC<H5CanvasProps> = ({
-  contentBlocks: _contentBlocks,
-  selectedBlockId: _selectedBlockId,
-  onBlockSelect,
-  h5Service,
-  containerRef,
-}) => {
+export const H5Canvas: FC<H5CanvasProps> = ({ h5Service, containerRef }) => {
   const editor = useContext(EditorContext);
   // 移除canvasRef，不再需要DOM引用
 
@@ -92,8 +75,13 @@ export const H5Canvas: FC<H5CanvasProps> = ({
   }, [editor, h5Service]);
 
   const handleCanvasClick = (event: React.MouseEvent) => {
+    // LayerPanel会自动处理选择变化，这里不需要额外处理
     if (event.target === event.currentTarget) {
-      onBlockSelect('');
+      // 清空选择
+      if (editor?.editor) {
+        editor.editor.selectedElements.setItems([]);
+        editor.editor.render();
+      }
     }
   };
 
