@@ -146,7 +146,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         autoSaveRef.current = new AutoSaveGraphics(editor.editor);
       }
 
-
       // 设置初始化完成标记
       (window as any).__h5ServiceInitialized = true;
     } catch (error) {
@@ -347,13 +346,13 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
           // 等待一帧后更新内容块列表，确保容器已完全初始化
           requestAnimationFrame(() => {
-
             // 强制重新渲染编辑器，确保H5容器可见
             editor?.editor?.render();
           });
 
           // 监听编辑器选择变化 - 简化逻辑，直接使用InfoPanel
-          const handleSelectionChange = () => {};
+          const handleSelectionChange = () => {
+          };
 
           editor?.editor?.selectedElements.on(
             'itemsChange',
@@ -436,7 +435,8 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   // 监听编辑器渲染事件，确保图层添加后立即更新
   useEffect(() => {
     if (editor?.editor) {
-      const handleEditorRender = () => {};
+      const handleEditorRender = () => {
+      };
 
       // 监听编辑器渲染事件
       editor.editor.sceneGraph.on('render', handleEditorRender);

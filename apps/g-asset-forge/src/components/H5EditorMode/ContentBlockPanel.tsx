@@ -1,4 +1,4 @@
-// 内容块面板 - 重构为标签页容器
+// 组件库和图层面板
 import './ContentBlockPanel.scss';
 
 import { type ComponentDefinition } from '@g-asset-forge/core';
