@@ -47,22 +47,25 @@ export const ComponentSaveDialog: FC<ComponentSaveDialogProps> = ({
         return { isValid: false, error: '选中的图形元素缺少类型信息' };
       }
 
-      // 验证必要的属性
-      const requiredProperties = ['attrs', 'id'];
-      const missingProperties = requiredProperties.filter(
-        (prop) => !(prop in frame),
-      );
-
-      if (missingProperties.length > 0) {
-        return {
-          isValid: false,
-          error: `选中的图形元素缺少必要信息：${missingProperties.join(', ')}`,
-        };
+      // 验证 attrs 属性存在（如果没有则尝试创建）
+      if (!frame.attrs || typeof frame.attrs !== 'object') {
+        console.warn('图形元素缺少 attrs 属性，将创建默认 attrs');
+        frame.attrs = {};
       }
 
-      // 验证 attrs 是否为对象
-      if (typeof frame.attrs !== 'object' || frame.attrs === null) {
-        return { isValid: false, error: '图形元素的属性信息无效' };
+      // 检查是否有有效的 ID（可以在顶级或 attrs 中）
+      const hasValidId = frame.id || frame.attrs?.id;
+      if (!hasValidId) {
+        console.warn('图形元素缺少 ID，将自动生成');
+        // 自动生成 ID 而不是拒绝操作
+        const generatedId = `element_${Date.now()}_${Math.random()
+          .toString(36)
+          .substring(2, 6)}`;
+        if (!frame.id) {
+          if (!frame.attrs.id) {
+            frame.attrs.id = generatedId;
+          }
+        }
       }
 
       return { isValid: true };
