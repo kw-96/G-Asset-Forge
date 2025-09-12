@@ -1,6 +1,7 @@
 // H5模式界面
 import './H5EditorMode.scss';
 
+import { addComponentToH5Container } from '@g-asset-forge/core';
 import {
   type FC,
   useCallback,
@@ -113,8 +114,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
       // 设置事件监听器（防重复注册）
       if (!(h5Service as any).__eventsRegistered) {
-        h5Service.on('contentBlocksChanged', () => {
-        });
+        h5Service.on('componentsChanged', () => {});
 
         h5Service.on('selectionChanged', (selectedBlocks: string[]) => {
           // 保留选择变化监听，但不用于UI状态管理
@@ -351,8 +351,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
           });
 
           // 监听编辑器选择变化 - 简化逻辑，直接使用InfoPanel
-          const handleSelectionChange = () => {
-          };
+          const handleSelectionChange = () => {};
 
           editor?.editor?.selectedElements.on(
             'itemsChange',
@@ -435,8 +434,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   // 监听编辑器渲染事件，确保图层添加后立即更新
   useEffect(() => {
     if (editor?.editor) {
-      const handleEditorRender = () => {
-      };
+      const handleEditorRender = () => {};
 
       // 监听编辑器渲染事件
       editor.editor.sceneGraph.on('render', handleEditorRender);
@@ -450,8 +448,68 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     }
   }, [editor]);
 
+  // 处理拖拽悬停
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  // 处理拖拽放置
+  const handleDrop = useCallback(
+    async (event: React.DragEvent) => {
+      event.preventDefault();
+
+      try {
+        // 获取拖拽的组件数据
+        const componentData = event.dataTransfer.getData('application/json');
+        if (!componentData) {
+          console.warn('没有获取到组件数据');
+          return;
+        }
+
+        const component = JSON.parse(componentData);
+        console.log('接收到拖拽的组件:', component);
+
+        // 获取H5容器
+        const currentCanvas = editor?.editor?.doc?.getCurrentCanvas();
+        if (!currentCanvas) {
+          console.warn('无法获取当前画布');
+          return;
+        }
+
+        const h5Container = currentCanvas.getChildren().find((child: any) => {
+          return (
+            child.type === 'H5Container' ||
+            child.constructor?.name === 'H5Container' ||
+            (child.attrs &&
+              child.attrs.id &&
+              child.attrs.id.includes('h5_container')) ||
+            (child.attrs &&
+              child.attrs.id &&
+              child.attrs.id.includes('h5-container'))
+          );
+        });
+
+        if (!h5Container) {
+          console.warn('未找到H5容器');
+          return;
+        }
+
+        // 将组件转换为H5元素并添加到H5容器
+        await addComponentToH5Container(component, h5Container, editor?.editor);
+      } catch (error) {
+        console.error('处理组件拖拽失败:', error);
+      }
+    },
+    [editor],
+  );
+
   return (
-    <div className="h5-editor-mode g-asset-forge-h5-mode">
+    <div
+      className="h5-editor-mode g-asset-forge-h5-mode"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* 错误提示 */}
       {(initializationError || error?.error) && (
         <div className="h5-error-banner">

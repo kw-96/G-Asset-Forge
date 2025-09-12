@@ -117,7 +117,8 @@ export interface IProjectHandler {
 export abstract class BaseProjectHandler implements IProjectHandler {
   protected editor: GAssetForgeEditor | null = null;
   protected state: ProjectHandlerState = ProjectHandlerState.IDLE;
-  protected eventListeners: Map<string, Function[]> = new Map();
+  protected eventListeners: Map<string, ((...args: any[]) => void)[]> =
+    new Map();
   protected dataValidator: ProjectDataValidator;
 
   constructor() {
@@ -351,7 +352,10 @@ export abstract class BaseProjectHandler implements IProjectHandler {
   /**
    * 添加事件监听器
    */
-  protected addEventListener(event: string, listener: Function): void {
+  protected addEventListener(
+    event: string,
+    listener: (...args: any[]) => void,
+  ): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }

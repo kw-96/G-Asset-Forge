@@ -32,6 +32,9 @@
         .attr-input {
           flex: 1;
           margin-left: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
         }
       }
     }

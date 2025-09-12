@@ -285,9 +285,6 @@ export class GAssetForgeEditor {
 
       return (
         type === 'H5Container' ||
-        type === 'H5TextBlock' ||
-        type === 'H5ImageBlock' ||
-        type === 'H5ButtonBlock' ||
         // 兼容序列化后的Frame类型H5容器
         (type === 'Frame' && id && id.includes('h5-container'))
       );

@@ -38,7 +38,6 @@ export * from './service/remove_service';
 export * from './service/ungroup_and_record';
 // 显式导出project-handlers，避免ProjectData冲突
 export {
-  type ContentBlockData,
   type DesignProjectData,
   DesignProjectHandler,
   globalProjectHandlerFactory,
@@ -55,14 +54,12 @@ export * from './transaction';
 export * from './type';
 
 // H5 编辑功能
-export * from './graphics/h5/content_block';
+export * from './graphics/h5/component_converter';
 export * from './graphics/h5/h5_container';
 export * from './service/h5_service';
 
 // 组件系统
-export * from './component/ComponentTypes';
-export * from './component/ComponentManager';
-export * from './component/ComponentStorage';
+export * from './component';
 
 // 性能优化和稳定性功能
 export * from './error_handler';

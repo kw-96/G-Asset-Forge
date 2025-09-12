@@ -261,10 +261,7 @@ export class DesignProjectHandler extends BaseProjectHandler {
     return data.data.some((item: any) => {
       const type = item.type || item.attrs?.type;
       return (
-        type === 'H5Container' ||
-        type === 'H5TextBlock' ||
-        type === 'H5ImageBlock' ||
-        type === 'H5ButtonBlock'
+        type === 'H5Container'
       );
     });
   }

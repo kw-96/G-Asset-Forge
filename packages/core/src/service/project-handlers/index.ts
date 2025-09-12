@@ -14,7 +14,6 @@ export type {
 export type { DesignProjectData } from './DesignProjectHandler';
 export { DesignProjectHandler } from './DesignProjectHandler';
 export type {
-  ContentBlockData,
   H5ContainerData,
   H5ProjectData,
   IH5Service,

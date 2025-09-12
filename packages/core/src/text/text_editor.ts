@@ -54,7 +54,7 @@ export class TextEditor {
 
   private createInputDom() {
     const inputDom = document.createElement('input');
-    inputDom.tabIndex = -1;
+    inputDom.tabIndex = 0; // 修复：使用0而不是-1，确保能正常获得焦点
     Object.assign(inputDom.style, defaultInputStyle);
     return inputDom;
   }
@@ -76,6 +76,8 @@ export class TextEditor {
     pos: IPoint;
     range?: IRange;
   }) {
+    console.log('TextEditor.active 开始激活');
+
     this._active = true;
     this.editor.controlHandleManager.enableTransformControl = false;
     this.editor.selectedBox.enableDrawSizeIndicator = false;
@@ -108,6 +110,8 @@ export class TextEditor {
         currentCanvas.insertChild(textGraphics);
       } else {
         console.error('无法获取当前画布，无法插入文本图形');
+        this.inactive();
+        return;
       }
     }
     this.textGraphics = textGraphics!;
@@ -133,11 +137,15 @@ export class TextEditor {
       this.updateCursor(cursorPos);
     }
 
+    // 简单聚焦输入框
     this.inputDom.focus();
+
     this.editor.render();
+    console.log('TextEditor.active 激活完成');
   }
 
   inactive() {
+    console.log('TextEditor.inactive 开始结束文本编辑');
     this._active = false;
 
     if (this.textGraphics) {
@@ -150,12 +158,25 @@ export class TextEditor {
         });
         this.transaction.updateParentSize([this.textGraphics]);
         this.transaction.commit('update text content');
+
+        // 检查是否在H5容器中，如果是则触发自动布局
+        const parent = this.textGraphics.getParent();
+        if (parent && (parent as any).type === 'H5Container') {
+          console.log('TextEditor.inactive 触发H5容器自动布局');
+          // 延迟执行，确保事务完成后再触发布局
+          setTimeout(() => {
+            if (typeof (parent as any).triggerAutoLayout === 'function') {
+              (parent as any).triggerAutoLayout();
+            }
+          }, 10);
+        }
       }
       this.textGraphics = null;
     }
 
     this.editor.controlHandleManager.enableTransformControl = true;
     this.editor.selectedBox.enableDrawSizeIndicator = true;
+    console.log('TextEditor.inactive 文本编辑结束完成');
   }
 
   static updateTextContentAndResize(

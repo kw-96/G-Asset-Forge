@@ -85,9 +85,9 @@ pnpm run electron:preview
 # 检查端口占用
 $ netstat -ano | findstr :6167
 # 检查进程ID
-$ tasklist /FI "PID eq 28116"
+$ tasklist /FI "PID eq 31088"
 # 清除进程占用
-$ taskkill /PID 28116 /F
+$ taskkill /PID 31088 /F
 
 ```
 

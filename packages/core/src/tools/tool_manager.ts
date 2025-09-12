@@ -151,36 +151,36 @@ export class ToolManager {
     let startWithLeftMouse = false;
 
     const handleDown = (e: PointerEvent) => {
-      setTimeout(() => {
-        isPressing = false;
-        this._isDragging = false;
-        startWithLeftMouse = false;
-        if (
-          e.button !== 0 || // is not left mouse
-          this.editor.textEditor.isActive() || // is editing text mode
-          this.editor.hostEventManager.isSpacePressing // is dragging canvas mode
-        ) {
-          return;
-        }
+      // 重置状态
+      isPressing = false;
+      this._isDragging = false;
+      startWithLeftMouse = false;
 
-        // 检查是否在标尺区域开始拖拽辅助线
-        const point = this.editor.getCursorXY(e);
-        if (this.rulerGuideTool.checkRulerDragStart(point)) {
-          isPressing = true;
-          startWithLeftMouse = true;
-          startPos = { x: e.clientX, y: e.clientY };
-          this.rulerGuideTool.onStart(e);
-          return;
-        }
+      if (
+        e.button !== 0 || // is not left mouse
+        this.editor.textEditor.isActive() || // is editing text mode
+        this.editor.hostEventManager.isSpacePressing // is dragging canvas mode
+      ) {
+        return;
+      }
 
+      // 检查是否在标尺区域开始拖拽辅助线
+      const point = this.editor.getCursorXY(e);
+      if (this.rulerGuideTool.checkRulerDragStart(point)) {
         isPressing = true;
         startWithLeftMouse = true;
-        if (!this.currentTool) {
-          throw new Error('there is no active tool');
-        }
         startPos = { x: e.clientX, y: e.clientY };
-        this.currentTool.onStart(e);
-      });
+        this.rulerGuideTool.onStart(e);
+        return;
+      }
+
+      isPressing = true;
+      startWithLeftMouse = true;
+      if (!this.currentTool) {
+        throw new Error('there is no active tool');
+      }
+      startPos = { x: e.clientX, y: e.clientY };
+      this.currentTool.onStart(e);
     };
     const handleMove = (e: PointerEvent) => {
       this.currViewportPoint = this.editor.getCursorXY(e);

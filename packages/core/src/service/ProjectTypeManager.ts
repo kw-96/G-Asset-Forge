@@ -73,7 +73,7 @@ export class ProjectTypeIdentifier {
     }
 
     // 策略3: 检查H5特定字段
-    if (projectData?.h5Container || projectData?.contentBlocks) {
+    if (projectData?.h5Container) {
       evidence.push('项目数据包含H5特定字段');
       confidence += 0.7;
       type = ProjectType.H5;
@@ -105,7 +105,7 @@ export class ProjectTypeIdentifier {
       metadata: {
         hasExplicitType: !!projectData?.type,
         hasH5Container: this.hasH5Container(projectData),
-        hasH5Fields: !!(projectData?.h5Container || projectData?.contentBlocks),
+        hasH5Fields: !!(projectData?.h5Container),
       },
     };
   }

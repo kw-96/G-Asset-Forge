@@ -11,10 +11,10 @@ import {
 import { PaintType } from '../paint';
 import { GraphicsType, type Optional } from '../type';
 import {
+  GAssetForgeGraphics,
   type GraphicsAttrs,
   type IAdvancedAttrs,
   type IGraphicsOpts,
-  GAssetForgeGraphics,
 } from './graphics';
 import { type IDrawInfo } from './type';
 

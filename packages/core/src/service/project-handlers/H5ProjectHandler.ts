@@ -26,25 +26,12 @@ export interface H5ContainerData {
 }
 
 /**
- * 内容块数据
- */
-export interface ContentBlockData {
-  id: string;
-  type: 'H5TextBlock' | 'H5ImageBlock' | 'H5ButtonBlock';
-  parentId: string;
-  order: number;
-  content: any;
-  style: any;
-}
-
-/**
  * H5项目数据格式
  */
 export interface H5ProjectData extends ProjectData {
   type: ProjectType.H5;
   data: IEditorPaperData;
   h5Container?: H5ContainerData;
-  contentBlocks?: ContentBlockData[];
   state?: any; // H5项目状态
 }
 
@@ -62,14 +49,10 @@ export interface IH5Service {
   restoreExistingH5Container(container: any): boolean;
   getCurrentContainer(): any;
   setCurrentContainer(container: any): void;
-  addTextBlock(content?: string): Promise<any>;
-  addImageBlock(src?: string, alt?: string): Promise<any>;
-  addButtonBlock(text?: string): Promise<any>;
-  removeContentBlock(blockId: string): boolean;
-  updateContentBlock(blockId: string, attrs: any): boolean;
-  getContentBlocks(): any[];
-  getSelectedContentBlocks(): any[];
-  exportData(): { h5Container: any; contentBlocks: any[] };
+  addComponent(component: any): boolean;
+  removeComponent(componentId: string): boolean;
+  getAllComponents(): any[];
+  exportData(): { h5Container: any; components: any[] };
   cleanup(): Promise<void>;
   destroy(): void;
 }
@@ -163,7 +146,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
       type: ProjectType.H5,
       data: editorData,
       h5Container: h5Data.h5Container,
-      contentBlocks: h5Data.contentBlocks,
       state: currentState,
       metadata: {
         ...this.currentProjectData?.metadata,
@@ -295,7 +277,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
   private configureH5Mode(): void {
     // 启用H5特定功能
     // 这里可以配置编辑器的H5模式设置
-
   }
 
   /**
@@ -326,7 +307,6 @@ export class H5ProjectHandler extends BaseProjectHandler {
         this.editor.viewportManager.setViewportSize(containerSize);
         this.editor.viewportManager.setZoom(1, { x: 0, y: 0 });
       }
-
     } catch (error) {
       console.warn('清理编辑器状态时出错:', error);
     }

@@ -29,6 +29,5 @@ export const graphCtorMap = {
   [GraphicsType.Frame]: GAssetForgeFrame,
   [GraphicsType.Canvas]: GAssetForgeCanvas,
   [GraphicsType.Document]: GAssetForgeDocument,
-  // H5Container 使用字符串类型，避免循环依赖
-  H5Container: H5Container,
+  [GraphicsType.H5Container]: H5Container,
 };

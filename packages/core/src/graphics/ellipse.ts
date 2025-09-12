@@ -10,9 +10,9 @@ import { DOUBLE_PI } from '../constant';
 import { PaintType } from '../paint';
 import { GraphicsType, type Optional } from '../type';
 import {
+  GAssetForgeGraphics,
   type GraphicsAttrs,
   type IGraphicsOpts,
-  GAssetForgeGraphics,
 } from './graphics';
 import { type IDrawInfo } from './type';
 import { drawLayer } from './utils';

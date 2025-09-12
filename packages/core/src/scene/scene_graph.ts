@@ -355,18 +355,82 @@ export class SceneGraph {
 
       // 兼容处理：如果旧项目中 H5 容器序列化为了 Frame，但 id 含有 h5-container 标识，则强制使用 H5Container 构造
       const isSerializedH5Container =
-        (type as any) === 'Frame' &&
+        ((type as any) === 'Frame' || (type as any) === GraphicsType.Frame) &&
         typeof attrs.id === 'string' &&
         (attrs.id.includes('h5-container') ||
-          attrs.id.includes('h5_container'));
+          attrs.id.includes('h5_container') ||
+          attrs.id.toLowerCase().includes('h5'));
 
       if (isSerializedH5Container) {
+        console.log(`检测到序列化的H5容器，ID: ${attrs.id}, 原类型: ${type}`);
+
         // 纠正类型并确保禁止移动属性默认开启
-        (attrs as any).type = 'H5Container';
+        (attrs as any).type = GraphicsType.H5Container;
+
+        // 确保H5容器的必要属性
         if ((attrs as any).disableMove === undefined) {
           (attrs as any).disableMove = true;
         }
-        children.push(new H5Container(attrs as any, { doc: this.editor.doc }));
+        if ((attrs as any).mobileWidth === undefined) {
+          (attrs as any).mobileWidth = 1080;
+        }
+        if ((attrs as any).autoLayout === undefined) {
+          (attrs as any).autoLayout = true;
+        }
+        if ((attrs as any).layoutType === undefined) {
+          (attrs as any).layoutType = 'vertical';
+        }
+
+        try {
+          const h5Container = new H5Container(attrs as any, {
+            doc: this.editor.doc,
+          });
+          children.push(h5Container);
+          console.log(`成功创建H5容器: ${attrs.id}`);
+        } catch (error) {
+          console.error(`创建H5容器失败 (${attrs.id}):`, error);
+          // 回退到普通Frame
+          const Ctor = graphCtorMap[GraphicsType.Frame];
+          if (Ctor) {
+            children.push(new Ctor(attrs as any, { doc: this.editor.doc }));
+          }
+        }
+        continue;
+      }
+
+      // 直接检查是否为H5Container类型
+      if (
+        type === GraphicsType.H5Container ||
+        (type as any) === 'H5Container'
+      ) {
+        try {
+          // 确保H5容器的必要属性
+          if ((attrs as any).disableMove === undefined) {
+            (attrs as any).disableMove = true;
+          }
+          if ((attrs as any).mobileWidth === undefined) {
+            (attrs as any).mobileWidth = 1080;
+          }
+          if ((attrs as any).autoLayout === undefined) {
+            (attrs as any).autoLayout = true;
+          }
+          if ((attrs as any).layoutType === undefined) {
+            (attrs as any).layoutType = 'vertical';
+          }
+
+          const h5Container = new H5Container(attrs as any, {
+            doc: this.editor.doc,
+          });
+          children.push(h5Container);
+          console.log(`成功创建H5容器: ${attrs.id}`);
+        } catch (error) {
+          console.error(`创建H5容器失败 (${attrs.id}):`, error);
+          // 回退到普通Frame
+          const Ctor = graphCtorMap[GraphicsType.Frame];
+          if (Ctor) {
+            children.push(new Ctor(attrs as any, { doc: this.editor.doc }));
+          }
+        }
         continue;
       }
 

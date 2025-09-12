@@ -7,17 +7,19 @@ import { EditorContext } from '../../../context';
 import NumberInput from '../../input/NumberInput';
 import { SelectInput } from '../../input/SelectInput';
 import { BaseCard } from '../BaseCard';
+import { Switch } from './Switch';
 
 interface H5LayoutAttr {
   label: string;
   key: string;
-  value: number | string;
+  value: number | string | boolean;
   uiType: string;
   options?: { value: string; label: string }[];
   min?: number;
   max?: number;
   step?: number;
   visible?: boolean;
+  disabled?: boolean;
 }
 
 export const H5LayoutCard: FC = () => {
@@ -52,7 +54,7 @@ export const H5LayoutCard: FC = () => {
     }
   }, [editor, MIXED]);
 
-  const execCommand = (key: string, newVal: number | string) => {
+  const execCommand = (key: string, newVal: number | string | boolean) => {
     if (!editor?.editor) {
       return false;
     }
@@ -92,6 +94,23 @@ export const H5LayoutCard: FC = () => {
           {attrs.map((attr) => {
             if (attr.visible === false) {
               return null;
+            }
+
+            if (attr.uiType === 'switch') {
+              return (
+                <div key={attr.key} className="layout-attr-item">
+                  <span className="attr-label">{attr.label}</span>
+                  <div className="attr-input">
+                    <Switch
+                      value={attr.value as boolean}
+                      onChange={(value: boolean) =>
+                        execCommand(attr.key, value)
+                      }
+                      disabled={attr.disabled}
+                    />
+                  </div>
+                </div>
+              );
             }
 
             if (attr.uiType === 'select') {

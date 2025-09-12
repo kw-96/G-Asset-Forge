@@ -5,10 +5,7 @@
 
 import type { IEditorPaperData } from '../type';
 import type { DesignProjectData } from './project-handlers/DesignProjectHandler';
-import type {
-  ContentBlockData,
-  H5ProjectData,
-} from './project-handlers/H5ProjectHandler';
+import type { H5ProjectData } from './project-handlers/H5ProjectHandler';
 import type { ProjectData } from './project-handlers/ProjectHandler';
 import { ProjectType } from './ProjectTypeManager';
 
@@ -267,11 +264,10 @@ export class ProjectDataValidator {
       type: ProjectType.H5,
       version: '1.0.0',
       requiredFields: ['type', 'data'],
-      optionalFields: ['metadata', 'state', 'h5Container', 'contentBlocks'],
+      optionalFields: ['metadata', 'state', 'h5Container'],
       validators: [
         this.validateH5ProjectStructure.bind(this),
         this.validateH5ContainerData.bind(this),
-        this.validateContentBlocksData.bind(this),
       ],
     });
   }
@@ -488,7 +484,7 @@ export class ProjectDataValidator {
     const designData = data as DesignProjectData;
 
     // 检查是否包含H5特定字段
-    if ('h5Container' in designData || 'contentBlocks' in designData) {
+    if ('h5Container' in designData) {
       result.errors.push({
         code: 'DESIGN_PROJECT_CONTAINS_H5_DATA',
         message: '设计项目不应包含H5特定数据',
@@ -513,15 +509,12 @@ export class ProjectDataValidator {
 
     const h5Data = data as H5ProjectData;
 
-    // H5项目应该有H5Container或contentBlocks
-    if (
-      !h5Data.h5Container &&
-      (!h5Data.contentBlocks || h5Data.contentBlocks.length === 0)
-    ) {
+    // H5项目应该有H5Container
+    if (!h5Data.h5Container) {
       result.warnings.push({
-        code: 'H5_PROJECT_MISSING_CONTAINER_OR_BLOCKS',
-        message: 'H5项目缺少H5Container或内容块',
-        suggestion: '建议添加H5Container或内容块以确保项目完整性',
+        code: 'H5_PROJECT_MISSING_CONTAINER',
+        message: 'H5项目缺少H5Container',
+        suggestion: '建议添加H5Container以确保项目完整性',
       });
     }
 
@@ -633,79 +626,6 @@ export class ProjectDataValidator {
   }
 
   /**
-   * 验证内容块数据
-   */
-  private validateContentBlocksData(data: ProjectData): ValidationResult {
-    const result: ValidationResult = {
-      isValid: true,
-      errors: [],
-      warnings: [],
-    };
-
-    const h5Data = data as H5ProjectData;
-
-    if (h5Data.contentBlocks && Array.isArray(h5Data.contentBlocks)) {
-      const blockIds = new Set<string>();
-
-      for (let i = 0; i < h5Data.contentBlocks.length; i++) {
-        const block = h5Data.contentBlocks[i];
-        const path = `contentBlocks[${i}]`;
-
-        // 验证必需字段
-        if (!block.id) {
-          result.errors.push({
-            code: 'CONTENT_BLOCK_MISSING_ID',
-            message: `内容块缺少ID`,
-            path: `${path}.id`,
-            severity: 'critical',
-            autoFixable: true,
-          });
-          result.isValid = false;
-        } else {
-          // 检查ID重复
-          if (blockIds.has(block.id)) {
-            result.errors.push({
-              code: 'CONTENT_BLOCK_DUPLICATE_ID',
-              message: `内容块ID重复: ${block.id}`,
-              path: `${path}.id`,
-              severity: 'major',
-              autoFixable: true,
-            });
-            result.isValid = false;
-          }
-          blockIds.add(block.id);
-        }
-
-        // 验证类型
-        const validTypes = ['H5TextBlock', 'H5ImageBlock', 'H5ButtonBlock'];
-        if (!validTypes.includes(block.type)) {
-          result.errors.push({
-            code: 'CONTENT_BLOCK_INVALID_TYPE',
-            message: `内容块类型无效: ${block.type}`,
-            path: `${path}.type`,
-            severity: 'major',
-            autoFixable: false,
-          });
-          result.isValid = false;
-        }
-
-        // 验证顺序
-        if (typeof block.order !== 'number' || block.order < 0) {
-          result.errors.push({
-            code: 'CONTENT_BLOCK_INVALID_ORDER',
-            message: `内容块顺序无效: ${block.order}`,
-            path: `${path}.order`,
-            severity: 'minor',
-            autoFixable: true,
-          });
-        }
-      }
-    }
-
-    return result;
-  }
-
-  /**
    * 验证元数据
    */
   private validateMetadata(metadata: any): ValidationResult {
@@ -736,8 +656,6 @@ export class ProjectDataValidator {
 
     return result;
   }
-
-  // 修复方法
 
   /**
    * 修复基础结构
@@ -846,11 +764,6 @@ export class ProjectDataValidator {
         delete (repairedData as any).h5Container;
         result.fixedIssues?.push('移除了设计项目中的H5容器数据');
       }
-
-      if ('contentBlocks' in repairedData) {
-        delete (repairedData as any).contentBlocks;
-        result.fixedIssues?.push('移除了设计项目中的内容块数据');
-      }
     }
 
     return repairedData;
@@ -883,54 +796,6 @@ export class ProjectDataValidator {
         };
         result.fixedIssues?.push('添加了默认H5容器');
       }
-
-      // 初始化内容块数组
-      if (!repairedData.contentBlocks) {
-        repairedData.contentBlocks = [];
-        result.fixedIssues?.push('初始化了内容块数组');
-      }
-    }
-
-    // 修复内容块数据
-    if (
-      repairedData.contentBlocks &&
-      Array.isArray(repairedData.contentBlocks)
-    ) {
-      const seenIds = new Set<string>();
-      const validBlocks: ContentBlockData[] = [];
-
-      for (let i = 0; i < repairedData.contentBlocks.length; i++) {
-        const block = { ...repairedData.contentBlocks[i] };
-
-        // 修复缺失的ID
-        if (!block.id) {
-          block.id = `content_block_${Date.now()}_${i}`;
-          result.fixedIssues?.push(`为内容块添加了ID: ${block.id}`);
-        }
-
-        // 处理重复ID
-        if (seenIds.has(block.id)) {
-          block.id = `${block.id}_${Date.now()}`;
-          result.fixedIssues?.push(`修复了重复的内容块ID: ${block.id}`);
-        }
-        seenIds.add(block.id);
-
-        // 修复顺序
-        if (typeof block.order !== 'number' || block.order < 0) {
-          block.order = i;
-          result.fixedIssues?.push(`修复了内容块顺序: ${block.id}`);
-        }
-
-        // 修复父容器ID
-        if (!block.parentId && repairedData.h5Container) {
-          block.parentId = repairedData.h5Container.id;
-          result.fixedIssues?.push(`设置了内容块的父容器ID: ${block.id}`);
-        }
-
-        validBlocks.push(block);
-      }
-
-      repairedData.contentBlocks = validBlocks;
     }
 
     return repairedData;

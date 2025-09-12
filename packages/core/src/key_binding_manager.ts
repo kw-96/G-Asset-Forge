@@ -60,9 +60,11 @@ export class KeyBindingManager {
       e.preventDefault();
     }
 
+    // 检查是否是输入元素或文本编辑器激活状态
     if (
       e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
+      e.target instanceof HTMLTextAreaElement ||
+      this.editor.textEditor?.isActive()
     ) {
       return;
     }

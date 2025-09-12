@@ -3,7 +3,9 @@ import './ComponentSaveDialog.scss';
 
 import {
   ComponentDefinition,
+  type ComponentGenerationOptions,
   ComponentManager,
+  generateComponentFromGraphics,
   generateProjectThumbnail,
 } from '@g-asset-forge/core';
 import { type FC, useCallback, useContext, useMemo, useState } from 'react';
@@ -14,7 +16,7 @@ interface ComponentSaveDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (component: ComponentDefinition) => void;
-  selectedFrame: any;
+  selectedFrame: any; // TODO: 改进为具体的图形元素类型
 }
 
 export const ComponentSaveDialog: FC<ComponentSaveDialogProps> = ({
@@ -30,12 +32,43 @@ export const ComponentSaveDialog: FC<ComponentSaveDialogProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const componentManager = useMemo(() => new ComponentManager(), []);
 
-  // 生成组件ID
-  const generateComponentId = useCallback(() => {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    return `component_${timestamp}_${random}`;
-  }, []);
+  // 验证选中的图形元素是否有效
+  const validateSelectedFrame = useCallback(
+    (frame: any): { isValid: boolean; error?: string } => {
+      if (!frame) {
+        return { isValid: false, error: '未选择有效的图形元素' };
+      }
+
+      if (typeof frame !== 'object') {
+        return { isValid: false, error: '选中的图形元素格式无效' };
+      }
+
+      if (!frame.type) {
+        return { isValid: false, error: '选中的图形元素缺少类型信息' };
+      }
+
+      // 验证必要的属性
+      const requiredProperties = ['attrs', 'id'];
+      const missingProperties = requiredProperties.filter(
+        (prop) => !(prop in frame),
+      );
+
+      if (missingProperties.length > 0) {
+        return {
+          isValid: false,
+          error: `选中的图形元素缺少必要信息：${missingProperties.join(', ')}`,
+        };
+      }
+
+      // 验证 attrs 是否为对象
+      if (typeof frame.attrs !== 'object' || frame.attrs === null) {
+        return { isValid: false, error: '图形元素的属性信息无效' };
+      }
+
+      return { isValid: true };
+    },
+    [],
+  );
 
   // 生成组件缩略图
   const generateThumbnail = useCallback((): string => {
@@ -59,43 +92,34 @@ export const ComponentSaveDialog: FC<ComponentSaveDialogProps> = ({
       return;
     }
 
+    // 验证 selectedFrame 是否有效
+    const validation = validateSelectedFrame(selectedFrame);
+    if (!validation.isValid) {
+      alert(`${validation.error}，无法创建组件`);
+      return;
+    }
+
     setIsSaving(true);
 
-    // 生成缩略图
-    const thumbnail = generateThumbnail();
-
-    // 生成组件定义
-    const component: ComponentDefinition = {
-      id: generateComponentId(),
-      name: componentName.trim(),
-      description: componentDescription.trim(),
-      version: '1.0.0',
-      author: '用户',
-      tags: componentTags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0),
-      icon: 'icon.24.plugin', // 默认图标
-      thumbnail: thumbnail, // 添加缩略图
-      rootElement: {
-        type: 'Frame',
-        id: selectedFrame.id || generateComponentId(),
-        attrs: {
-          x: selectedFrame.attrs?.x || 0,
-          y: selectedFrame.attrs?.y || 0,
-          width: selectedFrame.attrs?.width || 100,
-          height: selectedFrame.attrs?.height || 100,
-          // 复制画框的所有属性
-          ...selectedFrame.attrs,
-        },
-        children: selectedFrame.children || [],
-      },
-      parameters: [], // 暂时没有参数
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+    // 声明 component 变量在更外层作用域
+    let component: ComponentDefinition | undefined = undefined;
 
     try {
+      // 使用统一的组件数据生成器 - 确保数据格式完全兼容
+      const options: ComponentGenerationOptions = {
+        name: componentName.trim(),
+        description: componentDescription.trim(),
+        tags: componentTags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0),
+        author: '用户',
+        version: '1.0.0',
+        thumbnail: generateThumbnail(),
+      };
+
+      component = generateComponentFromGraphics(selectedFrame, options);
+
       // 使用 ComponentManager 保存组件到网盘路径
       await componentManager.registerComponent(component);
 
@@ -113,7 +137,7 @@ export const ComponentSaveDialog: FC<ComponentSaveDialogProps> = ({
       const errorMessage = error instanceof Error ? error.message : '未知错误';
 
       // 检查是否是重复名称错误
-      if (errorMessage.includes('已存在')) {
+      if (errorMessage.includes('已存在') && component) {
         const shouldOverwrite = window.confirm(
           `${errorMessage}\n\n是否要覆盖现有组件？`,
         );
@@ -162,11 +186,11 @@ export const ComponentSaveDialog: FC<ComponentSaveDialogProps> = ({
     componentDescription,
     componentTags,
     selectedFrame,
-    generateComponentId,
     generateThumbnail,
     componentManager,
     onSave,
     onClose,
+    validateSelectedFrame,
   ]);
 
   // 处理取消

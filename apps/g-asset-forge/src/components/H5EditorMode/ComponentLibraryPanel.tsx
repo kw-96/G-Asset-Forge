@@ -60,7 +60,7 @@ export const ComponentLibraryPanel: FC<ComponentLibraryPanelProps> = ({
   useEffect(() => {
     const interval = setInterval(() => {
       loadComponents();
-    }, 30000); // 30秒自动刷新
+    }, 300000); // 5分钟自动刷新
 
     return () => clearInterval(interval);
   }, [loadComponents]);
@@ -112,10 +112,21 @@ export const ComponentLibraryPanel: FC<ComponentLibraryPanelProps> = ({
     [],
   );
 
+  // 关闭右键菜单
+  const closeContextMenu = useCallback(() => {
+    setContextMenu({
+      visible: false,
+      x: 0,
+      y: 0,
+      component: null,
+    });
+  }, []);
+
   // 处理删除组件
   const handleDeleteComponent = useCallback(
     async (component: ComponentDefinition) => {
       if (!window.confirm(`确定要删除组件 "${component.name}" 吗？`)) {
+        closeContextMenu(); // 取消删除时也关闭菜单
         return;
       }
 
@@ -131,20 +142,13 @@ export const ComponentLibraryPanel: FC<ComponentLibraryPanelProps> = ({
             error instanceof Error ? error.message : '未知错误'
           }`,
         );
+      } finally {
+        // 无论成功还是失败，都关闭右键菜单
+        closeContextMenu();
       }
     },
-    [componentManager, loadComponents],
+    [componentManager, loadComponents, closeContextMenu],
   );
-
-  // 关闭右键菜单
-  const closeContextMenu = useCallback(() => {
-    setContextMenu({
-      visible: false,
-      x: 0,
-      y: 0,
-      component: null,
-    });
-  }, []);
 
   // 点击其他地方关闭右键菜单
   useEffect(() => {

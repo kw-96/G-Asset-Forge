@@ -393,7 +393,6 @@ const Editor: FC<EditorProps> = ({
         // 使用 passive: true 来避免滚轮事件冲突
         window.addEventListener('resize', changeViewport, { passive: true });
 
-
         // 输出诊断信息（仅在开发环境）
         if (import.meta.env?.DEV) {
           // 防重复诊断检查
@@ -409,7 +408,6 @@ const Editor: FC<EditorProps> = ({
 
         return () => {
           try {
-
             // 安全检查编辑器是否存在且未被销毁
             if (editor && editor.containerElement) {
               editor.destroy();

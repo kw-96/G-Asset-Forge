@@ -26,6 +26,7 @@ export enum GraphicsType {
   Frame = 'Frame',
   Canvas = 'Canvas',
   Document = 'Document',
+  H5Container = 'H5Container',
 }
 
 /**

@@ -6,24 +6,20 @@
 import { EventEmitter } from '@g-asset-forge/common';
 
 import type { GAssetForgeEditor } from '../editor';
-import type {
-  ContentBlockData,
-  IH5Service,
-} from './project-handlers/H5ProjectHandler';
+import type { IH5Service } from './project-handlers/H5ProjectHandler';
 
 /**
  * H5Service事件接口
  */
 interface H5ServiceEvents {
-  contentBlocksChanged: (blocks: ContentBlockData[]) => void;
-  selectionChanged: (selectedBlocks: string[]) => void;
+  componentsChanged: (components: any[]) => void;
+  selectionChanged: (selectedComponents: string[]) => void;
   error: (error: Error) => void;
   healthCheck: (isHealthy: boolean, issues?: string[]) => void;
 }
 
 /**
- * 精简的H5Service实现
- * 只保留核心功能，移除复杂的监控和状态管理
+ * H5Service核心功能
  */
 export class H5Service
   extends EventEmitter<H5ServiceEvents>
@@ -31,7 +27,6 @@ export class H5Service
 {
   private editor: GAssetForgeEditor | null = null;
   private currentContainer: any = null;
-  private contentBlocks: Map<string, ContentBlockData> = new Map();
 
   constructor() {
     super();
@@ -40,10 +35,7 @@ export class H5Service
   /**
    * 初始化H5Service
    */
-  async initialize(
-    editor: GAssetForgeEditor,
-    _projectData?: any,
-  ): Promise<void> {
+  async initialize(editor: GAssetForgeEditor): Promise<void> {
     this.editor = editor;
   }
 
@@ -231,22 +223,22 @@ export class H5Service
   }
 
   /**
-   * 添加内容块到H5容器
+   * 添加任意组件到H5容器
    */
-  addContentBlock(block: ContentBlockData): void {
+  addComponent(component: any): boolean {
     if (!this.currentContainer) {
-      console.warn('H5Service: 无法添加内容块：H5容器不存在');
-      return;
+      console.warn('H5Service: 无法添加组件：H5容器不存在');
+      return false;
     }
 
-    this.contentBlocks.set(block.id, block);
-  }
+    // 使用H5容器的insertChild方法添加组件
+    if (typeof this.currentContainer.insertChild === 'function') {
+      this.currentContainer.insertChild(component);
+      return true;
+    }
 
-  /**
-   * 获取所有内容块
-   */
-  getContentBlocks(): ContentBlockData[] {
-    return Array.from(this.contentBlocks.values());
+    console.warn('H5Service: H5容器不支持insertChild方法');
+    return false;
   }
 
   /**
@@ -269,104 +261,65 @@ export class H5Service
   async cleanup(): Promise<void> {
     this.editor = null;
     this.currentContainer = null;
-    this.contentBlocks.clear();
   }
 
-  // 实现IH5Service接口的其他方法（简化版）
-  getContentBlock(blockId: string): ContentBlockData | null {
-    return this.contentBlocks.get(blockId) || null;
-  }
+  /**
+   * 移除组件
+   */
+  removeComponent(componentId: string): boolean {
+    if (!this.currentContainer) {
+      console.warn('H5Service: 无法移除组件：H5容器不存在');
+      return false;
+    }
 
-  removeContentBlock(blockId: string): boolean {
-    return this.contentBlocks.delete(blockId);
-  }
+    const children = this.currentContainer.getChildren();
+    const component = children.find(
+      (child: any) => child.attrs?.id === componentId,
+    );
 
-  updateContentBlock(blockId: string, attrs: any): boolean {
-    const block = this.contentBlocks.get(blockId);
-    if (block) {
-      Object.assign(block, attrs);
+    if (component && typeof this.currentContainer.removeChild === 'function') {
+      this.currentContainer.removeChild(component);
       return true;
     }
+
     return false;
   }
 
-  getSelectedBlocks(): string[] {
-    return [];
-  }
-
-  setSelectedBlocks(_blockIds: string[]): void {
-    // 简化版，不实现选择功能
-  }
-
-  clearSelection(): void {
-    // 简化版，不实现选择功能
-  }
-
-  // 实现IH5Service接口的其他必需方法（简化版）
-  restoreExistingH5Container(container: any): boolean {
-    if (!container || !container.id) {
-      return false;
+  /**
+   * 获取所有组件
+   */
+  getAllComponents(): any[] {
+    if (!this.currentContainer) {
+      return [];
     }
-    this.currentContainer = container;
-    return true;
+
+    return this.currentContainer.getChildren();
   }
 
-  async addTextBlock(content?: string): Promise<any> {
-    const block: ContentBlockData = {
-      id: `text-${Date.now()}`,
-      type: 'H5TextBlock',
-      order: this.contentBlocks.size,
-      parentId: this.currentContainer?.id || '',
-      style: {},
-      content: { text: content || '文本内容' },
-    };
-    this.addContentBlock(block);
-    return block;
-  }
-
-  async addImageBlock(src?: string, alt?: string): Promise<any> {
-    const block: ContentBlockData = {
-      id: `image-${Date.now()}`,
-      type: 'H5ImageBlock',
-      order: this.contentBlocks.size,
-      parentId: this.currentContainer?.id || '',
-      style: {},
-      content: { src: src || '', alt: alt || '' },
-    };
-    this.addContentBlock(block);
-    return block;
-  }
-
-  async addButtonBlock(text?: string): Promise<any> {
-    const block: ContentBlockData = {
-      id: `button-${Date.now()}`,
-      type: 'H5ButtonBlock',
-      order: this.contentBlocks.size,
-      parentId: this.currentContainer?.id || '',
-      style: {},
-      content: { text: text || '按钮' },
-    };
-    this.addContentBlock(block);
-    return block;
-  }
-
-  getContentBlockCount(): number {
-    return this.contentBlocks.size;
-  }
-
-  getAllContentBlocks(): ContentBlockData[] {
-    return this.getContentBlocks();
-  }
-
-  getSelectedContentBlocks(): any[] {
-    return [];
-  }
-
-  exportData(): { h5Container: any; contentBlocks: any[] } {
+  /**
+   * 导出H5容器数据
+   */
+  exportData(): { h5Container: any; components: any[] } {
     return {
       h5Container: this.currentContainer,
-      contentBlocks: this.getContentBlocks(),
+      components: this.getAllComponents(),
     };
+  }
+
+  // 简化的IH5Service接口实现（保持兼容性）
+  restoreExistingH5Container(container: any): boolean {
+    if (!container) {
+      return false;
+    }
+
+    // 安全检查容器的ID属性
+    const containerId = container.id || container.attrs?.id;
+    if (!containerId) {
+      return false;
+    }
+
+    this.currentContainer = container;
+    return true;
   }
 
   destroy(): void {

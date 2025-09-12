@@ -141,7 +141,7 @@ export class HostEventManager {
       }
     };
 
-    editor.canvasElement.addEventListener('wheel', onWheel);
+    editor.canvasElement.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('wheel', preventDefaultScalePage, {
       passive: false,
     });

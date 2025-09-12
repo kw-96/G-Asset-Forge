@@ -52,7 +52,7 @@ export class ComponentStorage {
 
     // 保存预览图（如果有）
     if (component.thumbnail) {
-      await this.saveThumbnail(component.id, component.thumbnail);
+      await this.saveThumbnail(safeFileName, component.thumbnail);
     }
 
     // 更新索引文件
@@ -106,7 +106,7 @@ export class ComponentStorage {
 
         // 加载缩略图（如果组件定义中没有缩略图）
         if (!component.thumbnail) {
-          const thumbnail = await this.loadThumbnail(componentId);
+          const thumbnail = await this.loadThumbnail(safeFileName);
           if (thumbnail) {
             component.thumbnail = thumbnail;
           }
@@ -189,11 +189,10 @@ export class ComponentStorage {
             filename: `${safeFileName}.json`,
             directory: this.componentsPath,
           });
+          // 删除缩略图，使用相同的文件名规则
+          await this.deleteThumbnail(safeFileName);
         }
       }
-
-      // 删除缩略图
-      await this.deleteThumbnail(componentId);
 
       // 更新索引文件
       await this.removeFromIndex(componentId);
@@ -275,7 +274,7 @@ export class ComponentStorage {
    * 保存组件缩略图
    */
   private async saveThumbnail(
-    componentId: string,
+    safeFileName: string,
     thumbnailData: string,
   ): Promise<void> {
     // 只在 Electron 环境中保存缩略图
@@ -290,7 +289,7 @@ export class ComponentStorage {
 
       // 处理缩略图数据
       let imageData: string;
-      const filename = `${componentId}.png`;
+      const filename = `${safeFileName}.png`;
 
       if (thumbnailData.startsWith('data:image/')) {
         // Base64 数据
@@ -324,7 +323,7 @@ export class ComponentStorage {
   /**
    * 加载组件缩略图
    */
-  private async loadThumbnail(componentId: string): Promise<string | null> {
+  private async loadThumbnail(safeFileName: string): Promise<string | null> {
     // 只在 Electron 环境中加载缩略图
     if (!window.electronAPI) {
       return null;
@@ -332,7 +331,7 @@ export class ComponentStorage {
 
     try {
       const thumbnailsPath = path.join(this.basePath, 'thumbnails');
-      const filename = `${componentId}.png`;
+      const filename = `${safeFileName}.png`;
 
       const result = await window.electronAPI.readFile!({
         filename: filename,
@@ -354,7 +353,7 @@ export class ComponentStorage {
   /**
    * 删除组件缩略图
    */
-  private async deleteThumbnail(componentId: string): Promise<void> {
+  private async deleteThumbnail(safeFileName: string): Promise<void> {
     // 只在 Electron 环境中删除缩略图
     if (!window.electronAPI) {
       return;
@@ -362,7 +361,7 @@ export class ComponentStorage {
 
     try {
       const thumbnailsPath = path.join(this.basePath, 'thumbnails');
-      const filename = `${componentId}.png`;
+      const filename = `${safeFileName}.png`;
 
       await window.electronAPI.deleteFile!({
         filename: filename,
@@ -487,8 +486,9 @@ export class ComponentStorage {
 
 1.2 删除组件缩略图
 位置: ${this.thumbnailsPath}
-文件格式: {组件ID}.png
-示例: 如果组件 ID 为 "comp_1234567890"，则文件名为 "comp_1234567890.png"
+文件格式: {组件名称}.png
+示例: 如果组件名称为 "按钮组件"，则文件名为 "按钮组件.png"
+注意: 文件名中的特殊字符会被替换为下划线
 
 1.3 删除索引文件相关内容
 位置: ${this.basePath}\\index.json
@@ -509,7 +509,7 @@ export class ComponentStorage {
 2. 找到要删除的组件 JSON 文件（文件名与组件名称相同）
 3. 删除该 JSON 文件
 4. 进入 thumbnails 子目录
-5. 找到对应的缩略图文件（文件名与组件 ID 相同）
+5. 找到对应的缩略图文件（文件名与组件名称相同）
 6. 删除该缩略图文件
 7. 返回上级目录，打开 index.json 文件
 8. 找到对应的组件 ID 条目并删除整个对象
@@ -556,7 +556,7 @@ export class ComponentStorage {
    创建时间: ${createdDate}
    更新时间: ${updatedDate}
    JSON 文件: ${this.sanitizeFileName(component.name)}.json
-   缩略图文件: ${component.id}.png
+   缩略图文件: ${this.sanitizeFileName(component.name)}.png
 
 `;
     });
