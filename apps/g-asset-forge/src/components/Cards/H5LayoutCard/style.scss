@@ -1,0 +1,39 @@
+.g-asset-forge {
+  .h5-layout-card {
+    .layout-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 8px 0 16px;
+      height: 32px;
+      line-height: 32px;
+      color: #333;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .layout-attributes {
+      padding: 8px 0;
+
+      .layout-attr-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0 8px;
+        height: 28px;
+
+        .attr-label {
+          font-size: 12px;
+          color: #666666;
+          font-weight: 500;
+          min-width: 60px;
+        }
+
+        .attr-input {
+          flex: 1;
+          margin-left: 8px;
+        }
+      }
+    }
+  }
+}

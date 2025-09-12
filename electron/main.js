@@ -205,7 +205,15 @@ app.whenReady().then(() => {
       const filePath = path.join(saveDirectory, filename);
 
       // 保存文件
-      await fs.writeFile(filePath, data);
+      // 检查数据是否是 Base64 格式
+      if (typeof data === 'string' && /^[A-Za-z0-9+/]*={0,2}$/.test(data)) {
+        // 是 Base64 数据，转换为 Buffer
+        const buffer = Buffer.from(data, 'base64');
+        await fs.writeFile(filePath, buffer);
+      } else {
+        // 普通文本数据
+        await fs.writeFile(filePath, data);
+      }
 
       console.log(`文件保存成功: ${filePath}`);
       return {
@@ -373,6 +381,37 @@ app.whenReady().then(() => {
       };
     } catch (error) {
       console.error('文件删除失败:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  // 读取目录 IPC 处理器
+  ipcMain.handle('file:read-directory', async (event, { directory }) => {
+    try {
+      // 检查目录是否存在
+      try {
+        await fs.access(directory);
+      } catch (error) {
+        return {
+          success: false,
+          error: '目录不存在',
+        };
+      }
+
+      // 读取目录内容
+      const files = await fs.readdir(directory);
+
+      console.log(`目录读取成功: ${directory}`);
+      return {
+        success: true,
+        files: files,
+        directory: directory,
+      };
+    } catch (error) {
+      console.error('目录读取失败:', error);
       return {
         success: false,
         error: error.message,

@@ -53,7 +53,7 @@ npx pnpm run dev
 
 # 桌面应用开发
 $env:PATH += ";$env:APPDATA\npm"
-pnpm run electron:dev
+npx pnpm run electron:dev
 pnpm -w run electron:dev
 
 # 停止开发服务器
@@ -76,6 +76,19 @@ pnpm -w run electron:build
 
 # 预览桌面应用
 pnpm run electron:preview
+```
+
+### 清理端口
+
+```t
+
+# 检查端口占用
+$ netstat -ano | findstr :6167
+# 检查进程ID
+$ tasklist /FI "PID eq 28116"
+# 清除进程占用
+$ taskkill /PID 28116 /F
+
 ```
 
 ## 📁 项目结构

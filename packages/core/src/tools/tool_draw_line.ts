@@ -11,10 +11,10 @@ import {
 import { HALF_PI } from '../constant';
 import { type GAssetForgeEditor } from '../editor';
 import {
-  GraphicsObjectSuffix,
-  isFrameGraphics,
   type GAssetForgeGraphics,
   GAssetForgeLine,
+  GraphicsObjectSuffix,
+  isFrameGraphics,
 } from '../graphics';
 import { adjustSizeToKeepPolarSnap, getNoConflictObjectName } from '../utils';
 import { DrawGraphicsTool } from './tool_draw_graphics';

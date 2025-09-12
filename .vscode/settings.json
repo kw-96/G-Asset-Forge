@@ -66,5 +66,17 @@
     "*.suika": "binary",
     "*.GAssetForgeEditor": "binary"
   },
-  "cSpell.words": ["Bbox", "bboxes", "longpage", "Relayout", "ungroup"]
+  "cSpell.words": [
+    "Bbox",
+    "bboxes",
+    "favorited",
+    "findstr",
+    "longpage",
+    "promot",
+    "Relayout",
+    "taskkill",
+    "tasklist",
+    "unfavorited",
+    "ungroup"
+  ]
 }

@@ -51,184 +51,124 @@
     }
   }
 
-  .blocks-section,
-  .layers-section {
-    flex: 1;
-    overflow-y: auto;
+  .empty-layers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #999999;
+    text-align: center;
 
-    .section-title {
+    .empty-text {
       font-size: 14px;
-      font-weight: 500;
-      color: #333333;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
 
-    .block-types {
-      display: flex;
-      flex-direction: column;
-
-      .block-type-item {
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-
-        &:hover {
-          border-color: #007aff;
-          background-color: rgba(0, 122, 255, 0.05);
-        }
-
-        .block-icon {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f8f9fa;
-          border-radius: 6px;
-          margin-right: 12px;
-          color: #666666;
-          font-size: 16px;
-        }
-
-        .block-info {
-          flex: 1;
-
-          .block-name {
-            font-size: 14px;
-            font-weight: 500;
-            color: #333333;
-            margin-bottom: 2px;
-          }
-
-          .block-description {
-            font-size: 12px;
-            color: #666666;
-          }
-        }
-      }
+    .empty-hint {
+      font-size: 12px;
+      color: #cccccc;
     }
+  }
 
-    .empty-layers {
+  .layer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .layer-item {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 200px;
-      color: #999999;
-      text-align: center;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
 
-      .empty-text {
-        font-size: 14px;
-        margin-bottom: 8px;
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
       }
 
-      .empty-hint {
-        font-size: 12px;
-        color: #cccccc;
+      &.selected {
+        background-color: rgba(0, 122, 255, 0.1);
+        border-color: #007aff;
       }
-    }
 
-    .layer-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      &.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+      }
 
-      .layer-item {
+      .layer-drag-handle {
+        width: 16px;
+        height: 16px;
         display: flex;
         align-items: center;
-        padding: 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: 1px solid transparent;
+        justify-content: center;
+        color: #999999;
+        cursor: grab;
+        margin-right: 8px;
 
-        &:hover {
-          background-color: rgba(0, 0, 0, 0.05);
+        &:active {
+          cursor: grabbing;
+        }
+      }
+
+      .layer-icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666666;
+        margin-right: 8px;
+        font-size: 14px;
+      }
+
+      .layer-info {
+        flex: 1;
+        min-width: 0;
+
+        .layer-name {
+          font-size: 13px;
+          color: #333333;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
-        &.selected {
-          background-color: rgba(0, 122, 255, 0.1);
-          border-color: #007aff;
-        }
-
-        &.dragging {
-          opacity: 0.5;
-          transform: scale(0.95);
-        }
-
-        .layer-drag-handle {
-          width: 16px;
-          height: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .layer-type {
+          font-size: 11px;
           color: #999999;
-          cursor: grab;
-          margin-right: 8px;
-
-          &:active {
-            cursor: grabbing;
-          }
+          text-transform: uppercase;
         }
+      }
 
-        .layer-icon {
-          width: 20px;
-          height: 20px;
+      .layer-actions {
+        display: flex;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+
+        .delete-button {
+          color: #dc3545;
+          padding: 4px;
+          border: none;
+          background: transparent;
+          border-radius: 4px;
+          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #666666;
-          margin-right: 8px;
-          font-size: 14px;
-        }
 
-        .layer-info {
-          flex: 1;
-          min-width: 0;
-
-          .layer-name {
-            font-size: 13px;
-            color: #333333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .layer-type {
-            font-size: 11px;
-            color: #999999;
-            text-transform: uppercase;
+          &:hover {
+            background-color: rgba(220, 53, 69, 0.1);
           }
         }
+      }
 
-        .layer-actions {
-          display: flex;
-          align-items: center;
-          opacity: 0;
-          transition: opacity 0.2s ease;
-
-          .delete-button {
-            color: #dc3545;
-            padding: 4px;
-            border: none;
-            background: transparent;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            &:hover {
-              background-color: rgba(220, 53, 69, 0.1);
-            }
-          }
-        }
-
-        &:hover .layer-actions {
-          opacity: 1;
-        }
+      &:hover .layer-actions {
+        opacity: 1;
       }
     }
   }
@@ -560,6 +500,35 @@
 
     .sk-layer-children {
       margin-left: 0;
+    }
+  }
+}
+
+// 组件右键菜单样式
+.component-context-menu {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 120px;
+
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+
+    .context-menu-icon {
+      margin-right: 8px;
+      font-size: 16px;
     }
   }
 }

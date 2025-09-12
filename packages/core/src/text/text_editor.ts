@@ -33,6 +33,13 @@ export class TextEditor {
   private _active = false;
   private transaction!: Transaction;
 
+  // 事件监听器引用，用于清理
+  private mouseEventHandlers: {
+    onStart: (event: IMousemoveEvent) => void;
+    onDrag: (event: IMousemoveEvent) => void;
+    onUpdateCursor: (event: IMousemoveEvent) => void;
+  } | null = null;
+
   // 画布状态管理器
 
   constructor(private editor: GAssetForgeEditor) {
@@ -370,11 +377,17 @@ export class TextEditor {
       this.updateCursor(event.pos);
     };
 
+    // 保存事件处理器引用，用于清理
+    this.mouseEventHandlers = {
+      onStart,
+      onDrag,
+      onUpdateCursor,
+    };
+
     this.editor.mouseEventManager.on('start', onStart);
     this.editor.mouseEventManager.on('drag', onDrag);
     this.editor.mouseEventManager.on('move', onUpdateCursor);
     this.editor.mouseEventManager.on('end', onUpdateCursor);
-    // TODO: remove listener when text editor destroy
   }
 
   updateCursor(mousePt: IPoint) {
@@ -387,6 +400,24 @@ export class TextEditor {
   }
 
   destroy() {
+    // 清理鼠标事件监听器
+    if (this.mouseEventHandlers) {
+      this.editor.mouseEventManager.off(
+        'start',
+        this.mouseEventHandlers.onStart,
+      );
+      this.editor.mouseEventManager.off('drag', this.mouseEventHandlers.onDrag);
+      this.editor.mouseEventManager.off(
+        'move',
+        this.mouseEventHandlers.onUpdateCursor,
+      );
+      this.editor.mouseEventManager.off(
+        'end',
+        this.mouseEventHandlers.onUpdateCursor,
+      );
+      this.mouseEventHandlers = null;
+    }
+
     this.inputDom.remove();
     this._active = false;
   }

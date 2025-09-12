@@ -24,6 +24,7 @@ import {
 import { FormattedMessage } from 'react-intl';
 
 import { EditorContext } from '../../context';
+import { ComponentSaveDialog } from '../H5EditorMode/ComponentSaveDialog';
 import ContextMenuItem from './components/ContextMenuItem';
 import ContextMenuSep from './components/ContextMenuSep';
 
@@ -38,6 +39,8 @@ export const ContextMenu: FC = () => {
   const [canRedo, setCanRedo] = useState(false);
   const [canUndo, setCanUdo] = useState(false);
   const [showCopy, setShowCopy] = useState(false);
+  const [showComponentDialog, setShowComponentDialog] = useState(false);
+  const [selectedFrame, setSelectedFrame] = useState<any>(null);
   const [menuSize, setMenuSize] = useState({ width: 0, height: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -191,12 +194,80 @@ export const ContextMenu: FC = () => {
   };
 
   /**
+   * 检查选中的元素是否是画框
+   */
+  const isFrameSelected = () => {
+    if (!editor?.editor) return false;
+    const selectedItems = editor.editor.selectedElements.getItems();
+    if (selectedItems.length !== 1) return false;
+
+    const selectedItem = selectedItems[0];
+    // 检查是否是画框类型
+    return (
+      selectedItem.type === 'Frame' ||
+      selectedItem.constructor?.name === 'Frame'
+    );
+  };
+
+  /**
+   * 处理添加为组件
+   */
+  const handleAddAsComponent = () => {
+    setVisible(false);
+    if (!editor?.editor) return;
+
+    const selectedItems = editor.editor.selectedElements.getItems();
+    if (selectedItems.length !== 1) return;
+
+    const frame = selectedItems[0];
+    setSelectedFrame(frame);
+    setShowComponentDialog(true);
+  };
+
+  /**
+   * 处理组件保存
+   */
+  const handleComponentSave = useCallback(async (component: any) => {
+    try {
+      console.log('组件保存成功:', component);
+
+      // 触发组件列表刷新事件
+      window.dispatchEvent(
+        new CustomEvent('componentSaved', {
+          detail: { component },
+        }),
+      );
+
+      alert('组件保存成功！');
+    } catch (error) {
+      console.error('保存组件失败:', error);
+      alert('保存组件失败，请重试');
+    }
+  }, []);
+
+  /**
+   * 处理组件对话框关闭
+   */
+  const handleComponentDialogClose = useCallback(() => {
+    setShowComponentDialog(false);
+    setSelectedFrame(null);
+  }, []);
+
+  /**
    * with select elements
    */
   const renderSelectContextMenu = () => {
     return (
       <>
-        <ContextMenuSep />
+        {/* 添加为组件 - 只在选中单个画框时显示 */}
+        {isFrameSelected() && (
+          <>
+            <ContextMenuItem onClick={handleAddAsComponent}>
+              添加为组件
+            </ContextMenuItem>
+            <ContextMenuSep />
+          </>
+        )}
         <ContextMenuItem
           suffix={isWindows() ? 'Ctrl+G' : '⌘G'}
           onClick={() => {
@@ -370,6 +441,14 @@ export const ContextMenu: FC = () => {
           !editor?.editor?.selectedElements?.isEmpty() &&
           renderSelectContextMenu()}
       </div>
+
+      {/* 组件保存对话框 */}
+      <ComponentSaveDialog
+        isOpen={showComponentDialog}
+        onClose={handleComponentDialogClose}
+        onSave={handleComponentSave}
+        selectedFrame={selectedFrame}
+      />
     </div>
   );
 };

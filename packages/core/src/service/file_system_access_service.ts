@@ -120,7 +120,11 @@ export class FileSystemAccessService {
 
     // 调用预加载脚本中定义的文件保存方法
     if (window.electronAPI && window.electronAPI.saveFile) {
-      const result = await window.electronAPI.saveFile(filename, uint8Array);
+      const result = await window.electronAPI.saveFile({
+        filename,
+        data: new TextDecoder().decode(uint8Array),
+        directory: undefined,
+      });
 
       if (!result.success) {
         throw new Error(result.error || '文件保存失败');
@@ -436,7 +440,10 @@ export class FileSystemAccessService {
    */
   private async readFileElectron(filename: string): Promise<string | null> {
     if (window.electronAPI && window.electronAPI.readFile) {
-      const result = await window.electronAPI.readFile(filename);
+      const result = await window.electronAPI.readFile({
+        filename,
+        directory: undefined,
+      });
       if (result.success) {
         return result.content || null;
       } else {
@@ -481,7 +488,10 @@ export class FileSystemAccessService {
    */
   private async deleteFileElectron(filename: string): Promise<boolean> {
     if (window.electronAPI && window.electronAPI.deleteFile) {
-      const result = await window.electronAPI.deleteFile(filename);
+      const result = await window.electronAPI.deleteFile({
+        filename,
+        directory: undefined,
+      });
       return result.success;
     } else {
       throw new Error('Electron API 不可用');

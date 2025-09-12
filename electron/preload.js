@@ -39,8 +39,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   versions: process.versions,
 
   // 文件操作 API
-  saveFile: async (filename, data, directory) => {
-    return await ipcRenderer.invoke('file:save', { filename, data, directory });
+  saveFile: async (options) => {
+    return await ipcRenderer.invoke('file:save', options);
   },
 
   saveFileDialog: async (filename, data) => {
@@ -51,12 +51,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return await ipcRenderer.invoke('file:get-default-directory');
   },
 
-  readFile: async (filename, directory) => {
-    return await ipcRenderer.invoke('file:read', { filename, directory });
+  readFile: async (options) => {
+    return await ipcRenderer.invoke('file:read', options);
   },
 
-  deleteFile: async (filename, directory) => {
-    return await ipcRenderer.invoke('file:delete', { filename, directory });
+  deleteFile: async (options) => {
+    return await ipcRenderer.invoke('file:delete', options);
+  },
+
+  readDirectory: async (options) => {
+    return await ipcRenderer.invoke('file:read-directory', options);
   },
 });
 

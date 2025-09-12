@@ -1,4 +1,4 @@
-// H5模式界面 - 重构版本
+// H5模式界面
 import './H5EditorMode.scss';
 
 import {
@@ -54,79 +54,11 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
   }, []); // 空依赖数组，只在组件挂载时执行一次
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  const [selectedBlockId, setSelectedBlockId] = useState<string>('');
-  const [contentBlocks, setContentBlocks] = useState<any[]>([]);
+  // 内容块相关状态已移除，现在使用组件库功能
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [initializationError, setInitializationError] = useState<string | null>(
     null,
   );
-
-  // 获取块内容
-  const getBlockContent = useCallback((block: any) => {
-    if (!block || !block.attrs) {
-      return {};
-    }
-
-    switch (block.attrs.blockType) {
-      case 'text':
-        return {
-          text: block.attrs.content || '请输入文本内容',
-          fontSize: block.attrs.fontSize || 16,
-          color: block.attrs.textColor || '#333333',
-          textAlign: block.attrs.textAlign || 'left',
-        };
-      case 'image':
-        return {
-          src: block.attrs.src || '',
-          alt: block.attrs.alt || '图片',
-          objectFit: block.attrs.objectFit || 'cover',
-        };
-      case 'button':
-        return {
-          text: block.attrs.text || '点击按钮',
-          backgroundColor: block.attrs.backgroundColor || '#007AFF',
-          textColor: block.attrs.textColor || '#FFFFFF',
-          borderRadius: block.attrs.borderRadius || 8,
-        };
-      default:
-        return {};
-    }
-  }, []);
-
-  // 更新内容块列表
-  const updateContentBlocksList = useCallback(() => {
-    if (h5ServiceRef.current) {
-      try {
-        // 使用新的H5Service API
-        const blocks = h5ServiceRef.current.getContentBlocks
-          ? h5ServiceRef.current.getContentBlocks()
-          : h5ServiceRef.current.getAllContentBlocks
-          ? h5ServiceRef.current.getAllContentBlocks()
-          : [];
-
-        const blockData = blocks
-          .filter(
-            (block: any) =>
-              block && (block.id || (block.attrs && block.attrs.id)),
-          ) // 过滤掉无效的块
-          .map((block: any) => ({
-            id: block.id || block.attrs?.id,
-            type: block.type || block.attrs?.blockType || 'unknown',
-            content: block.content || getBlockContent(block),
-            style:
-              block.style || (block.getBlockStyle ? block.getBlockStyle() : {}),
-            order: block.order || block.attrs?.order || 0,
-            isVisible:
-              block.isVisible !== false && block.attrs?.visible !== false,
-            isLocked: block.isLocked === true || block.attrs?.locked === true,
-          }));
-        setContentBlocks(blockData);
-      } catch (error) {
-        console.error('更新内容块列表失败:', error);
-        setContentBlocks([]);
-      }
-    }
-  }, [getBlockContent]);
 
   // H5Service初始化和生命周期管理
   const initializeH5Service = useCallback(async () => {
@@ -151,8 +83,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
           existingH5Service.setEditor(editor.editor);
         }
 
-        // 更新内容块列表
-        updateContentBlocksList();
         return;
       } else {
         console.log('现有H5Service无效，将创建新的');
@@ -183,8 +113,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
       // 设置事件监听器（防重复注册）
       if (!(h5Service as any).__eventsRegistered) {
-        h5Service.on('contentBlocksChanged', (blocks: any[]) => {
-          updateContentBlocksList();
+        h5Service.on('contentBlocksChanged', () => {
         });
 
         h5Service.on('selectionChanged', (selectedBlocks: string[]) => {
@@ -217,8 +146,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         autoSaveRef.current = new AutoSaveGraphics(editor.editor);
       }
 
-      // 初始化内容块列表
-      updateContentBlocksList();
 
       // 设置初始化完成标记
       (window as any).__h5ServiceInitialized = true;
@@ -235,7 +162,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     } finally {
       setIsInitializing(false);
     }
-  }, [editor.editor, updateContentBlocksList]);
+  }, [editor.editor]);
 
   // 清理H5Service
   const cleanupH5Service = useCallback(async () => {
@@ -361,9 +288,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
             // 使用事件驱动方式等待H5容器恢复
 
             // 监听H5容器恢复事件
-            const handleH5ContainerRestored = (event: {
-              containerId: string;
-            }) => {
+            const handleH5ContainerRestored = () => {
               // 检查项目是否仍然打开
               if (!(window as any).__isH5Project) {
                 return;
@@ -422,17 +347,13 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
 
           // 等待一帧后更新内容块列表，确保容器已完全初始化
           requestAnimationFrame(() => {
-            updateContentBlocksList();
 
             // 强制重新渲染编辑器，确保H5容器可见
             editor?.editor?.render();
           });
 
           // 监听编辑器选择变化 - 简化逻辑，直接使用InfoPanel
-          const handleSelectionChange = () => {
-            // LayerPanel会自动处理选择变化，这里不需要额外处理
-            console.log('编辑器选择变化');
-          };
+          const handleSelectionChange = () => {};
 
           editor?.editor?.selectedElements.on(
             'itemsChange',
@@ -486,7 +407,6 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     editor?.editor?.doc,
     containerRef,
     initializeH5Service,
-    updateContentBlocksList,
     projectManagementService,
   ]);
 
@@ -513,152 +433,10 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
     }
   }, [cleanupH5Service, initializeH5Service]);
 
-  const handleBlockSelect = (blockId: string) => {
-    setSelectedBlockId(blockId);
-    if (h5ServiceRef.current) {
-      if (blockId) {
-        // 使用新的H5Service API
-        if (h5ServiceRef.current.selectContentBlocks) {
-          h5ServiceRef.current.selectContentBlocks([blockId]);
-        } else if (h5ServiceRef.current.selectContentBlock) {
-          h5ServiceRef.current.selectContentBlock(blockId);
-        }
-      } else {
-        if (h5ServiceRef.current.clearSelection) {
-          h5ServiceRef.current.clearSelection();
-        }
-      }
-    }
-  };
-
-  const handleBlockAdd = (blockType: string) => {
-    if (!h5ServiceRef.current) return;
-
-    let newBlock;
-    switch (blockType) {
-      case 'text':
-        newBlock = h5ServiceRef.current.addTextBlock();
-        break;
-      case 'image':
-        newBlock = h5ServiceRef.current.addImageBlock();
-        break;
-      case 'button':
-        newBlock = h5ServiceRef.current.addButtonBlock();
-        break;
-      default:
-        return;
-    }
-
-    if (newBlock) {
-      updateContentBlocksList();
-      // 自动选择新添加的块
-      setTimeout(() => {
-        const blockId = newBlock.id || newBlock.attrs?.id;
-        if (blockId) {
-          handleBlockSelect(blockId);
-        }
-      }, 100);
-    }
-  };
-
-  const handleBlockDelete = (blockId: string) => {
-    if (!h5ServiceRef.current) return;
-
-    const success = h5ServiceRef.current.removeContentBlock(blockId);
-    if (success) {
-      updateContentBlocksList();
-      if (selectedBlockId === blockId) {
-        setSelectedBlockId('');
-      }
-    }
-  };
-
-  const handleBlockReorder = (dragIndex: number, hoverIndex: number) => {
-    if (!h5ServiceRef.current) return;
-
-    try {
-      const newOrder = [...contentBlocks];
-      const draggedBlock = newOrder.splice(dragIndex, 1)[0];
-      newOrder.splice(hoverIndex, 0, draggedBlock);
-
-      // 更新每个块的order属性
-      newOrder.forEach((block, index) => {
-        if (h5ServiceRef.current && h5ServiceRef.current.updateContentBlock) {
-          h5ServiceRef.current.updateContentBlock(block.id, { order: index });
-        }
-      });
-
-      updateContentBlocksList();
-    } catch (error) {
-      console.error('重排序内容块失败:', error);
-    }
-  };
-
-  // 获取H5容器的所有子元素
-  const [allElements, setAllElements] = useState<any[]>([]);
-
-  // 更新所有元素列表 - 包含H5容器及其子元素
-  const updateAllElements = useCallback(() => {
-    if (h5ServiceRef.current) {
-      try {
-        // 通过H5Service的公共方法获取容器
-        const container = h5ServiceRef.current.getCurrentContainer();
-        if (container) {
-          const children = container.getChildren
-            ? container.getChildren()
-            : container.childrenIds
-            ? container.childrenIds
-            : [];
-
-          // 构建包含容器和子元素的层级结构
-          const allElements = [
-            container,
-            ...(Array.isArray(children) ? children : []),
-          ];
-          setAllElements(allElements);
-        } else {
-          // 如果容器不存在，尝试从编辑器直接获取
-          if (editor?.editor) {
-            const currentCanvas = editor.editor.doc.getCurrentCanvas();
-            if (currentCanvas) {
-              const h5Container = currentCanvas
-                .getChildren()
-                .find((child: any) => child.type === 'H5Container');
-              if (h5Container) {
-                const children = h5Container.getChildren
-                  ? h5Container.getChildren()
-                  : [];
-
-                // 构建包含容器和子元素的层级结构
-                const allElements = [
-                  h5Container,
-                  ...(Array.isArray(children) ? children : []),
-                ];
-                setAllElements(allElements);
-                return;
-              }
-            }
-          }
-          setAllElements([]);
-        }
-      } catch (error) {
-        console.error('更新所有元素列表失败:', error);
-        setAllElements([]);
-      }
-    }
-  }, [editor]);
-
-  // 监听H5容器的变化
-  useEffect(() => {
-    updateAllElements();
-  }, [updateAllElements, contentBlocks]);
-
   // 监听编辑器渲染事件，确保图层添加后立即更新
   useEffect(() => {
     if (editor?.editor) {
-      const handleEditorRender = () => {
-        updateAllElements();
-      };
+      const handleEditorRender = () => {};
 
       // 监听编辑器渲染事件
       editor.editor.sceneGraph.on('render', handleEditorRender);
@@ -670,9 +448,7 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         }
       };
     }
-  }, [editor, updateAllElements]);
-
-  // 事件监听器已在H5Service初始化时注册，无需重复注册
+  }, [editor]);
 
   return (
     <div className="h5-editor-mode g-asset-forge-h5-mode">
@@ -693,40 +469,14 @@ export const H5EditorMode: FC<H5EditorModeProps> = ({
         </div>
       )}
 
-      {/* 左侧内容块面板 */}
+      {/* 左侧组件库和图层面板 */}
       <div className="h5-left-panel">
         <ContentBlockPanel
-          onBlockAdd={handleBlockAdd}
-          selectedBlockId={selectedBlockId}
-          contentBlocks={contentBlocks}
-          onBlockSelect={handleBlockSelect}
-          onBlockDelete={handleBlockDelete}
-          onBlockReorder={handleBlockReorder}
-          onBlockVisibilityToggle={(blockId, isVisible) => {
-            // 通过H5Service处理可见性切换
-            if (
-              h5ServiceRef.current &&
-              typeof h5ServiceRef.current.updateContentBlockAttrs === 'function'
-            ) {
-              h5ServiceRef.current.updateContentBlockAttrs(blockId, {
-                visible: isVisible,
-              });
-              updateContentBlocksList();
-            }
+          onComponentDrag={(component) => {
+            // 处理组件拖拽到画布
+            console.log('拖拽组件到画布:', component);
+            // 组件拖拽逻辑在H5Canvas中处理
           }}
-          onBlockLockToggle={(blockId, isLocked) => {
-            // 通过H5Service处理锁定切换
-            if (
-              h5ServiceRef.current &&
-              typeof h5ServiceRef.current.updateContentBlockAttrs === 'function'
-            ) {
-              h5ServiceRef.current.updateContentBlockAttrs(blockId, {
-                locked: isLocked,
-              });
-              updateContentBlocksList();
-            }
-          }}
-          allElements={allElements}
           loading={loading}
           error={error}
         />

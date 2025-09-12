@@ -8,6 +8,7 @@ import { EditorContext } from '../../context';
 import { AlignCard } from '../Cards/AlignCard';
 import { ElementsInfoCards } from '../Cards/ElementsInfoCard';
 import { FillCard } from '../Cards/FillCard';
+import { H5LayoutCard } from '../Cards/H5LayoutCard/H5LayoutCard';
 import { LayerInfoCard } from '../Cards/LayerInfoCard';
 import { StrokeCard } from '../Cards/StrokeCard';
 import { DebugPanel } from '../DebugPanel';
@@ -22,7 +23,8 @@ export const InfoPanel: FC = () => {
   const [type, setType] = useState(PanelType.Global);
   // select panel type by selected elements
 
-  const showDebugPanel = localStorage.getItem('g-asset-forge-debug-panel') === 'true';
+  const showDebugPanel =
+    localStorage.getItem('g-asset-forge-debug-panel') === 'true';
 
   useEffect(() => {
     if (editor?.editor) {
@@ -43,6 +45,7 @@ export const InfoPanel: FC = () => {
         <>
           <AlignCard />
           <ElementsInfoCards />
+          <H5LayoutCard />
           <LayerInfoCard />
           <FillCard key="fill" />
           <StrokeCard key="stroke" />

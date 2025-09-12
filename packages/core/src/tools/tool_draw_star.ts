@@ -3,9 +3,9 @@ import { type IRect, normalizeRect } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../editor';
 import {
-  GraphicsObjectSuffix,
   type GAssetForgeGraphics,
   GAssetForgeStar,
+  GraphicsObjectSuffix,
 } from '../graphics';
 import { getNoConflictObjectName } from '../utils';
 import { DrawGraphicsTool } from './tool_draw_graphics';

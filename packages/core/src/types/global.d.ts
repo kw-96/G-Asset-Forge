@@ -31,11 +31,11 @@ declare global {
           resizable?: boolean,
         ) => Promise<any>;
       };
-      saveFile?: (
-        filename: string,
-        data: Uint8Array,
-        directory?: string,
-      ) => Promise<{
+      saveFile?: (options: {
+        filename: string;
+        data: string;
+        directory?: string;
+      }) => Promise<{
         success: boolean;
         filePath?: string;
         directory?: string;
@@ -54,12 +54,24 @@ declare global {
         directory?: string;
         error?: string;
       }>;
-      readFile?: (filename: string) => Promise<{
+      readFile?: (options: {
+        filename: string;
+        directory?: string;
+      }) => Promise<{
         success: boolean;
+        data?: string;
         content?: string;
         error?: string;
       }>;
-      deleteFile?: (filename: string) => Promise<{
+      readDirectory?: (options: { directory: string }) => Promise<{
+        success: boolean;
+        files?: string[];
+        error?: string;
+      }>;
+      deleteFile?: (options: {
+        filename: string;
+        directory?: string;
+      }) => Promise<{
         success: boolean;
         error?: string;
       }>;
