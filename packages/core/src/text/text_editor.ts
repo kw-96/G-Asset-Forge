@@ -49,7 +49,45 @@ export class TextEditor {
     this.inactive();
     this.bindEvent();
 
-    editor.containerElement.appendChild(this.inputDom);
+    // 确保输入框添加到正确的容器
+    this.appendInputToContainer();
+  }
+
+  public appendInputToContainer() {
+    try {
+      // 获取容器元素
+      let containerElement: HTMLElement = this.editor.containerElement;
+
+      // 如果容器元素无效，尝试使用body作为备选
+      if (!containerElement || !document.body.contains(containerElement)) {
+        console.warn('TextEditor: 编辑器容器无效，使用document.body作为备选');
+        containerElement = document.body;
+      }
+
+      // 如果输入框已经在目标容器中，无需重复添加
+      if (containerElement.contains(this.inputDom)) {
+        return;
+      }
+
+      // 如果输入框在其他容器中，先移除
+      if (this.inputDom.parentElement) {
+        this.inputDom.parentElement.removeChild(this.inputDom);
+      }
+
+      // 添加到目标容器
+      containerElement.appendChild(this.inputDom);
+    } catch (error) {
+      console.error('TextEditor: 添加输入框到容器失败', error);
+      // 备选方案：添加到body
+      try {
+        if (this.inputDom.parentElement) {
+          this.inputDom.parentElement.removeChild(this.inputDom);
+        }
+        document.body.appendChild(this.inputDom);
+      } catch (bodyError) {
+        console.error('TextEditor: 添加输入框到body也失败', bodyError);
+      }
+    }
   }
 
   private createInputDom() {
@@ -76,7 +114,6 @@ export class TextEditor {
     pos: IPoint;
     range?: IRange;
   }) {
-    console.log('TextEditor.active 开始激活');
 
     this._active = true;
     this.editor.controlHandleManager.enableTransformControl = false;
@@ -141,11 +178,9 @@ export class TextEditor {
     this.inputDom.focus();
 
     this.editor.render();
-    console.log('TextEditor.active 激活完成');
   }
 
   inactive() {
-    console.log('TextEditor.inactive 开始结束文本编辑');
     this._active = false;
 
     if (this.textGraphics) {
@@ -158,25 +193,12 @@ export class TextEditor {
         });
         this.transaction.updateParentSize([this.textGraphics]);
         this.transaction.commit('update text content');
-
-        // 检查是否在H5容器中，如果是则触发自动布局
-        const parent = this.textGraphics.getParent();
-        if (parent && (parent as any).type === 'H5Container') {
-          console.log('TextEditor.inactive 触发H5容器自动布局');
-          // 延迟执行，确保事务完成后再触发布局
-          setTimeout(() => {
-            if (typeof (parent as any).triggerAutoLayout === 'function') {
-              (parent as any).triggerAutoLayout();
-            }
-          }, 10);
-        }
       }
       this.textGraphics = null;
     }
 
     this.editor.controlHandleManager.enableTransformControl = true;
     this.editor.selectedBox.enableDrawSizeIndicator = true;
-    console.log('TextEditor.inactive 文本编辑结束完成');
   }
 
   static updateTextContentAndResize(

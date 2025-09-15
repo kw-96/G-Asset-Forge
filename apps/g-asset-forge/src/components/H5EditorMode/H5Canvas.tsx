@@ -35,6 +35,19 @@ export const H5Canvas: FC<H5CanvasProps> = ({ h5Service, containerRef }) => {
 
         // 更新编辑器的容器引用
         editor.editor.containerElement = targetContainer;
+
+        // 重新确保文本编辑器的输入框在正确的容器中
+        if (
+          editor.editor.textEditor &&
+          typeof editor.editor.textEditor.appendInputToContainer === 'function'
+        ) {
+          editor.editor.textEditor.appendInputToContainer();
+        }
+
+        // 同步H5容器状态
+        if (h5Service && typeof h5Service.syncH5ContainerState === 'function') {
+          h5Service.syncH5ContainerState();
+        }
       }
 
       // 直接操作编辑器实例

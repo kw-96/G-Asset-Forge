@@ -11,4 +11,8 @@ export {
   type LayoutItemConfig,
   type LayoutResult,
 } from './auto_layout_manager';
+export {
+  type LayoutAttrConfig,
+  LayoutAttrsConfigManager,
+} from './layout_attrs_config';
 export { LayoutUtils } from './layout_utils';

@@ -362,7 +362,6 @@ export class SceneGraph {
           attrs.id.toLowerCase().includes('h5'));
 
       if (isSerializedH5Container) {
-        console.log(`检测到序列化的H5容器，ID: ${attrs.id}, 原类型: ${type}`);
 
         // 纠正类型并确保禁止移动属性默认开启
         (attrs as any).type = GraphicsType.H5Container;
@@ -375,7 +374,7 @@ export class SceneGraph {
           (attrs as any).mobileWidth = 1080;
         }
         if ((attrs as any).autoLayout === undefined) {
-          (attrs as any).autoLayout = true;
+          (attrs as any).autoLayout = false; // 默认关闭自动布局
         }
         if ((attrs as any).layoutType === undefined) {
           (attrs as any).layoutType = 'vertical';
@@ -386,7 +385,6 @@ export class SceneGraph {
             doc: this.editor.doc,
           });
           children.push(h5Container);
-          console.log(`成功创建H5容器: ${attrs.id}`);
         } catch (error) {
           console.error(`创建H5容器失败 (${attrs.id}):`, error);
           // 回退到普通Frame
@@ -412,7 +410,7 @@ export class SceneGraph {
             (attrs as any).mobileWidth = 1080;
           }
           if ((attrs as any).autoLayout === undefined) {
-            (attrs as any).autoLayout = true;
+            (attrs as any).autoLayout = false; // 默认关闭自动布局
           }
           if ((attrs as any).layoutType === undefined) {
             (attrs as any).layoutType = 'vertical';
@@ -422,7 +420,6 @@ export class SceneGraph {
             doc: this.editor.doc,
           });
           children.push(h5Container);
-          console.log(`成功创建H5容器: ${attrs.id}`);
         } catch (error) {
           console.error(`创建H5容器失败 (${attrs.id}):`, error);
           // 回退到普通Frame

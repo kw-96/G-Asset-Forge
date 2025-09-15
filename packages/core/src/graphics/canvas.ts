@@ -6,6 +6,7 @@ import {
   type GraphicsAttrs,
   type IGraphicsOpts,
 } from './graphics';
+import { h5ContainerManager } from './h5/h5_container_manager';
 import { type IHitOptions } from './type';
 
 type GAssetForgeCanvasAttrs = GraphicsAttrs;
@@ -93,30 +94,8 @@ export class GAssetForgeCanvas extends GAssetForgeGraphics<GAssetForgeCanvasAttr
    * @returns H5容器或null
    */
   private findH5Container(): GAssetForgeGraphics | null {
-    const children = this.getChildren();
-
-    // 改进的H5容器查找逻辑
-    const h5Container = children.find((child: any) => {
-      // 多重检查确保准确识别H5容器
-      return (
-        child.type === 'H5Container' ||
-        child.constructor?.name === 'H5Container' ||
-        (child.attrs &&
-          child.attrs.id &&
-          child.attrs.id.includes('h5_container')) ||
-        (child.attrs &&
-          child.attrs.id &&
-          child.attrs.id.includes('h5-container'))
-      );
-    });
-
-    if (h5Container) {
-      return h5Container;
-    }
-
-    console.log('未找到H5容器，当前画布子元素数量:', children.length);
-
-    return null;
+    // 使用H5ContainerManager统一查找H5容器
+    return h5ContainerManager.findH5Container(this);
   }
 }
 

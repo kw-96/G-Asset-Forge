@@ -1,6 +1,6 @@
 // H5 容器
-import { LayoutUtils } from '../../layout';
-import { type IPaint, PaintType } from '../../paint';
+import { LayoutAttrsConfigManager, LayoutUtils } from '../../layout';
+import { type IPaint } from '../../paint';
 import { GraphicsType, type Optional } from '../../type';
 import { GAssetForgeFrame } from '../frame';
 import {
@@ -10,90 +10,43 @@ import {
 } from '../graphics';
 import { H5ContainerAttrsController } from './h5_container_attrs';
 
-// H5 容器属性 - 继承Graphics的所有属性，添加H5特有的属性
+// H5 容器属性 - 继承Frame的所有属性，H5Container不添加任何特有属性
 export interface H5ContainerAttrs extends GraphicsAttrs {
-  // H5特有属性
-  mobileWidth?: number; // 移动端宽度，默认375px
-  padding?: number; // 内边距
-  gap?: number; // 内容块之间的间距
-  autoLayout?: boolean; // 是否自动布局
-  layoutType?: 'vertical' | 'horizontal' | 'grid' | 'smart'; // 布局类型
-  gridColumns?: number; // 网格布局列数
-  disableMove?: boolean; // 是否禁止移动
   resizeToFit: boolean; // 继承自Frame
   // 确保fill和stroke属性类型正确
   fill?: IPaint[];
   stroke?: IPaint[];
   strokeWidth?: number;
-  // 移除children属性，子元素由SceneGraph统一管理
+  // H5Container不定义特有属性，所有布局属性由通用系统管理
 }
 
 // H5 容器类 - 轻量级实现，继承自Frame
 export class H5Container extends GAssetForgeFrame {
   override type = GraphicsType.H5Container;
 
-  // H5特有的属性
-  private mobileWidth: number;
-  private padding: number;
-  private gap: number;
-  private autoLayout: boolean;
-  private layoutType: 'vertical' | 'horizontal' | 'grid' | 'smart';
-  private gridColumns: number;
-  private disableMove: boolean;
-
   constructor(
     attrs: Optional<H5ContainerAttrs, 'id' | 'transform'>,
     opts: IGraphicsOpts,
   ) {
-    // 调用Frame的构造函数
+    // 调用Frame的构造函数，H5Container专注于H5业务特性
     super(
       {
         ...attrs,
-        type: GraphicsType.H5Container, // 使用H5Container类型，确保序列化/反序列化一致
+        type: GraphicsType.H5Container, // H5Container类型，用于类型识别
         resizeToFit: false, // H5容器不自动调整尺寸
         objectName: attrs.objectName || 'H5长图容器',
         width: attrs.width || 1080, // H5长图标准宽度
         height: attrs.height || 2220, // H5长图标准高度
-        // 强制设置位置为(0,0)，确保H5容器不可移动
+        // H5特有：强制设置位置为(0,0)，确保H5容器不可移动
         transform: [1, 0, 0, 1, 0, 0], // 单位矩阵，位置为(0,0)
-        // 添加默认的填充和边框，确保容器可见
-        fill: attrs.fill || [
-          {
-            type: PaintType.Solid,
-            attrs: { r: 255, g: 255, b: 255, a: 1 },
-            visible: true,
-          } as IPaint,
-        ],
-        stroke: attrs.stroke || [
-          {
-            type: PaintType.Solid,
-            attrs: { r: 200, g: 200, b: 200, a: 1 },
-            visible: true,
-          } as IPaint,
-        ],
-        strokeWidth: attrs.strokeWidth || 1,
-        // 不设置lock，通过重写方法控制移动行为
+        // H5特有：不设置任何填充和边框，导出时保持纯净
+        // 编辑器中的可见性通过其他方式实现（如选中框、CSS样式等）
+        fill: attrs.fill || [], // 空填充数组
+        stroke: attrs.stroke || [], // 空边框数组
+        strokeWidth: 0, // 无边框宽度
       },
       opts,
     );
-
-    // 设置H5特有属性到attrs中，确保序列化时能保存
-    (this.attrs as any).mobileWidth = attrs.mobileWidth || 1080; // H5长图标准宽度
-    (this.attrs as any).padding = attrs.padding || 0; // 内边距
-    (this.attrs as any).gap = attrs.gap || 0; // 间距
-    (this.attrs as any).autoLayout = attrs.autoLayout !== false; // 默认开启自动布局
-    (this.attrs as any).layoutType = attrs.layoutType || 'vertical'; // 默认垂直布局
-    (this.attrs as any).gridColumns = attrs.gridColumns || 2; // 默认2列网格
-    (this.attrs as any).disableMove = attrs.disableMove !== false; // 默认禁止移动
-
-    // 同时设置私有变量，保持向后兼容
-    this.mobileWidth = (this.attrs as any).mobileWidth;
-    this.padding = (this.attrs as any).padding;
-    this.gap = (this.attrs as any).gap;
-    this.autoLayout = (this.attrs as any).autoLayout;
-    this.layoutType = (this.attrs as any).layoutType;
-    this.gridColumns = (this.attrs as any).gridColumns;
-    this.disableMove = (this.attrs as any).disableMove;
   }
 
   // 重写图层图标路径 - H5容器使用sticky图标
@@ -102,44 +55,38 @@ export class H5Container extends GAssetForgeFrame {
     return 'icon.24.sticky' as any;
   }
 
-  // 获取移动端宽度
-  getMobileWidth(): number {
-    return this.mobileWidth;
+  // 检查是否应该在编辑器中显示边界
+  shouldShowEditorBorder(): boolean {
+    // 当容器为空或者没有子元素时，显示边界帮助用户识别
+    const children = this.getChildren();
+    return children.length === 0;
   }
 
-  // 获取内边距
-  getPadding(): number {
-    return this.padding;
-  }
-
-  // 获取间距
-  getGap(): number {
-    return this.gap;
-  }
-
-  // 是否启用自动布局
+  // H5特有：检查是否启用自动布局（从通用属性获取）
   isAutoLayoutEnabled(): boolean {
-    return this.autoLayout;
+    return (this.attrs as any).autoLayout || false;
   }
 
-  // 设置自动布局开关
-  setAutoLayout(enabled: boolean): void {
-    this.autoLayout = enabled;
-    (this.attrs as any).autoLayout = enabled;
-
-    // 如果启用了自动布局，立即执行布局
-    if (enabled) {
-      this.performAutoLayout();
-    }
-  }
-
-  // 是否禁止移动
-  isMoveDisabled(): boolean {
-    return this.disableMove;
-  }
-
-  // 获取排序后的所有子元素（支持任意类型）
+  // 获取排序后的Frame子元素（自动布局仅作用于Frame）
   getSortedChildren(): GAssetForgeGraphics[] {
+    const children = this.getChildren();
+    // 只返回Frame类型的子元素，其他类型（文本、图片等）保持自由定位
+    const frameChildren = children.filter((child) => {
+      return (
+        child.type === 'Frame' || child.constructor.name === 'GAssetForgeFrame'
+      );
+    });
+
+    return frameChildren.sort((a, b) => {
+      // 优先按order排序，如果没有order则按添加顺序
+      const orderA = (a.attrs as any).order ?? 0;
+      const orderB = (b.attrs as any).order ?? 0;
+      return orderA - orderB;
+    });
+  }
+
+  // 获取所有子元素（包括非Frame类型）
+  getAllChildren(): GAssetForgeGraphics[] {
     const children = this.getChildren();
     return children.sort((a, b) => {
       // 优先按order排序，如果没有order则按添加顺序
@@ -151,7 +98,7 @@ export class H5Container extends GAssetForgeFrame {
 
   // 触发自动布局（公共方法）
   public triggerAutoLayout(): void {
-    if (this.autoLayout) {
+    if (this.isAutoLayoutEnabled()) {
       this.performAutoLayout();
     }
   }
@@ -160,150 +107,113 @@ export class H5Container extends GAssetForgeFrame {
   override insertChild(graphics: GAssetForgeGraphics, sortIdx?: string): void {
     super.insertChild(graphics, sortIdx);
 
-    // 检查是否正在进行文本编辑，如果是则延迟自动布局
-    if (this.autoLayout) {
-      // 获取编辑器实例（从doc中获取）
-      const editor = (this.doc as any)?.editor;
+    // 只有在自动布局开启且插入的是Frame类型时才执行布局
+    if (this.isAutoLayoutEnabled()) {
+      const isFrame =
+        graphics.type === 'Frame' ||
+        graphics.constructor.name === 'GAssetForgeFrame';
 
-      if (editor?.textEditor?.isActive()) {
-        console.log('H5Container: 检测到文本编辑状态，延迟自动布局');
-        // 延迟执行自动布局，等待文本编辑器完成初始化
-        setTimeout(() => {
-          if (this.autoLayout && !editor.textEditor.isActive()) {
-            console.log('H5Container: 执行延迟的自动布局');
-            this.performAutoLayout();
-          }
-        }, 50);
-      } else {
+      if (isFrame) {
+        // 直接执行自动布局，无需检查文本编辑器状态
         this.performAutoLayout();
+      } else {
+        console.log(
+          'H5Container: 插入非Frame元素，跳过自动布局:',
+          graphics.type,
+        );
       }
     }
+
+    // 更新编辑器选中状态
+    const editor = (this.doc as any)?.editor;
+    editor?.selectedElements?.setItems([graphics]);
   }
 
-  // 自动布局功能
+  // 自动布局功能 - H5Container的唯一特性：仅对Frame类型的直接子元素进行布局
   private performAutoLayout(): void {
-    const children = this.getSortedChildren();
-    if (children.length === 0) return;
+    // 获取Frame类型的直接子元素（H5Container特有逻辑）
+    const frameChildren = this.getSortedChildren();
+    if (frameChildren.length === 0) return;
 
-    // 根据布局类型选择不同的布局算法
-    switch (this.layoutType) {
+    // 从通用属性获取布局配置
+    const containerWidth = this.attrs.width || 1080;
+    const gap = (this.attrs as any).gap || 0;
+    const padding = (this.attrs as any).padding || 0;
+    const layoutType = (this.attrs as any).layoutType || 'vertical';
+    const gridColumns = (this.attrs as any).gridColumns || 2;
+
+    const layoutOptions = {
+      gap,
+      padding,
+      maxWidth: containerWidth,
+      containerWidth: containerWidth,
+      containerHeight: this.attrs.height,
+    };
+
+    // 调用通用布局工具（H5特有：仅对Frame子元素布局）
+    switch (layoutType) {
       case 'vertical':
-        this.performVerticalLayout(children);
+        LayoutUtils.verticalLayout(frameChildren, {
+          gap: layoutOptions.gap,
+          padding: layoutOptions.padding,
+          align: 'stretch',
+        });
         break;
       case 'horizontal':
-        this.performHorizontalLayout(children);
+        LayoutUtils.horizontalLayout(frameChildren, {
+          gap: layoutOptions.gap,
+          padding: layoutOptions.padding,
+          align: 'stretch',
+          wrap: true,
+        });
         break;
       case 'grid':
-        this.performGridLayout(children);
+        LayoutUtils.gridLayout(frameChildren, {
+          columns: gridColumns,
+          gap: layoutOptions.gap,
+          padding: layoutOptions.padding,
+        });
         break;
       case 'smart':
-        this.performSmartLayout(children);
+        LayoutUtils.smartLayout(frameChildren, {
+          maxWidth: layoutOptions.maxWidth - layoutOptions.padding * 2,
+          gap: layoutOptions.gap,
+          padding: layoutOptions.padding,
+        });
         break;
       default:
-        this.performVerticalLayout(children);
+        LayoutUtils.verticalLayout(frameChildren, {
+          gap: layoutOptions.gap,
+          padding: layoutOptions.padding,
+          align: 'stretch',
+        });
     }
 
-    // 更新容器高度
-    this.updateContainerHeight();
+    // 自动调整容器高度以适应内容
+    this.adjustContainerHeight();
   }
 
-  // 垂直布局
-  private performVerticalLayout(children: GAssetForgeGraphics[]): void {
-    let currentY = this.padding;
-    const contentWidth = this.mobileWidth - this.padding * 2;
-
-    children.forEach((child, index) => {
-      // 直接设置transform来确保坐标正确
-      const newTransform = [1, 0, 0, 1, this.padding, currentY];
-
-      child.updateAttrs({
-        width: contentWidth,
-        transform: newTransform,
-      } as any);
-
-      // 计算下一个元素的Y位置
-      const childHeight = (child.attrs as any).height || 0;
-      currentY += childHeight + (index < children.length - 1 ? this.gap : 0);
-    });
-  }
-
-  // 水平布局
-  private performHorizontalLayout(children: GAssetForgeGraphics[]): void {
-    LayoutUtils.horizontalLayout(children, {
-      gap: this.gap,
-      padding: this.padding,
-      align: 'stretch',
-      wrap: true, // 允许换行
-    });
-
-    // 设置所有子元素的高度为容器内容高度
-    const contentHeight = this.attrs.height - this.padding * 2;
-    children.forEach((child) => {
-      child.updateAttrs({
-        height: contentHeight,
-      } as any);
-    });
-  }
-
-  // 网格布局
-  private performGridLayout(children: GAssetForgeGraphics[]): void {
-    LayoutUtils.gridLayout(children, {
-      columns: this.gridColumns,
-      gap: this.gap,
-      padding: this.padding,
-    });
-
-    // 计算每个网格项的尺寸
-    const contentWidth = this.mobileWidth - this.padding * 2;
-    const itemWidth =
-      (contentWidth - this.gap * (this.gridColumns - 1)) / this.gridColumns;
-
-    children.forEach((child) => {
-      child.updateAttrs({
-        width: itemWidth,
-      } as any);
-    });
-  }
-
-  // 智能布局
-  private performSmartLayout(children: GAssetForgeGraphics[]): void {
-    LayoutUtils.smartLayout(children, {
-      maxWidth: this.mobileWidth - this.padding * 2,
-      gap: this.gap,
-      padding: this.padding,
-    });
-
-    // 根据布局结果调整尺寸
-    const contentWidth = this.mobileWidth - this.padding * 2;
-    children.forEach((child) => {
-      const currentWidth = (child as any).attrs.width || 100;
-      if (currentWidth > contentWidth) {
-        child.updateAttrs({
-          width: contentWidth,
-        } as any);
-      }
-    });
-  }
-
-  // 更新容器高度
-  private updateContainerHeight(): void {
-    const children = this.getSortedChildren();
-    if (children.length === 0) {
+  // 自动调整容器高度
+  private adjustContainerHeight(): void {
+    const frameChildren = this.getSortedChildren();
+    if (frameChildren.length === 0) {
       this.updateAttrs({ height: 667 } as any);
       return;
     }
 
-    // 计算总高度 - 从transform中获取正确的Y坐标
+    const padding = (this.attrs as any).padding || 0;
+
+    // 计算Frame子元素的最大Y坐标
     let maxY = 0;
-    children.forEach((child) => {
+    frameChildren.forEach((child) => {
       const transform = (child.attrs as any).transform || [1, 0, 0, 1, 0, 0];
-      const childY = transform[5]; // 从transform矩阵中获取Y坐标
+      const childY = transform[5];
       const childHeight = (child.attrs as any).height || 0;
       const childBottom = childY + childHeight;
       maxY = Math.max(maxY, childBottom);
     });
 
-    const totalHeight = maxY + this.padding;
+    const totalHeight = maxY + padding;
     this.updateAttrs({ height: Math.max(totalHeight, 667) } as any);
   }
 
@@ -321,7 +231,7 @@ export class H5Container extends GAssetForgeFrame {
     });
 
     // 触发自动布局
-    if (this.autoLayout) {
+    if (this.isAutoLayoutEnabled()) {
       this.performAutoLayout();
     }
   }
@@ -331,44 +241,12 @@ export class H5Container extends GAssetForgeFrame {
     this.reorderChildren(newOrder);
   }
 
-  // 切换布局类型
-  setLayoutType(
-    layoutType: 'vertical' | 'horizontal' | 'grid' | 'smart',
-  ): void {
-    this.layoutType = layoutType;
-    (this.attrs as any).layoutType = layoutType;
-
-    if (this.autoLayout) {
-      this.performAutoLayout();
-    }
-  }
-
-  // 设置网格列数
-  setGridColumns(columns: number): void {
-    this.gridColumns = Math.max(1, columns);
-    (this.attrs as any).gridColumns = this.gridColumns;
-
-    if (this.autoLayout && this.layoutType === 'grid') {
-      this.performAutoLayout();
-    }
-  }
-
-  // 获取当前布局类型
-  getLayoutType(): string {
-    return this.layoutType;
-  }
-
-  // 获取网格列数
-  getGridColumns(): number {
-    return this.gridColumns;
-  }
-
-  // 重写updateAttrs方法，处理H5特有属性并禁止移动
+  // H5特有：重写updateAttrs方法，实现不可移动特性，并在布局属性更新时触发布局
   override updateAttrs(
     partialAttrs: Partial<GraphicsAttrs> & any,
     options?: { finishRecomputed?: boolean },
   ): void {
-    // 使用H5容器属性控制器过滤属性
+    // H5特有：使用属性控制器过滤属性（主要是禁止移动）
     const filteredAttrs = H5ContainerAttrsController.filterAttrsForUpdate(
       partialAttrs,
       this.attrs.transform,
@@ -384,81 +262,26 @@ export class H5Container extends GAssetForgeFrame {
       console.warn('H5容器属性更新警告:', validation.warnings);
     }
 
-    // 处理H5特有属性变更
-    const h5Attrs = partialAttrs as Partial<H5ContainerAttrs>;
-
-    // 处理自动布局开关变更
-    if (
-      h5Attrs.autoLayout !== undefined &&
-      h5Attrs.autoLayout !== this.autoLayout
-    ) {
-      this.autoLayout = h5Attrs.autoLayout;
-      (this.attrs as any).autoLayout = h5Attrs.autoLayout;
-
-      // 如果启用了自动布局，立即执行布局
-      if (h5Attrs.autoLayout) {
-        this.performAutoLayout();
-      }
-    }
-
-    // 处理布局类型变更
-    if (h5Attrs.layoutType && h5Attrs.layoutType !== this.layoutType) {
-      this.layoutType = h5Attrs.layoutType;
-      (this.attrs as any).layoutType = h5Attrs.layoutType;
-
-      if (this.autoLayout) {
-        this.performAutoLayout();
-      }
-    }
-
-    // 处理网格列数变更
-    if (
-      h5Attrs.gridColumns !== undefined &&
-      h5Attrs.gridColumns !== this.gridColumns
-    ) {
-      this.gridColumns = Math.max(1, h5Attrs.gridColumns);
-      (this.attrs as any).gridColumns = this.gridColumns;
-
-      if (this.autoLayout && this.layoutType === 'grid') {
-        this.performAutoLayout();
-      }
-    }
-
-    // 处理移动端宽度变更
-    if (
-      h5Attrs.mobileWidth !== undefined &&
-      h5Attrs.mobileWidth !== this.mobileWidth
-    ) {
-      this.mobileWidth = h5Attrs.mobileWidth;
-      (this.attrs as any).mobileWidth = h5Attrs.mobileWidth;
-
-      if (this.autoLayout) {
-        this.performAutoLayout();
-      }
-    }
-
-    // 处理内边距变更
-    if (h5Attrs.padding !== undefined && h5Attrs.padding !== this.padding) {
-      this.padding = h5Attrs.padding;
-      (this.attrs as any).padding = h5Attrs.padding;
-
-      if (this.autoLayout) {
-        this.performAutoLayout();
-      }
-    }
-
-    // 处理间距变更
-    if (h5Attrs.gap !== undefined && h5Attrs.gap !== this.gap) {
-      this.gap = h5Attrs.gap;
-      (this.attrs as any).gap = h5Attrs.gap;
-
-      if (this.autoLayout) {
-        this.performAutoLayout();
-      }
-    }
-
-    // 调用父类的updateAttrs方法
+    // 调用父类的updateAttrs方法更新属性
     super.updateAttrs(filteredAttrs, options);
+
+    // H5特有：检查是否有布局相关属性更新，如果有则触发自动布局
+    const layoutRelatedAttrs = [
+      'autoLayout',
+      'layoutType',
+      'gridColumns',
+      'padding',
+      'gap',
+      'mobileWidth',
+    ];
+    const hasLayoutUpdate = layoutRelatedAttrs.some(
+      (attr) => partialAttrs[attr] !== undefined,
+    );
+
+    if (hasLayoutUpdate && this.isAutoLayoutEnabled()) {
+      // 延迟执行布局，确保属性已经更新完成
+      setTimeout(() => this.performAutoLayout(), 0);
+    }
   }
 
   // 获取属性面板属性
@@ -467,66 +290,14 @@ export class H5Container extends GAssetForgeFrame {
     return super.getInfoPanelAttrs() || [];
   }
 
-  // 获取H5布局属性（供H5LayoutCard使用）
+  // 获取H5布局属性（供H5LayoutCard组件使用）- 使用通用配置管理器
   getH5LayoutAttrs() {
-    return [
-      {
-        label: '自动布局',
-        key: 'autoLayout',
-        value: this.autoLayout,
-        uiType: 'switch',
-      },
-      {
-        label: '布局类型',
-        key: 'layoutType',
-        value: this.layoutType,
-        uiType: 'select',
-        options: [
-          { value: 'vertical', label: '垂直布局' },
-          { value: 'horizontal', label: '水平布局' },
-          { value: 'grid', label: '网格布局' },
-          { value: 'smart', label: '智能布局' },
-        ],
-        disabled: !this.autoLayout, // 当自动布局关闭时禁用布局类型选择
-      },
-      {
-        label: '网格列数',
-        key: 'gridColumns',
-        value: this.gridColumns,
-        uiType: 'number',
-        min: 1,
-        max: 6,
-        step: 1,
-        visible: this.layoutType === 'grid',
-      },
-      {
-        label: '移动端宽度',
-        key: 'mobileWidth',
-        value: this.mobileWidth,
-        uiType: 'number',
-        min: 320,
-        max: 1920,
-        step: 10,
-      },
-      {
-        label: '内边距',
-        key: 'padding',
-        value: this.padding,
-        uiType: 'number',
-        min: 0,
-        max: 100,
-        step: 1,
-      },
-      {
-        label: '间距',
-        key: 'gap',
-        value: this.gap,
-        uiType: 'number',
-        min: 0,
-        max: 50,
-        step: 1,
-      },
-    ];
+    return LayoutAttrsConfigManager.getElementLayoutAttrs(this);
+  }
+
+  // 获取H5特有属性（保持向后兼容）
+  getH5SpecificAttrs() {
+    return [];
   }
 
   // 销毁容器

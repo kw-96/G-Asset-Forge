@@ -6,6 +6,7 @@
 import { EventEmitter } from '@g-asset-forge/common';
 
 import type { GAssetForgeEditor } from '../editor';
+import { h5ContainerManager } from '../graphics/h5/h5_container_manager';
 import type { IH5Service } from './project-handlers/H5ProjectHandler';
 
 /**
@@ -79,21 +80,13 @@ export class H5Service
       return;
     }
 
-    // 检查是否已存在H5容器（兼容序列化后的Frame类型）
-    const existingH5Container = currentCanvas
-      .getChildren()
-      .find((child: any) => {
-        const type = child.type || child.attrs?.type;
-        const id = child.attrs?.id || child.id;
-        return (
-          type === 'H5Container' ||
-          (type === 'Frame' && id && id.includes('h5-container'))
-        );
-      });
+    // 使用H5ContainerManager查找H5容器
+    const existingH5Container =
+      h5ContainerManager.findH5Container(currentCanvas);
 
     if (existingH5Container) {
       this.currentContainer = existingH5Container;
-      this.syncH5Container();
+      console.log('H5Service: 发现现有H5容器', existingH5Container.attrs?.id);
     } else {
       try {
         await this.initializeH5Mode();
@@ -161,18 +154,33 @@ export class H5Service
     });
 
     if (existingContainer) {
+      console.log(
+        'H5Service: 发现现有H5容器，使用现有容器',
+        existingContainer.attrs?.id,
+      );
       this.currentContainer = existingContainer;
       return;
     }
 
-    // 添加H5容器到画布
-    if (
-      this.currentContainer &&
-      typeof this.currentContainer.insertInto === 'function'
-    ) {
-      this.currentContainer.insertInto(currentCanvas);
-    } else {
+    try {
+      // 添加到场景图
+      this.editor.sceneGraph.addItems([this.currentContainer]);
+
+      // 添加到画布
       currentCanvas.insertChild(this.currentContainer);
+
+      // 选中新创建的容器
+      this.editor.selectedElements.setItems([this.currentContainer]);
+
+      console.log(
+        'H5Service: H5容器已成功添加到画布',
+        this.currentContainer.attrs?.id,
+      );
+
+      // 触发渲染
+      this.editor.render();
+    } catch (error) {
+      console.error('H5Service: 添加H5容器到画布失败:', error);
     }
   }
 
@@ -202,24 +210,20 @@ export class H5Service
    * 创建默认H5容器
    */
   private async createDefaultContainer(): Promise<any> {
-    if (!this.editor?.doc) {
-      throw new Error('编辑器文档不存在，无法创建H5容器');
+    if (!this.editor) {
+      throw new Error('编辑器不存在，无法创建H5容器');
     }
 
-    // 动态导入H5Container类
-    const { H5Container } = await import('../graphics/h5/h5_container');
+    // 使用H5ContainerManager统一创建H5容器
+    const container = h5ContainerManager.createH5Container(this.editor, {
+      objectName: 'H5容器',
+      width: 1080,
+      height: 2220,
+      // H5Container已经默认不可移动，不需要disableMove参数
+    });
 
-    return new H5Container(
-      {
-        id: 'h5-container-1',
-        objectName: 'H5容器',
-        width: 1080,
-        height: 2220,
-        resizeToFit: false,
-        disableMove: true, // 禁止移动H5容器
-      },
-      { doc: this.editor.doc },
-    );
+    console.log('H5Service: 使用管理器创建H5容器', container.attrs?.id);
+    return container;
   }
 
   /**
@@ -253,6 +257,36 @@ export class H5Service
    */
   setCurrentContainer(container: any): void {
     this.currentContainer = container;
+  }
+
+  /**
+   * 强制重新创建H5容器（公开方法）
+   */
+  async forceAddH5Container(): Promise<void> {
+    if (!this.editor) {
+      console.warn('H5Service: 编辑器不存在，无法添加H5容器');
+      return;
+    }
+
+    try {
+      // 创建新的H5容器
+      const container = await this.createDefaultContainer();
+      this.currentContainer = container;
+
+      // 添加到画布
+      this.addH5ContainerToCanvas();
+
+      console.log('H5Service: 已强制创建新的H5容器');
+    } catch (error) {
+      console.error('H5Service: 强制创建H5容器失败:', error);
+    }
+  }
+
+  /**
+   * 同步H5容器状态（公开方法）
+   */
+  public syncH5ContainerState(): void {
+    this.syncH5Container();
   }
 
   /**
