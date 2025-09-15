@@ -174,7 +174,7 @@ export class ProjectManagementService extends EventEmitter<ExtendedProjectManage
   }
 
   /**
-   * 打开项目 - 简洁防重复方案
+   * 打开项目
    */
   async openProject(projectId: string): Promise<boolean> {
     // 简洁的防重复检查

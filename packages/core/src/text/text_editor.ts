@@ -114,7 +114,6 @@ export class TextEditor {
     pos: IPoint;
     range?: IRange;
   }) {
-
     this._active = true;
     this.editor.controlHandleManager.enableTransformControl = false;
     this.editor.selectedBox.enableDrawSizeIndicator = false;
@@ -141,10 +140,10 @@ export class TextEditor {
       );
       this.textGraphics = textGraphics;
 
-      this.editor.sceneGraph.addItems([textGraphics]);
+      this.editor.sceneGraph.addItems([textGraphics as any]);
       const currentCanvas = this.editor.doc.getCurrentCanvas();
       if (currentCanvas) {
-        currentCanvas.insertChild(textGraphics);
+        currentCanvas.insertChild(textGraphics as any);
       } else {
         console.error('无法获取当前画布，无法插入文本图形');
         this.inactive();
@@ -152,7 +151,7 @@ export class TextEditor {
       }
     }
     this.textGraphics = textGraphics!;
-    this.editor.selectedElements.setItems([textGraphics!]);
+    this.editor.selectedElements.setItems([textGraphics! as any]);
 
     this.transaction.recordOld<TextAttrs>(textGraphics!.attrs.id, {
       content: textGraphics!.attrs.content,
@@ -185,13 +184,13 @@ export class TextEditor {
 
     if (this.textGraphics) {
       if (!this.textGraphics.attrs.content) {
-        removeGraphicsAndRecord(this.editor, [this.textGraphics]);
+        removeGraphicsAndRecord(this.editor, [this.textGraphics as any]);
       } else {
         this.transaction.update<TextAttrs>(this.textGraphics.attrs.id, {
           content: this.textGraphics.attrs.content,
           width: this.textGraphics.attrs.width,
         });
-        this.transaction.updateParentSize([this.textGraphics]);
+        this.transaction.updateParentSize([this.textGraphics] as any);
         this.transaction.commit('update text content');
       }
       this.textGraphics = null;

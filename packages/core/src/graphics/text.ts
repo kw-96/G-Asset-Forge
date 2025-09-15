@@ -183,4 +183,28 @@ export class GAssetForgeText extends GAssetForgeGraphics<TextAttrs> {
     }
     return left;
   }
+
+  // 重写getInfoPanelAttrs，添加文本特有属性
+  override getInfoPanelAttrs() {
+    const baseAttrs = super.getInfoPanelAttrs();
+
+    // 添加文本特有属性
+    const textAttrs = [
+      {
+        label: 'Font Size',
+        key: 'fontSize',
+        value: this.attrs.fontSize,
+        uiType: 'number',
+        suffixValue: 'px',
+      },
+      {
+        label: 'Font Family',
+        key: 'fontFamily',
+        value: this.attrs.fontFamily,
+        uiType: 'fontFamily',
+      },
+    ];
+
+    return [...baseAttrs, ...textAttrs];
+  }
 }

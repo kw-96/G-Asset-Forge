@@ -67,6 +67,7 @@
     "*.GAssetForgeEditor": "binary"
   },
   "cSpell.words": [
+    "AABB",
     "Bbox",
     "bboxes",
     "favorited",
@@ -77,6 +78,7 @@
     "taskkill",
     "tasklist",
     "unfavorited",
-    "ungroup"
+    "ungroup",
+    "Verts"
   ]
 }

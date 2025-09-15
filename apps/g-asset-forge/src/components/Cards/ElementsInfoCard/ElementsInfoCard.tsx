@@ -11,15 +11,6 @@ import NumberInput from '../../input/NumberInput';
 import { PercentInput } from '../../input/PercentInput';
 import { BaseCard } from '../BaseCard';
 
-/**
- * 因为运算中会丢失精度
- * 如果两个数距离非常非常小，我们认为它相等
- */
-const isEqual = (a: number | string, b: number) => {
-  if (typeof a === 'string') return false;
-  return Math.abs(a - b) < 0.00000001;
-};
-
 interface IAttr {
   label: string;
   key: string;
@@ -43,7 +34,12 @@ export const ElementsInfoCards: FC = () => {
         for (const el of items || []) {
           const attrs = el.getInfoPanelAttrs();
           for (const attr of attrs || []) {
-            if (attr.uiType === 'number') {
+            // 跳过文本相关的属性，这些由TextCard处理
+            if (attr.uiType === 'fontFamily' || attr.key === 'fontSize') {
+              continue;
+            }
+
+            if (attr.uiType === 'number' && typeof attr.value === 'number') {
               const precision = 2;
               attr.value = remainDecimal(attr.value, precision);
             }
@@ -181,12 +177,13 @@ export const ElementsInfoCards: FC = () => {
 
 const NumAttrInput: FC<{
   label: string;
+  key: string;
   min?: number;
   max?: number;
   value: string | number;
   suffixValue?: string;
   uiType: string;
-  onChange: (newValue: number) => void;
+  onChange: (newVal: number) => void;
   onIncrement?: () => void;
   onDecrement?: () => void;
 }> = (props) => {

@@ -11,6 +11,7 @@ import { FillCard } from '../Cards/FillCard';
 import { H5LayoutCard } from '../Cards/H5LayoutCard/H5LayoutCard';
 import { LayerInfoCard } from '../Cards/LayerInfoCard';
 import { StrokeCard } from '../Cards/StrokeCard';
+import { TextCard } from '../Cards/TextCard';
 import { DebugPanel } from '../DebugPanel';
 
 enum PanelType {
@@ -45,6 +46,7 @@ export const InfoPanel: FC = () => {
         <>
           <AlignCard />
           <ElementsInfoCards />
+          <TextCard />
           <H5LayoutCard />
           <LayerInfoCard />
           <FillCard key="fill" />

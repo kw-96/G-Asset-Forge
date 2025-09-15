@@ -86,7 +86,6 @@ export class H5Service
 
     if (existingH5Container) {
       this.currentContainer = existingH5Container;
-      console.log('H5Service: 发现现有H5容器', existingH5Container.attrs?.id);
     } else {
       try {
         await this.initializeH5Mode();

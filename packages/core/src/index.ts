@@ -50,6 +50,7 @@ export {
 } from './service/project-handlers';
 export type { SettingValue } from './setting';
 export * from './template';
+export * from './text';
 export * from './transaction';
 export * from './type';
 

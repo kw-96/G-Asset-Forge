@@ -1,7 +1,7 @@
 import { applyMatrix, type IPoint } from '@g-asset-forge/geo';
 
 import { type GAssetForgeEditor } from '../editor';
-import { type IDrawInfo, type GAssetForgeText } from '../graphics';
+import { type GAssetForgeText,type IDrawInfo } from '../graphics';
 
 export interface IRange {
   start: number;

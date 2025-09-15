@@ -12,7 +12,6 @@ class ProjectManagementServiceSingleton {
    */
   static getInstance(): ProjectManagementService {
     if (!this.instance) {
-      console.log('创建 ProjectManagementService 单例');
       this.instance = new ProjectManagementService();
     }
     return this.instance;

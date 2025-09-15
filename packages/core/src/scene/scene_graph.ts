@@ -362,7 +362,6 @@ export class SceneGraph {
           attrs.id.toLowerCase().includes('h5'));
 
       if (isSerializedH5Container) {
-
         // 纠正类型并确保禁止移动属性默认开启
         (attrs as any).type = GraphicsType.H5Container;
 
@@ -390,7 +389,9 @@ export class SceneGraph {
           // 回退到普通Frame
           const Ctor = graphCtorMap[GraphicsType.Frame];
           if (Ctor) {
-            children.push(new Ctor(attrs as any, { doc: this.editor.doc }));
+            children.push(
+              new Ctor(attrs as any, { doc: this.editor.doc }) as any,
+            );
           }
         }
         continue;
